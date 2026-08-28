@@ -6,15 +6,9 @@ import com.millones.estacionamiento.model.CalculadoraTarifa
 import com.millones.estacionamiento.model.HistorialJson
 import com.millones.estacionamiento.model.Moto
 import com.millones.estacionamiento.model.ParqueaderoSistema
+import com.millones.estacionamiento.model.Recibo
 import com.millones.estacionamiento.model.Vehiculo
 import java.time.LocalDateTime
-
-/**
- * FASE 1: Ingreso de datos (menú 1 y 2)
- * FASE 2: Generar cálculos (menú 3: buscar vehículo a retirar + detalle
- *         de estacionamiento + cálculo de recargo/descuento + retiro,
- *         guardando el historial en vehiculos_retirados.json)
- */
 
 val REGEX_PLACA = Regex("^[A-Z]{2,3}-\\d{3,4}$")
 val REGEX_NOMBRE = Regex("^[A-Za-zÁÉÍÓÚáéíóúÑñ ]{3,50}$")
@@ -31,6 +25,7 @@ fun main() {
             1 -> registrarVehiculo(sistema)
             2 -> listarVehiculos(sistema)
             3 -> buscarYRetirarVehiculo(sistema)
+            4 -> mostrarHistorial()
             0 -> println("Saliendo del sistema...")
             else -> println("Opción inválida, intente nuevamente.")
         }
@@ -42,13 +37,12 @@ fun mostrarMenu() {
     println("1. Ingresar vehículo")
     println("2. Listar vehículos en el parqueadero")
     println("3. Buscar vehículo a retirar / Detalle de estacionamiento")
+    println("4. Ver historial de retiros (reporte + total recaudado)")
     println("0. Salir")
     print("Seleccione una opción: ")
 }
 
 fun leerOpcionMenu(): Int = readLine()?.trim()?.toIntOrNull() ?: -1
-
-// ---------------------- FASE 1: Ingreso de datos ----------------------
 
 fun registrarVehiculo(sistema: ParqueaderoSistema) {
     if (sistema.estaLleno()) {
@@ -173,9 +167,16 @@ fun buscarYRetirarVehiculo(sistema: ParqueaderoSistema) {
         val horaSalida = LocalDateTime.now()
         sistema.retirarVehiculo(placa)
         HistorialJson.agregarRegistro(vehiculo, detalle, horaSalida)
-        println("\n✅ Vehículo retirado. Total cobrado: S/ ${"%.2f".format(detalle.total)}")
+        println()
+        print(Recibo.generar(vehiculo, detalle, horaSalida))
         println("Vehículos actualmente en el parqueadero: ${sistema.totalRegistrados()}/${sistema.capacidadMaxima}")
     } else {
         println("Retiro cancelado. El vehículo permanece en el parqueadero.")
     }
+}
+
+fun mostrarHistorial() {
+    val registros = HistorialJson.leerTodos()
+    println()
+    print(Recibo.generarReporteHistorial(registros))
 }
