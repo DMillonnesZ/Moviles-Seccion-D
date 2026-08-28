@@ -22,6 +22,14 @@ fun calcularTotal(subtotal: Double, igv: Double): Double {
     return subtotal + igv
 }
 
+fun calcularDescuento(total: Double): Double {
+    return when {
+        total > 5000 -> total * 0.10
+        total > 3000 -> total * 0.05
+        else -> 0.0
+    }
+}
+
 fun mostrarDetalle(productos: List<Producto>) {
     println("--------- DETALLE DEL CARRITO ---------")
     var i = 1
@@ -38,7 +46,7 @@ fun main() {
     println("     CARRITO DE COMPRAS - TIENDA TECSUP    ")
     println("=========================================")
 
-    val nombreCliente = "Juan Leon"              // String (inferido)
+    val nombreCliente = "Daniel Millones"              // String (inferido)
     val carrito = mutableListOf<Producto>()      // lista vacía de productos
     println("Cliente: $nombreCliente")
     println()
@@ -54,11 +62,33 @@ fun main() {
 
     println()
 
+    mostrarDetalle(carrito)
+    println("Cantidad de productos: ${carrito.size}")
+
     val subtotal = calcularSubtotal(carrito)
     val igv = calcularIGV(subtotal)
     val total = calcularTotal(subtotal, igv)
 
-    println("Subtotal: S/ %.2f".format(subtotal))
-    println("IGV (18%%): S/ %.2f".format(igv))
-    println("Total: S/ %.2f".format(total))
+    val descuento = calcularDescuento(total)
+    val totalConDescuento = total - descuento
+
+    println(String.format("%-15s S/ %8.2f", "Subtotal:", subtotal))
+    println(String.format("%-15s S/ %8.2f", "IGV (18%):", igv))
+    println(String.format("%-15s S/ %8.2f", "TOTAL A PAGAR:", total))
+    println("---------------------------------------")
+    val masCaro = carrito.maxByOrNull { it.precio }
+    if (masCaro != null) {
+        println("Producto mas caro: ${masCaro.nombre} " + String.format("(S/ %.2f)", masCaro.precio))
+    }
+
+    if (descuento > 0) {
+        val porcentaje = if (total > 5000) 10 else 5
+        val umbral = if (total > 5000) 5000 else 3000
+        println("Descuento aplicado: $porcentaje% por compra mayor a S/ $umbral")
+    } else {
+        println("Descuento: No aplica")
+    }
+    println(String.format("%-15s S/ %8.2f", "TOTAL CON DESCUENTO:", totalConDescuento))
+    println()
+    println("Gracias por su compra, Daniel Millones!")
 }
