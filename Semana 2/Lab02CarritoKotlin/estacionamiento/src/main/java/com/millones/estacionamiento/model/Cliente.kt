@@ -2,7 +2,6 @@ package com.millones.estacionamiento.model
 
 class Cliente(val nombre: String, val documento: String) {
 
-    // Historial de placas asociadas a las visitas de este cliente
     private val historialPlacas: MutableList<String> = mutableListOf()
 
     fun registrarVisita(placa: String) {
