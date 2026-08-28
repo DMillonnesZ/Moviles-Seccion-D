@@ -6,13 +6,13 @@ import com.millones.carrito_consola.model.ProductoDigital
 import com.millones.carrito_consola.model.ProductoFisico
 import com.millones.carrito_consola.service.Carrito
 
-data class ItemCatalogo(val nombre: String, val precio: Double, val tipo: String)
+data class ItemCatalogo(val nombre: String, val precio: Double, val tipo: String, val meta: String)
 
 val catalogo = listOf(
-    ItemCatalogo("Laptop HP", 2500.0, "FISICO"),
-    ItemCatalogo("Mouse Logitech", 45.5, "FISICO"),
-    ItemCatalogo("Licencia Antivirus ESET", 120.0, "DIGITAL"),
-    ItemCatalogo("USB Kingston 64GB", 25.0, "FISICO")
+    ItemCatalogo("Laptop HP", 2500.0, "FISICO","2.5"),
+    ItemCatalogo("Mouse Logitech", 45.5, "FISICO","0.2"),
+    ItemCatalogo("Licencia Antivirus ESET", 120.0, "DIGITAL","soporte@tecsup.edu.pe"),
+    ItemCatalogo("USB Kingston 64GB", 25.0, "FISICO","0.05")
 )
 
 fun main() {
@@ -36,7 +36,10 @@ fun main() {
             2 -> verCarrito(carrito)
             3 -> eliminarProductoMenu(carrito)
             4 -> carrito.vaciarCarrito()
-            5 -> carrito.mostrarResumenFinal(cliente)
+            5 -> {
+                carrito.mostrarResumenFinal(cliente)
+                carrito.vaciarCarrito()
+            }
             0 -> println("\u001B[36mSaliendo del sistema...\u001B[0m")
             else -> println("\u001B[33mOpción inválida, intente nuevamente.\u001B[0m")
         }
@@ -74,14 +77,13 @@ fun submenuCatalogo(carrito: Carrito) {
 
             val producto: Producto = when (seleccionado.tipo) {
                 "FISICO" -> {
-                    print("Ingrese el peso estimado del producto (kg): ")
-                    val peso = readLine()?.toDoubleOrNull() ?: 1.0
-                    ProductoFisico(seleccionado.nombre, seleccionado.precio, cantidadIngresada, peso)
+                    val pesoAutomatico = seleccionado.meta.toDoubleOrNull() ?: 1.0
+                    ProductoFisico(seleccionado.nombre, seleccionado.precio, cantidadIngresada, pesoAutomatico)
                 }
                 "DIGITAL" -> {
                     print("Ingrese el correo de destino para el enlace: ")
-                    val correo = readLine() ?: "soporte@tecsup.edu.pe"
-                    val correoValido = if (correo.isBlank()) "soporte@tecsup.edu.pe" else correo
+                    val correoIngresado = readLine()
+                    val correoValido = if ( correoIngresado.isNullOrBlank()) seleccionado.meta else correoIngresado
                     ProductoDigital(seleccionado.nombre, seleccionado.precio, cantidadIngresada, correoValido)
                 }
                 else -> Producto(seleccionado.nombre, seleccionado.precio, cantidadIngresada)

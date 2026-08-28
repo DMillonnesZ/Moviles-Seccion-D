@@ -31,8 +31,13 @@ open class Producto {
     val subtotalProducto: Double
         get() = precio * cantidad
 
+    @JvmName("getNombreManual")
     fun getNombre(): String = nombre
+
+    @JvmName("getPrecioManual")
     fun getPrecio(): Double = precio
+
+    @JvmName("getCantidadManual")
     fun getCantidad(): Int = cantidad
 
     open fun mostrarDetalle(index: Int): String {
