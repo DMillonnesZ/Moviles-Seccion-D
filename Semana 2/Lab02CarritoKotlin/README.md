@@ -1,6 +1,6 @@
 # Laboratorio 2 - Carrito de Compras en Kotlin
 
-**Nombre completo:** Millones Vasquez, Daniel
+**Nombre completo:** Millones Vasquez, Daniel 
 **Curso:** Programación en Móviles
 **Sección:** D
 
