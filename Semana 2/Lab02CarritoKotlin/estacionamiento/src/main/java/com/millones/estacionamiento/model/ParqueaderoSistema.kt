@@ -21,4 +21,13 @@ class ParqueaderoSistema(val capacidadMaxima: Int = 30) {
     fun listarActivos(): List<Vehiculo> = vehiculosActivos.toList()
 
     fun totalRegistrados(): Int = vehiculosActivos.size
+
+    fun buscarActivo(placa: String): Vehiculo? =
+        vehiculosActivos.find { it.placa.equals(placa, ignoreCase = true) }
+
+    fun retirarVehiculo(placa: String): Vehiculo? {
+        val vehiculo = buscarActivo(placa)
+        if (vehiculo != null) vehiculosActivos.remove(vehiculo)
+        return vehiculo
+    }
 }

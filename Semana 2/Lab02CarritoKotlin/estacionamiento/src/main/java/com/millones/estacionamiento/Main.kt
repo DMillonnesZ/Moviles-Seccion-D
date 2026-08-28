@@ -2,9 +2,19 @@ package com.millones.estacionamiento
 
 import com.millones.estacionamiento.model.Auto
 import com.millones.estacionamiento.model.Camioneta
+import com.millones.estacionamiento.model.CalculadoraTarifa
+import com.millones.estacionamiento.model.HistorialJson
 import com.millones.estacionamiento.model.Moto
 import com.millones.estacionamiento.model.ParqueaderoSistema
 import com.millones.estacionamiento.model.Vehiculo
+import java.time.LocalDateTime
+
+/**
+ * FASE 1: Ingreso de datos (menú 1 y 2)
+ * FASE 2: Generar cálculos (menú 3: buscar vehículo a retirar + detalle
+ *         de estacionamiento + cálculo de recargo/descuento + retiro,
+ *         guardando el historial en vehiculos_retirados.json)
+ */
 
 val REGEX_PLACA = Regex("^[A-Z]{2,3}-\\d{3,4}$")
 val REGEX_NOMBRE = Regex("^[A-Za-zÁÉÍÓÚáéíóúÑñ ]{3,50}$")
@@ -20,6 +30,7 @@ fun main() {
         when (opcion) {
             1 -> registrarVehiculo(sistema)
             2 -> listarVehiculos(sistema)
+            3 -> buscarYRetirarVehiculo(sistema)
             0 -> println("Saliendo del sistema...")
             else -> println("Opción inválida, intente nuevamente.")
         }
@@ -30,11 +41,14 @@ fun mostrarMenu() {
     println("\n===== SISTEMA DE TARIFAS DE ESTACIONAMIENTO =====")
     println("1. Ingresar vehículo")
     println("2. Listar vehículos en el parqueadero")
+    println("3. Buscar vehículo a retirar / Detalle de estacionamiento")
     println("0. Salir")
     print("Seleccione una opción: ")
 }
 
 fun leerOpcionMenu(): Int = readLine()?.trim()?.toIntOrNull() ?: -1
+
+// ---------------------- FASE 1: Ingreso de datos ----------------------
 
 fun registrarVehiculo(sistema: ParqueaderoSistema) {
     if (sistema.estaLleno()) {
@@ -118,4 +132,50 @@ fun listarVehiculos(sistema: ParqueaderoSistema) {
     }
     println("\n--- Vehículos en el parqueadero (${activos.size}) ---")
     activos.forEachIndexed { index, v -> println("${index + 1}. $v") }
+}
+
+fun buscarYRetirarVehiculo(sistema: ParqueaderoSistema) {
+    print("\nIngrese la placa del vehículo a buscar: ")
+    val placa = readLine()?.trim()?.uppercase() ?: ""
+
+    val vehiculo = sistema.buscarActivo(placa)
+    if (vehiculo == null) {
+        println("No se encontró un vehículo activo con la placa '$placa'.")
+        return
+    }
+
+    val horasReales = vehiculo.horasTranscurridas()
+    val visitaNumero = HistorialJson.contarVisitasPlaca(placa) + 1
+    val detalle = CalculadoraTarifa.calcular(vehiculo, horasReales, visitaNumero)
+
+    println("\n--- Detalle de estacionamiento ---")
+    println(vehiculo)
+    println("Horas transcurridas: ${"%.2f".format(horasReales)} h  (horas cobradas: ${detalle.horasCobradas})")
+    println("Tarifa base: S/ ${"%.2f".format(detalle.tarifaBase)}")
+    if (detalle.recargoPorcentaje > 0.0) {
+        println("Recargo por tiempo (${(detalle.recargoPorcentaje * 100).toInt()}%): + S/ ${"%.2f".format(detalle.montoRecargo)}")
+    } else {
+        println("Recargo por tiempo: No aplica (dentro de las 2 horas)")
+    }
+    println("Subtotal: S/ ${"%.2f".format(detalle.subtotal)}")
+    println("N° de visita registrada de esta placa: ${detalle.visitaNumero}")
+    if (detalle.descuentoPorcentaje > 0.0) {
+        println("Descuento por frecuencia (10%, cada 5ta visita): - S/ ${"%.2f".format(detalle.montoDescuento)}")
+    } else {
+        println("Descuento por frecuencia: No aplica")
+    }
+    println("TOTAL A PAGAR: S/ ${"%.2f".format(detalle.total)}")
+
+    print("\n¿Confirmar retiro del vehículo? (S/N): ")
+    val confirmacion = readLine()?.trim()?.uppercase()
+
+    if (confirmacion == "S") {
+        val horaSalida = LocalDateTime.now()
+        sistema.retirarVehiculo(placa)
+        HistorialJson.agregarRegistro(vehiculo, detalle, horaSalida)
+        println("\n✅ Vehículo retirado. Total cobrado: S/ ${"%.2f".format(detalle.total)}")
+        println("Vehículos actualmente en el parqueadero: ${sistema.totalRegistrados()}/${sistema.capacidadMaxima}")
+    } else {
+        println("Retiro cancelado. El vehículo permanece en el parqueadero.")
+    }
 }

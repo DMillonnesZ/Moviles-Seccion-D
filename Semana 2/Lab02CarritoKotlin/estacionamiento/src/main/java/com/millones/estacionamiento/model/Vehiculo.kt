@@ -7,12 +7,10 @@ import java.time.format.DateTimeFormatter
 abstract class Vehiculo(
     val placa: String,
     val tipo: String,
-    val cliente: Cliente
-) {
+    val cliente: Cliente,
     val horaIngreso: LocalDateTime = LocalDateTime.now()
-
+) {
     abstract val tarifaHora: Double
-
 
     fun horasTranscurridas(horaReferencia: LocalDateTime = LocalDateTime.now()): Double {
         val minutos = Duration.between(horaIngreso, horaReferencia).toMinutes()

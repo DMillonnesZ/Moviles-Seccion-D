@@ -1,5 +1,11 @@
 package com.millones.estacionamiento.model
 
-class Auto(placa: String, cliente: Cliente) : Vehiculo(placa, "Auto", cliente) {
+import java.time.LocalDateTime
+
+class Auto(
+    placa: String,
+    cliente: Cliente,
+    horaIngreso: LocalDateTime = LocalDateTime.now()
+) : Vehiculo(placa, "Auto", cliente, horaIngreso) {
     override val tarifaHora: Double = 4.00
 }
