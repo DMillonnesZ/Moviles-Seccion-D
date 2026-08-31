@@ -13,9 +13,11 @@ val mapClientes = mutableMapOf<String, String>()
 val mapFrecuente = mutableMapOf<String, Boolean>()
 val mapVisitas = mutableMapOf<String, Int>()
 
+val mapTotal = mutableMapOf<String, Double>()
 const val MAX_VEHICULOS = 30
 const val UMBRAL_FRECUENTE = 5
 
+const val DESCUENTO_FRECUENTE = 0.10
 fun ingresoDeDatos() {
     var continuar = true
 
@@ -84,7 +86,30 @@ fun ingresoDeDatos() {
     }
 }
 
-fun main() {
+fun calculos() {
+    for (placa in mapTipos.keys) {
+        val tipo = mapTipos[placa] ?: ""
+        val horas = mapHoras[placa] ?: 0
+        val tarifaBase = when (tipo) {
+            "MOTO" -> 2.0
+            "AUTO" -> 4.0
+            "CAMIONETA" -> 10.0
+            else -> 0.0
+        }
+        val horasNormales = minOf(horas, 2)
+        val horasCon20 = if (horas > 2) minOf(horas, 5) - 2 else 0
+        val horasCon50 = if (horas > 5) horas - 5 else 0
+        var total = horasNormales * tarifaBase +
+                horasCon20 * tarifaBase * 1.20 +
+                horasCon50 * tarifaBase * 1.50
+        if (mapFrecuente[placa] == true) {
+            total -= total * DESCUENTO_FRECUENTE
+        }
+        mapTotal[placa] = total
+    }
+}
+
+        fun main() {
     ingresoDeDatos()
 
     println("\n=== RESUMEN DE INGRESO (temporal, se moverá a Fase 3) ===")
