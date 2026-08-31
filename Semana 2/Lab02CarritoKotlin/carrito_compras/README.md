@@ -71,9 +71,9 @@ Al ejecutar el programa en tu entorno de desarrollo, el flujo interactivo de la 
 ## 📸 Evidencia de Ejecución (Resultado)
 
 A continuación, se detalla el comportamiento visual del sistema tras simular la adquisición de licencias virtuales y periféricos:
-![Resultado del programa](screenshots/Resultado1.png)
-![Resultado del programa](screenshots/Resultado2.png)
-![Resultado del programa](screenshots/Resultado3.png)
+![Resultado del programa](../screenshots/Resultado1.png)
+![Resultado del programa](../screenshots/Resultado2.png)
+![Resultado del programa](../screenshots/Resultado3.png)
 
 
 
