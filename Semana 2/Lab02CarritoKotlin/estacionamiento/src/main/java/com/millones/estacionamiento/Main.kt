@@ -109,11 +109,72 @@ fun calculos() {
     }
 }
 
-        fun main() {
-    ingresoDeDatos()
-
-    println("\n=== RESUMEN DE INGRESO (temporal, se moverá a Fase 3) ===")
+fun mostrarResultados() {
+    println("\n===================================================")
+    println("                 DETALLE DE PAGOS")
+    println("===================================================")
+    println(String.format("%-10s %-12s %-7s %-10s %-10s", "PLACA", "TIPO", "HORAS", "RECARGO", "PAGO"))
+    println("---------------------------------------------------")
     for (placa in mapTipos.keys) {
-        println("Placa: $placa | Tipo: ${mapTipos[placa]} | Ingreso: ${mapHoraIngreso[placa]?.format(formatoHora)} | Salida: ${mapHoraSalida[placa]?.format(formatoHora)} | Horas: ${mapHoras[placa]} | Cliente: ${mapClientes[placa]} | Frecuente: ${mapFrecuente[placa]}")
+        val horas = mapHoras[placa] ?: 0
+        val recargo = when {
+            horas <= 2 -> "0%"
+            horas <= 5 -> "20%"
+            else -> "50%"
+        }
+        val pago = mapTotal[placa] ?: 0.0
+        println(String.format("%-10s %-12s %-7d %-10s S/ %.2f", placa, mapTipos[placa], horas, recargo, pago))
     }
+    println("---------------------------------------------------")
+
+    val totalVehiculos = mapTipos.size
+    val totalMotos = mapTipos.values.count { it == "MOTO" }
+    val totalAutos = mapTipos.values.count { it == "AUTO" }
+    val totalCamionetas = mapTipos.values.count { it == "CAMIONETA" }
+    val recaudacionTotal = mapTotal.values.sum()
+
+    var placaMayorPago = ""
+    var mayorPago = -1.0
+    for (placa in mapTotal.keys) {
+        if ((mapTotal[placa] ?: 0.0) > mayorPago) {
+            mayorPago = mapTotal[placa] ?: 0.0
+            placaMayorPago = placa
+        }
+    }
+
+    val conteoHoras = mutableMapOf<Int, Int>()
+    for (placa in mapHoraIngreso.keys) {
+        val hora = mapHoraIngreso[placa]?.hour ?: -1
+        conteoHoras[hora] = conteoHoras.getOrDefault(hora, 0) + 1
+    }
+    var horaMasDemandada = -1
+    var mayorConteo = -1
+    for (hora in conteoHoras.keys) {
+        if ((conteoHoras[hora] ?: 0) > mayorConteo) {
+            mayorConteo = conteoHoras[hora] ?: 0
+            horaMasDemandada = hora
+        }
+    }
+
+    println("\n===================================================")
+    println("                RESUMEN DEL DIA")
+    println("===================================================")
+    println("Vehiculos: $totalVehiculos")
+    println("  Motos: $totalMotos")
+    println("  Autos: $totalAutos")
+    println("  Camionetas: $totalCamionetas")
+    println("Recaudacion Total: S/ ${"%.2f".format(recaudacionTotal)}")
+    if (placaMayorPago.isNotEmpty()) {
+        println("Vehiculo con Mayor Pago: $placaMayorPago (S/ ${"%.2f".format(mayorPago)})")
+    }
+    if (horaMasDemandada >= 0) {
+        println("Hora mas Demandada: ${String.format("%02d:00", horaMasDemandada)} ($mayorConteo registros)")
+    }
+    println("===================================================")
+}
+
+fun main() {
+    ingresoDeDatos()
+    calculos()
+    mostrarResultados()
 }
