@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="898357cd-a0dd-4287-a90a-7b51aa1dd885" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/../.idea/Moviles-Seccion-D.iml" afterDir="false" />
-    </list>
+    <list default="true" id="898357cd-a0dd-4287-a90a-7b51aa1dd885" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -53,7 +51,7 @@
     "RunOnceActivity.readMode.enableVisualFormatting": "true",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "sin-ia",
+    "git-widget-placeholder": "con-ia",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "/Users/tecsup/Desktop/Moviles-Seccion-D/Semana 2",
     "settings.editor.selected.configurable": "org.jetbrains.plugins.github.ui.GithubSettingsConfigurable"
