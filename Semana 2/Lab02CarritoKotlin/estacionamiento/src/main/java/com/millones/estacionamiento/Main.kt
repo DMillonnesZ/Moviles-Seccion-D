@@ -17,6 +17,9 @@ val mapTotal = mutableMapOf<String, Double>()
 const val MAX_VEHICULOS = 30
 const val UMBRAL_FRECUENTE = 5
 
+const val IGV = 0.18
+const val UMBRAL_DESCUENTO_MONTO = 500.0
+const val DESCUENTO_MONTO_ALTO = 0.20
 const val DESCUENTO_FRECUENTE = 0.10
 fun ingresoDeDatos() {
     var continuar = true
@@ -94,17 +97,29 @@ fun calculos() {
             "MOTO" -> 2.0
             "AUTO" -> 4.0
             "CAMIONETA" -> 10.0
+            "TRAILER" -> 20.0
             else -> 0.0
         }
+
         val horasNormales = minOf(horas, 2)
         val horasCon20 = if (horas > 2) minOf(horas, 5) - 2 else 0
-        val horasCon50 = if (horas > 5) horas - 5 else 0
+        val horasCon40 = if (horas > 5) minOf(horas, 10) - 5 else 0
+        val horasCon50 = if (horas > 10) horas - 10 else 0
+
         var total = horasNormales * tarifaBase +
                 horasCon20 * tarifaBase * 1.20 +
+                horasCon40 * tarifaBase * 1.40 +
                 horasCon50 * tarifaBase * 1.50
         if (mapFrecuente[placa] == true) {
             total -= total * DESCUENTO_FRECUENTE
         }
+
+        if (total > UMBRAL_DESCUENTO_MONTO) {
+            total -= total * DESCUENTO_MONTO_ALTO
+        }
+
+        total += total * IGV
+
         mapTotal[placa] = total
     }
 }
@@ -120,6 +135,7 @@ fun mostrarResultados() {
         val recargo = when {
             horas <= 2 -> "0%"
             horas <= 5 -> "20%"
+            horas <= 10 -> "40%"
             else -> "50%"
         }
         val pago = mapTotal[placa] ?: 0.0
