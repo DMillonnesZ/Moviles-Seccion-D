@@ -12,7 +12,8 @@ val mapHoraSalida = mutableMapOf<String, LocalTime>()
 val mapClientes = mutableMapOf<String, String>()
 val mapFrecuente = mutableMapOf<String, Boolean>()
 val mapVisitas = mutableMapOf<String, Int>()
-
+val mapSubtotal = mutableMapOf<String, Double>()
+val mapIGVMonto = mutableMapOf<String, Double>()
 val mapTotal = mutableMapOf<String, Double>()
 var MAX_VEHICULOS = 30
 const val UMBRAL_FRECUENTE = 5
@@ -130,18 +131,21 @@ fun calculos() {
             total -= total * DESCUENTO_MONTO_ALTO
         }
 
-        total += total * IGV
+        val montoIGV = total * IGV
+        total += montoIGV
 
+        mapSubtotal[placa] = total - montoIGV
+        mapIGVMonto[placa] = montoIGV
         mapTotal[placa] = total
     }
 }
 
 fun mostrarResultados() {
-    println("\n===================================================")
+    println("\n=============================================================================")
     println("                 DETALLE DE PAGOS")
-    println("===================================================")
-    println(String.format("%-10s %-12s %-7s %-10s %-10s", "PLACA", "TIPO", "HORAS", "RECARGO", "PAGO"))
-    println("---------------------------------------------------")
+    println("=============================================================================")
+    println(String.format("%-10s %-12s %-7s %-10s %-10s %-10s %-10s", "PLACA", "TIPO", "HORAS", "RECARGO", "SUBTOTAL", "IGV", "PAGO"))
+    println("-----------------------------------------------------------------------------")
     for (placa in mapTipos.keys) {
         val horas = mapHoras[placa] ?: 0
         val recargo = when {
@@ -150,10 +154,12 @@ fun mostrarResultados() {
             horas <= 10 -> "40%"
             else -> "50%"
         }
+        val subtotal = mapSubtotal[placa] ?: 0.0
+        val igvMonto = mapIGVMonto[placa] ?: 0.0
         val pago = mapTotal[placa] ?: 0.0
-        println(String.format("%-10s %-12s %-7d %-10s S/ %.2f", placa, mapTipos[placa], horas, recargo, pago))
+        println(String.format("%-10s %-12s %-7d %-10s S/ %-8.2f S/ %-8.2f S/ %.2f", placa, mapTipos[placa], horas, recargo, subtotal, igvMonto, pago))
     }
-    println("---------------------------------------------------")
+    println("-----------------------------------------------------------------------------")
 
     val totalVehiculos = mapTipos.size
     val totalMotos = mapTipos.values.count { it == "MOTO" }
