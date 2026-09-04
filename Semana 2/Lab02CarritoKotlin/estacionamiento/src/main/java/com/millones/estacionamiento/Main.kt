@@ -14,7 +14,7 @@ val mapFrecuente = mutableMapOf<String, Boolean>()
 val mapVisitas = mutableMapOf<String, Int>()
 
 val mapTotal = mutableMapOf<String, Double>()
-const val MAX_VEHICULOS = 30
+var MAX_VEHICULOS = 30
 const val UMBRAL_FRECUENTE = 5
 
 const val IGV = 0.18
@@ -87,6 +87,18 @@ fun ingresoDeDatos() {
             }
         }
     }
+}
+
+fun configurarAforo() {
+    var aforo: Int
+    while (true) {
+        print("Ingrese el aforo maximo del estacionamiento: ")
+        aforo = readLine()?.trim()?.toIntOrNull() ?: -1
+        if (aforo >= 1) break
+        println("El aforo debe ser un numero entero mayor o igual a 1.")
+    }
+    MAX_VEHICULOS = aforo
+    println("Aforo configurado: $MAX_VEHICULOS vehiculos.")
 }
 
 fun calculos() {
@@ -192,6 +204,7 @@ fun mostrarResultados() {
 }
 
 fun main() {
+    configurarAforo()
     ingresoDeDatos()
     calculos()
     mostrarResultados()
