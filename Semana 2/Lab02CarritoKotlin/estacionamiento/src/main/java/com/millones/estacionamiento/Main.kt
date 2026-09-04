@@ -201,6 +201,8 @@ fun mostrarResultados() {
         println("Hora mas Demandada: ${String.format("%02d:00", horaMasDemandada)} ($mayorConteo registros)")
     }
     println("===================================================")
+
+    println("Muchas Gracias por usar el sistema!")
 }
 
 fun main() {
