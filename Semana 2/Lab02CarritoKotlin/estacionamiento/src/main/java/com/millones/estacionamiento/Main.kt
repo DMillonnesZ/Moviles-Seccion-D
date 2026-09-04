@@ -49,8 +49,8 @@ fun ingresoDeDatos() {
         while (true) {
             print("Ingrese Horas: ")
             horas = readLine()?.trim()?.toIntOrNull() ?: -1
-            if (horas >= 1) break
-            println("Las horas deben ser un numero entero mayor o igual a 1.")
+            if (horas in 1..24) break
+            println("Disponibilidad de 24 horas")
         }
 
         val horaSalida = horaIngreso.plusHours(horas.toLong())
