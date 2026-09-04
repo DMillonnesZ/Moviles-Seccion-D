@@ -36,9 +36,9 @@ fun ingresoDeDatos() {
 
         var tipo: String
         while (true) {
-            print("Ingrese Tipo (MOTO / AUTO / CAMIONETA): ")
+            print("Ingrese Tipo (MOTO / AUTO / CAMIONETA / TRAILER): ")
             tipo = readLine()?.trim()?.uppercase() ?: ""
-            if (tipo == "MOTO" || tipo == "AUTO" || tipo == "CAMIONETA") break
+            if (tipo == "MOTO" || tipo == "AUTO" || tipo == "CAMIONETA" || tipo == "TRAILER") break
             println("Tipo invalido. Intente nuevamente.")
         }
 
@@ -131,6 +131,7 @@ fun mostrarResultados() {
     val totalMotos = mapTipos.values.count { it == "MOTO" }
     val totalAutos = mapTipos.values.count { it == "AUTO" }
     val totalCamionetas = mapTipos.values.count { it == "CAMIONETA" }
+    val totalTrailers = mapTipos.values.count() { it == "TRAILER"}
     val recaudacionTotal = mapTotal.values.sum()
 
     var placaMayorPago = ""
@@ -163,6 +164,7 @@ fun mostrarResultados() {
     println("  Motos: $totalMotos")
     println("  Autos: $totalAutos")
     println("  Camionetas: $totalCamionetas")
+    println("  Trailers:  $totalTrailers")
     println("Recaudacion Total: S/ ${"%.2f".format(recaudacionTotal)}")
     if (placaMayorPago.isNotEmpty()) {
         println("Vehiculo con Mayor Pago: $placaMayorPago (S/ ${"%.2f".format(mayorPago)})")
