@@ -8,6 +8,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -17,8 +18,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.util.Locale
@@ -28,7 +32,6 @@ val PrimaryPurple = Color(0xFF6C3EB5)
 val BackgroundStart = Color(0xFFF4EEFB)
 val BackgroundEnd = Color(0xFFEDE3F8)
 val BadgeBackground = Color(0xFFEBE1F7)
-val BadgeText = Color(0xFF6C3EB5)
 val TextGray = Color(0xFF8A8A8E)
 val ButtonDisabled = Color(0xFFD9D0EC)
 val ButtonDisabledText = Color(0xFF9C93B0)
@@ -41,21 +44,23 @@ val ChipRecuperacionText = Color(0xFF8A6D00)
 val ChipDesaprobadoBg = Color(0xFFFBDADA)
 val ChipDesaprobadoText = Color(0xFFB71C1C)
 val ConfirmGreen = Color(0xFF2E7D32)
+val PesoColor = Color(0xFFAB94D8)
 
-data class Curso(val nombre: String, val peso: Float)
+data class Curso(val nombre: String, val nombreCorto: String, val peso: Float)
 data class Resultado(
     val ponderado: Double,
     val promedioFinal: Double,
     val observacion: String,
     val chipBg: Color,
-    val chipText: Color
+    val chipText: Color,
+    val aportes: List<String>
 )
 
 val cursos = listOf(
-    Curso("Fundamentos de Programación", 0.20f),
-    Curso("Programación Orientada a Objetos", 0.25f),
-    Curso("Programación en Móviles", 0.30f),
-    Curso("Base de Datos", 0.25f)
+    Curso("Fundamentos de Programación", "Fundamentos", 0.20f),
+    Curso("Programación Orientada a Objetos", "POO", 0.25f),
+    Curso("Programación en Móviles", "Móviles", 0.30f),
+    Curso("Base de Datos", "Base de Datos", 0.25f)
 )
 
 fun calcularResultado(f: Float, poo: Float, m: Float, bd: Float, redondear: Boolean): Resultado {
@@ -69,7 +74,14 @@ fun calcularResultado(f: Float, poo: Float, m: Float, bd: Float, redondear: Bool
         promedioFinal >= 10.0 -> Triple("EN RECUPERACIÓN", ChipRecuperacionBg, ChipRecuperacionText)
         else -> Triple("DESAPROBADO", ChipDesaprobadoBg, ChipDesaprobadoText)
     }
-    return Resultado(ponderado2dec, promedioFinal, obs, bg, txt)
+
+    val notas = listOf(f, poo, m, bd)
+    val aportes = cursos.mapIndexed { i, curso ->
+        val valor = notas[i] * curso.peso
+        "${curso.nombreCorto}: ${notas[i].roundToInt()} × ${(curso.peso * 100).toInt()}% = ${String.format(Locale.US, "%.2f", valor)}"
+    }
+
+    return Resultado(ponderado2dec, promedioFinal, obs, bg, txt, aportes)
 }
 
 class MainActivity : ComponentActivity() {
@@ -173,20 +185,43 @@ fun RegistroNotasScreen() {
                 }
                 Spacer(Modifier.height(4.dp))
 
-                Button(
-                    onClick = { mostrarResultado = true },
-                    enabled = confirmado,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(28.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = PrimaryPurple,
-                        disabledContainerColor = ButtonDisabled,
-                        contentColor = Color.White,
-                        disabledContentColor = ButtonDisabledText
-                    )
-                ) { Text("CALCULAR PROMEDIO", fontSize = 15.sp, fontWeight = FontWeight.Bold) }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Button(
+                        onClick = { mostrarResultado = true },
+                        enabled = confirmado,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(28.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PrimaryPurple,
+                            disabledContainerColor = ButtonDisabled,
+                            contentColor = Color.White,
+                            disabledContentColor = ButtonDisabledText
+                        )
+                    ) { Text("CALCULAR PROMEDIO", fontSize = 14.sp, fontWeight = FontWeight.Bold) }
+
+                    OutlinedButton(
+                        onClick = {
+                            notaFundamentos = 0f
+                            notaPoo = 0f
+                            notaMoviles = 0f
+                            notaBd = 0f
+                            redondear = false
+                            confirmado = false
+                            mostrarResultado = false
+                        },
+                        modifier = Modifier
+                            .weight(0.6f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(28.dp),
+                        border = BorderStroke(1.dp, PrimaryPurple),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryPurple)
+                    ) { Text("LIMPIAR", fontSize = 14.sp, fontWeight = FontWeight.Bold) }
+                }
 
                 if (!mostrarResultado) {
                     Spacer(Modifier.height(20.dp))
@@ -215,21 +250,30 @@ fun RegistroNotasScreen() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CursoRow(curso: Curso, nota: Float, onNotaChange: (Float) -> Unit) {
+    val badgeBg = if (nota < 13f) ChipDesaprobadoBg else ChipAprobadoBg
+    val badgeText = if (nota < 13f) ChipDesaprobadoText else ChipAprobadoText
+
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
             Text(
-                "${curso.nombre} (${(curso.peso * 100).toInt()}%)",
+                text = buildAnnotatedString {
+                    append(curso.nombre + " ")
+                    withStyle(SpanStyle(color = PesoColor, fontWeight = FontWeight.Bold)) {
+                        append("(${(curso.peso * 100).toInt()}%)")
+                    }
+                },
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.weight(1f)
             )
             Spacer(Modifier.width(8.dp))
-            Surface(color = BadgeBackground, shape = RoundedCornerShape(8.dp)) {
+            Surface(color = badgeBg, shape = RoundedCornerShape(8.dp)) {
                 Text(
-                    nota.toInt().toString(),
-                    color = BadgeText,
+                    nota.roundToInt().toString(),
+                    color = badgeText,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
                 )
@@ -240,8 +284,14 @@ fun CursoRow(curso: Curso, nota: Float, onNotaChange: (Float) -> Unit) {
             onValueChange = { onNotaChange(it) },
             valueRange = 0f..20f,
             steps = 19,
+            thumb = {
+                Box(
+                    modifier = Modifier
+                        .size(20.dp)
+                        .background(PrimaryPurple, CircleShape)
+                )
+            },
             colors = SliderDefaults.colors(
-                thumbColor = PrimaryPurple,
                 activeTrackColor = PrimaryPurple,
                 inactiveTrackColor = BadgeBackground
             )
@@ -289,6 +339,12 @@ fun ResultadoCard(resultado: Resultado, redondear: Boolean) {
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 17.dp, vertical = 5.dp)
                 )
+            }
+
+            Spacer(Modifier.height(6.dp))
+            Text("Aporte por curso", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF403B45))
+            resultado.aportes.forEach { linea ->
+                Text(linea, fontSize = 12.sp, color = TextGray)
             }
         }
     }
