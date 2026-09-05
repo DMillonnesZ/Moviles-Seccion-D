@@ -150,17 +150,29 @@ fun PantallaRegistro(modifier: Modifier = Modifier) {
                     if (precio.isBlank()) {
                         errorPrecio = "Ingrese el precio"
                         hayError = true
-                    } else if (precio.toDoubleOrNull() == null) {
-                        errorPrecio = "Precio inválido"
-                        hayError = true
+                    } else {
+                        val p = precio.toDoubleOrNull()
+                        if (p == null) {
+                            errorPrecio = "Precio inválido"
+                            hayError = true
+                        } else if (p <= 0) {
+                            errorPrecio = "El precio debe ser mayor a 0"
+                            hayError = true
+                        }
                     }
 
                     if (cantidad.isBlank()) {
                         errorCantidad = "Ingrese la cantidad"
                         hayError = true
-                    } else if (cantidad.toIntOrNull() == null) {
-                        errorCantidad = "Cantidad inválida"
-                        hayError = true
+                    } else {
+                        val c = cantidad.toIntOrNull()
+                        if (c == null) {
+                            errorCantidad = "Cantidad inválida"
+                            hayError = true
+                        } else if (c <= 0) {
+                            errorCantidad = "La cantidad debe ser mayor a 0"
+                            hayError = true
+                        }
                     }
 
                     if (!hayError) {
@@ -171,7 +183,10 @@ fun PantallaRegistro(modifier: Modifier = Modifier) {
                 },
                 modifier = Modifier.weight(1f)
             ) {
-                Text("AGREGAR PRODUCTO")
+                Text(
+                    text = "AGREGAR PRODUCTO",
+                    textAlign = TextAlign.Center
+                )
             }
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -188,7 +203,10 @@ fun PantallaRegistro(modifier: Modifier = Modifier) {
                 },
                 modifier = Modifier.weight(1f)
             ) {
-                Text("LIMPIAR")
+                Text(
+                    text = "LIMPIAR",
+                    textAlign = TextAlign.Center
+                )
             }
         }
 
