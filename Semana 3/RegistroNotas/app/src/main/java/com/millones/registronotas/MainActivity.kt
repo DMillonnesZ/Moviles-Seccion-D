@@ -18,16 +18,23 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -43,6 +50,8 @@ val BackgroundEnd = Color(0xFFEDE3F8)
 val BadgeBackground = Color(0xFFEBE1F7)
 val BadgeText = Color(0xFF6C3EB5)
 val TextGray = Color(0xFF8A8A8E)
+val ButtonDisabled = Color(0xFFD9D0EC)
+val ButtonDisabledText = Color(0xFF9C93B0)
 
 data class Curso(val nombre: String, val peso: Float)
 
@@ -99,10 +108,21 @@ fun RegistroNotasScreen() {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                cursos.forEach { curso ->
-                    CursoRow(curso = curso, nota = 0f)
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
+                var notaFundamentos by remember { mutableFloatStateOf(0f) }
+                var notaPoo by remember { mutableFloatStateOf(0f) }
+                var notaMoviles by remember { mutableFloatStateOf(0f) }
+                var notaBd by remember { mutableFloatStateOf(0f) }
+
+                var redondear by remember { mutableStateOf(false) }
+                var confirmado by remember { mutableStateOf(false) }
+
+                CursoRow(cursos[0], notaFundamentos) { notaFundamentos = it }
+                Spacer(modifier = Modifier.height(4.dp))
+                CursoRow(cursos[1], notaPoo) { notaPoo = it }
+                Spacer(modifier = Modifier.height(4.dp))
+                CursoRow(cursos[2], notaMoviles) { notaMoviles = it }
+                Spacer(modifier = Modifier.height(4.dp))
+                CursoRow(cursos[3], notaBd) { notaBd = it }
 
                 Spacer(modifier = Modifier.height(4.dp))
 
@@ -112,11 +132,11 @@ fun RegistroNotasScreen() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(text = "Redondear promedio final")
-                    Switch(checked = false, onCheckedChange = {})
+                    Switch(checked = redondear, onCheckedChange = { redondear = it })
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = false, onCheckedChange = {})
+                    Checkbox(checked = confirmado, onCheckedChange = { confirmado = it })
                     Text(text = "Confirmo que las notas son correctas")
                 }
 
@@ -124,7 +144,12 @@ fun RegistroNotasScreen() {
 
                 Button(
                     onClick = {},
-                    enabled = false,
+                    enabled = confirmado,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PrimaryPurple,
+                        disabledContainerColor = ButtonDisabled,
+                        disabledContentColor = ButtonDisabledText
+                    ),
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -154,7 +179,7 @@ fun RegistroNotasScreen() {
 }
 
 @Composable
-fun CursoRow(curso: Curso, nota: Float) {
+fun CursoRow(curso: Curso, nota: Float, onNotaChange: (Float) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -176,6 +201,16 @@ fun CursoRow(curso: Curso, nota: Float) {
                 )
             }
         }
-        Slider(value = nota, onValueChange = {}, valueRange = 0f..20f, steps = 19)
+        Slider(
+            value = nota,
+            onValueChange = onNotaChange,
+            valueRange = 0f..20f,
+            steps = 19,
+            colors = SliderDefaults.colors(
+                thumbColor = PrimaryPurple,
+                activeTrackColor = PrimaryPurple,
+                inactiveTrackColor = BadgeBackground
+            )
+        )
     }
 }
