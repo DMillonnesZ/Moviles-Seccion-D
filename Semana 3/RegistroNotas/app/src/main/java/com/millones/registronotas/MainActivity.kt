@@ -43,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 
 val PrimaryPurple = Color(0xFF6C3EB5)
 val BackgroundStart = Color(0xFFF4EEFB)
@@ -52,6 +53,14 @@ val BadgeText = Color(0xFF6C3EB5)
 val TextGray = Color(0xFF8A8A8E)
 val ButtonDisabled = Color(0xFFD9D0EC)
 val ButtonDisabledText = Color(0xFF9C93B0)
+val ChipExcelenteBg = Color(0xFFB7E4C7)
+val ChipExcelenteText = Color(0xFF1B5E20)
+val ChipAprobadoBg = Color(0xFFDCF3DE)
+val ChipAprobadoText = Color(0xFF2E7D32)
+val ChipRecuperacionBg = Color(0xFFFFF1C2)
+val ChipRecuperacionText = Color(0xFF8A6D00)
+val ChipDesaprobadoBg = Color(0xFFFBDADA)
+val ChipDesaprobadoText = Color(0xFFB71C1C)
 
 data class Curso(val nombre: String, val peso: Float)
 
@@ -61,6 +70,44 @@ val cursos = listOf(
     Curso("Programación en Móviles", 0.30f),
     Curso("Base de Datos", 0.25f)
 )
+
+data class Resultado(
+    val ponderado: Double,
+    val final: Double,
+    val observacion: String,
+    val chipBg: Color,
+    val chipText: Color
+)
+
+fun calcularResultado(
+    notaFundamentos: Float,
+    notaPoo: Float,
+    notaMoviles: Float,
+    notaBd: Float,
+    redondear: Boolean
+): Resultado {
+    val ponderado = notaFundamentos * cursos[0].peso +
+            notaPoo * cursos[1].peso +
+            notaMoviles * cursos[2].peso +
+            notaBd * cursos[3].peso
+
+    val ponderadoRedondeado2 = (ponderado * 100.0).roundToInt() / 100.0
+
+    val final: Double = if (redondear) {
+        ponderado.roundToInt().toDouble()
+    } else {
+        ponderadoRedondeado2
+    }
+
+    val (observacion, chipBg, chipText) = when {
+        final >= 17.0 -> Triple("EXCELENTE", ChipExcelenteBg, ChipExcelenteText)
+        final >= 13.0 -> Triple("APROBADO", ChipAprobadoBg, ChipAprobadoText)
+        final >= 10.0 -> Triple("EN RECUPERACIÓN", ChipRecuperacionBg, ChipRecuperacionText)
+        else -> Triple("DESAPROBADO", ChipDesaprobadoBg, ChipDesaprobadoText)
+    }
+
+    return Resultado(ponderadoRedondeado2, final, observacion, chipBg, chipText)
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -142,8 +189,16 @@ fun RegistroNotasScreen() {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                var mostrarResultado by remember { mutableStateOf(false) }
+                var resultado by remember { mutableStateOf<Resultado?>(null) }
+
                 Button(
-                    onClick = {},
+                    onClick = {
+                        resultado = calcularResultado(
+                            notaFundamentos, notaPoo, notaMoviles, notaBd, redondear
+                        )
+                        mostrarResultado = true
+                    },
                     enabled = confirmado,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = PrimaryPurple,
@@ -158,11 +213,19 @@ fun RegistroNotasScreen() {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = "Asigna las notas y confirma para calcular",
-                    color = TextGray,
-                    fontSize = 13.sp
-                )
+                if (!mostrarResultado) {
+                    Text(
+                        text = "Asigna las notas y confirma para calcular",
+                        color = TextGray,
+                        fontSize = 13.sp
+                    )
+                } else {
+                    resultado?.let { r ->
+                        Text(text = "Promedio ponderado: ${"%.2f".format(r.ponderado)}")
+                        Text(text = "Promedio final: ${if (redondear) r.final.toInt() else r.final}")
+                        Text(text = "Observación: ${r.observacion}")
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
