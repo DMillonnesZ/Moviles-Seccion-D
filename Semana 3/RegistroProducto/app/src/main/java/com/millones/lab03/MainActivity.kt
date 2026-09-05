@@ -69,6 +69,10 @@ fun PantallaRegistro(modifier: Modifier = Modifier) {
     var cantidad by remember { mutableStateOf("") }
     var mostrarResumen by remember { mutableStateOf(false) }
 
+    var errorNombre by remember { mutableStateOf("") }
+    var errorPrecio by remember { mutableStateOf("") }
+    var errorCantidad by remember { mutableStateOf("") }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -87,9 +91,16 @@ fun PantallaRegistro(modifier: Modifier = Modifier) {
 
         OutlinedTextField(
             value = nombre,
-            onValueChange = { nombre = it },
+            onValueChange = {
+                nombre = it
+                errorNombre = ""
+            },
             label = { Text("Nombre del producto") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = errorNombre.isNotEmpty(),
+            supportingText = {
+                if (errorNombre.isNotEmpty()) Text(errorNombre)
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -97,26 +108,88 @@ fun PantallaRegistro(modifier: Modifier = Modifier) {
         Row(modifier = Modifier.fillMaxWidth()) {
             OutlinedTextField(
                 value = precio,
-                onValueChange = { precio = it },
+                onValueChange = {
+                    precio = it
+                    errorPrecio = ""
+                },
                 label = { Text("Precio (S/)") },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                isError = errorPrecio.isNotEmpty(),
+                supportingText = {
+                    if (errorPrecio.isNotEmpty()) Text(errorPrecio)
+                }
             )
             Spacer(modifier = Modifier.width(16.dp))
             OutlinedTextField(
                 value = cantidad,
-                onValueChange = { cantidad = it },
+                onValueChange = {
+                    cantidad = it
+                    errorCantidad = ""
+                },
                 label = { Text("Cantidad") },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                isError = errorCantidad.isNotEmpty(),
+                supportingText = {
+                    if (errorCantidad.isNotEmpty()) Text(errorCantidad)
+                }
             )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Button(
-            onClick = { mostrarResumen = true },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("AGREGAR PRODUCTO")
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = {
+                    var hayError = false
+
+                    if (nombre.isBlank()) {
+                        errorNombre = "Ingrese el nombre"
+                        hayError = true
+                    }
+
+                    if (precio.isBlank()) {
+                        errorPrecio = "Ingrese el precio"
+                        hayError = true
+                    } else if (precio.toDoubleOrNull() == null) {
+                        errorPrecio = "Precio inválido"
+                        hayError = true
+                    }
+
+                    if (cantidad.isBlank()) {
+                        errorCantidad = "Ingrese la cantidad"
+                        hayError = true
+                    } else if (cantidad.toIntOrNull() == null) {
+                        errorCantidad = "Cantidad inválida"
+                        hayError = true
+                    }
+
+                    if (!hayError) {
+                        mostrarResumen = true
+                    } else {
+                        mostrarResumen = false
+                    }
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("AGREGAR PRODUCTO")
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Button(
+                onClick = {
+                    nombre = ""
+                    precio = ""
+                    cantidad = ""
+                    errorNombre = ""
+                    errorPrecio = ""
+                    errorCantidad = ""
+                    mostrarResumen = false
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("LIMPIAR")
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
