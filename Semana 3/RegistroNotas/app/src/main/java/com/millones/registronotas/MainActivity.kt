@@ -4,37 +4,15 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -43,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.util.Locale
 import kotlin.math.roundToInt
 
 val PrimaryPurple = Color(0xFF6C3EB5)
@@ -61,8 +40,16 @@ val ChipRecuperacionBg = Color(0xFFFFF1C2)
 val ChipRecuperacionText = Color(0xFF8A6D00)
 val ChipDesaprobadoBg = Color(0xFFFBDADA)
 val ChipDesaprobadoText = Color(0xFFB71C1C)
+val ConfirmGreen = Color(0xFF2E7D32)
 
 data class Curso(val nombre: String, val peso: Float)
+data class Resultado(
+    val ponderado: Double,
+    val promedioFinal: Double,
+    val observacion: String,
+    val chipBg: Color,
+    val chipText: Color
+)
 
 val cursos = listOf(
     Curso("Fundamentos de Programación", 0.20f),
@@ -71,171 +58,158 @@ val cursos = listOf(
     Curso("Base de Datos", 0.25f)
 )
 
-data class Resultado(
-    val ponderado: Double,
-    val final: Double,
-    val observacion: String,
-    val chipBg: Color,
-    val chipText: Color
-)
+fun calcularResultado(f: Float, poo: Float, m: Float, bd: Float, redondear: Boolean): Resultado {
+    val ponderado = f * 0.20 + poo * 0.25 + m * 0.30 + bd * 0.25
+    val ponderado2dec = String.format(Locale.US, "%.2f", ponderado).toDouble()
+    val promedioFinal = if (redondear) ponderado.roundToInt().toDouble() else ponderado2dec
 
-fun calcularResultado(
-    notaFundamentos: Float,
-    notaPoo: Float,
-    notaMoviles: Float,
-    notaBd: Float,
-    redondear: Boolean
-): Resultado {
-    val ponderado = notaFundamentos * cursos[0].peso +
-            notaPoo * cursos[1].peso +
-            notaMoviles * cursos[2].peso +
-            notaBd * cursos[3].peso
-
-    val ponderadoRedondeado2 = (ponderado * 100.0).roundToInt() / 100.0
-
-    val final: Double = if (redondear) {
-        ponderado.roundToInt().toDouble()
-    } else {
-        ponderadoRedondeado2
-    }
-
-    val (observacion, chipBg, chipText) = when {
-        final >= 17.0 -> Triple("EXCELENTE", ChipExcelenteBg, ChipExcelenteText)
-        final >= 13.0 -> Triple("APROBADO", ChipAprobadoBg, ChipAprobadoText)
-        final >= 10.0 -> Triple("EN RECUPERACIÓN", ChipRecuperacionBg, ChipRecuperacionText)
+    val (obs, bg, txt) = when {
+        promedioFinal >= 17.0 -> Triple("EXCELENTE", ChipExcelenteBg, ChipExcelenteText)
+        promedioFinal >= 13.0 -> Triple("APROBADO", ChipAprobadoBg, ChipAprobadoText)
+        promedioFinal >= 10.0 -> Triple("EN RECUPERACIÓN", ChipRecuperacionBg, ChipRecuperacionText)
         else -> Triple("DESAPROBADO", ChipDesaprobadoBg, ChipDesaprobadoText)
     }
-
-    return Resultado(ponderadoRedondeado2, final, observacion, chipBg, chipText)
+    return Resultado(ponderado2dec, promedioFinal, obs, bg, txt)
 }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
-            RegistroNotasScreen()
-        }
+        setContent { RegistroNotasScreen() }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegistroNotasScreen() {
+    var notaFundamentos by rememberSaveable { mutableFloatStateOf(0f) }
+    var notaPoo by rememberSaveable { mutableFloatStateOf(0f) }
+    var notaMoviles by rememberSaveable { mutableFloatStateOf(0f) }
+    var notaBd by rememberSaveable { mutableFloatStateOf(0f) }
+    var redondear by rememberSaveable { mutableStateOf(false) }
+    var confirmado by rememberSaveable { mutableStateOf(false) }
+    var mostrarResultado by rememberSaveable { mutableStateOf(false) }
+
+    val resultado = if (mostrarResultado) {
+        calcularResultado(notaFundamentos, notaPoo, notaMoviles, notaBd, redondear)
+    } else null
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "Registro de Notas", fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        "Registro de Notas",
+                        fontSize = 21.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = PrimaryPurple,
                     titleContentColor = Color.White
                 )
             )
+        },
+        bottomBar = {
+            Surface(color = BackgroundEnd) {
+                Text(
+                    "Desarrollado por: Daniel Alejandro Millones Vasquez",
+                    color = TextGray,
+                    fontSize = 11.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 5.dp, bottom = 10.dp)
+                )
+            }
         }
     ) { padding ->
         Box(
-            modifier = Modifier
+            Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .background(Brush.verticalGradient(listOf(BackgroundStart, BackgroundEnd)))
         ) {
             Column(
-                modifier = Modifier
+                Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                    .padding(horizontal = 24.dp, vertical = 14.dp)
             ) {
-                Text(text = "Notas del ciclo", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Text(
-                    text = "Desliza para asignar cada nota (0 a 20)",
-                    fontSize = 13.sp,
-                    color = TextGray
+                    "Notas del ciclo",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF29252E)
                 )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                var notaFundamentos by remember { mutableFloatStateOf(0f) }
-                var notaPoo by remember { mutableFloatStateOf(0f) }
-                var notaMoviles by remember { mutableFloatStateOf(0f) }
-                var notaBd by remember { mutableFloatStateOf(0f) }
-
-                var redondear by remember { mutableStateOf(false) }
-                var confirmado by remember { mutableStateOf(false) }
+                Text("Desliza para asignar cada nota (0 a 20)", fontSize = 13.sp, color = TextGray)
+                Spacer(Modifier.height(8.dp))
 
                 CursoRow(cursos[0], notaFundamentos) { notaFundamentos = it }
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(Modifier.height(3.dp))
                 CursoRow(cursos[1], notaPoo) { notaPoo = it }
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(Modifier.height(3.dp))
                 CursoRow(cursos[2], notaMoviles) { notaMoviles = it }
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(Modifier.height(3.dp))
                 CursoRow(cursos[3], notaBd) { notaBd = it }
+                Spacer(Modifier.height(2.dp))
 
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "Redondear promedio final")
+                Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+                    Text("Redondear promedio final", fontSize = 14.sp, color = Color(0xFF403B45))
                     Switch(checked = redondear, onCheckedChange = { redondear = it })
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Checkbox(checked = confirmado, onCheckedChange = { confirmado = it })
-                    Text(text = "Confirmo que las notas son correctas")
+                    Text(
+                        "Confirmo que las notas son correctas",
+                        fontSize = 14.sp,
+                        color = Color(0xFF403B45)
+                    )
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                var mostrarResultado by remember { mutableStateOf(false) }
-                var resultado by remember { mutableStateOf<Resultado?>(null) }
+                Spacer(Modifier.height(4.dp))
 
                 Button(
-                    onClick = {
-                        resultado = calcularResultado(
-                            notaFundamentos, notaPoo, notaMoviles, notaBd, redondear
-                        )
-                        mostrarResultado = true
-                    },
+                    onClick = { mostrarResultado = true },
                     enabled = confirmado,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(28.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = PrimaryPurple,
                         disabledContainerColor = ButtonDisabled,
+                        contentColor = Color.White,
                         disabledContentColor = ButtonDisabledText
-                    ),
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(text = "CALCULAR PROMEDIO", fontWeight = FontWeight.Bold)
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
+                    )
+                ) { Text("CALCULAR PROMEDIO", fontSize = 15.sp, fontWeight = FontWeight.Bold) }
 
                 if (!mostrarResultado) {
+                    Spacer(Modifier.height(20.dp))
                     Text(
-                        text = "Asigna las notas y confirma para calcular",
+                        "Asigna las notas y confirma para calcular",
                         color = TextGray,
                         fontSize = 13.sp
                     )
                 } else {
-                    resultado?.let { r ->
-                        Text(text = "Promedio ponderado: ${"%.2f".format(r.ponderado)}")
-                        Text(text = "Promedio final: ${if (redondear) r.final.toInt() else r.final}")
-                        Text(text = "Observación: ${r.observacion}")
+                    Spacer(Modifier.height(18.dp))
+                    resultado?.let {
+                        ResultadoCard(it, redondear)
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            "✓ Promedio calculado correctamente",
+                            color = ConfirmGreen,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(start = 18.dp)
+                        )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = "Desarrollado por: Daniel Millones",
-                    color = TextGray,
-                    fontSize = 12.sp,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
+                Spacer(Modifier.height(18.dp))
             }
         }
     }
@@ -243,30 +217,27 @@ fun RegistroNotasScreen() {
 
 @Composable
 fun CursoRow(curso: Curso, nota: Float, onNotaChange: (Float) -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+    Column(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
             Text(
-                text = "${curso.nombre} (${(curso.peso * 100).toInt()}%)",
-                fontWeight = FontWeight.Medium,
+                "${curso.nombre} (${(curso.peso * 100).toInt()}%)",
                 fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
                 modifier = Modifier.weight(1f)
             )
+            Spacer(Modifier.width(8.dp))
             Surface(color = BadgeBackground, shape = RoundedCornerShape(8.dp)) {
                 Text(
-                    text = nota.toInt().toString(),
+                    nota.toInt().toString(),
                     color = BadgeText,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
                 )
             }
         }
         Slider(
             value = nota,
-            onValueChange = onNotaChange,
+            onValueChange = { onNotaChange(it) },
             valueRange = 0f..20f,
             steps = 19,
             colors = SliderDefaults.colors(
@@ -275,5 +246,50 @@ fun CursoRow(curso: Curso, nota: Float, onNotaChange: (Float) -> Unit) {
                 inactiveTrackColor = BadgeBackground
             )
         )
+    }
+}
+
+@Composable
+fun ResultadoCard(resultado: Resultado, redondear: Boolean) {
+    Surface(
+        color = Color.White,
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(1.dp, Color(0xFFD4C6E7)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 17.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Text(
+                "Promedio ponderado:  ${String.format(Locale.US, "%.2f", resultado.ponderado)}",
+                fontSize = 14.sp,
+                color = Color(0xFF403B45)
+            )
+
+            val finalTexto = if (redondear) resultado.promedioFinal.roundToInt().toString()
+            else String.format(Locale.US, "%.2f", resultado.promedioFinal)
+
+            Text(
+                "Promedio final:  $finalTexto",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = PrimaryPurple
+            )
+            if (redondear) Text("(redondeado)", fontSize = 12.sp, color = TextGray)
+            Spacer(Modifier.height(3.dp))
+
+            Surface(color = resultado.chipBg, shape = RoundedCornerShape(20.dp)) {
+                Text(
+                    resultado.observacion,
+                    color = resultado.chipText,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 17.dp, vertical = 5.dp)
+                )
+            }
+        }
     }
 }
