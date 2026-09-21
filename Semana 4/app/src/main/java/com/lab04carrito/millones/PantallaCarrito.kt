@@ -1,6 +1,8 @@
 package com.lab04carrito.millones
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -60,6 +62,15 @@ fun PantallaCarrito(modifier: Modifier = Modifier) {
 
         HorizontalDivider()
 
-        Text("Productos: ${productos.size}")
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(productos) { producto ->
+                Text(producto.nombre)
+            }
+        }
     }
 }
