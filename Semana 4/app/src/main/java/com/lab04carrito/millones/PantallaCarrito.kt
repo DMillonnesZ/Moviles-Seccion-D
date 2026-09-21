@@ -69,7 +69,10 @@ fun PantallaCarrito(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(productos) { producto ->
-                Text(producto.nombre)
+                TarjetaProducto(
+                    producto = producto,
+                    onEliminar = { productos.remove(producto) }
+                )
             }
         }
     }
