@@ -33,7 +33,9 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 ) { innerPadding ->
-                    PantallaCarrito(modifier = Modifier.padding(innerPadding))
+                    PantallaCarrito(
+                        modifier = Modifier.padding(top = innerPadding.calculateTopPadding())
+                    )
                 }
             }
         }
