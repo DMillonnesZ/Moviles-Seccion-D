@@ -12,9 +12,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.lab04carrito.millones.ui.theme.LavandaBorde
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 @Composable
 fun TarjetaProducto(producto: Producto, onEliminar: () -> Unit) {
+    var mostrarDialogo by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -42,7 +48,7 @@ fun TarjetaProducto(producto: Producto, onEliminar: () -> Unit) {
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
-            IconButton(onClick = onEliminar) {
+            IconButton(onClick = { mostrarDialogo = true }) {
                 Icon(
                     imageVector = Icons.Outlined.Delete,
                     contentDescription = "Eliminar",
@@ -50,5 +56,22 @@ fun TarjetaProducto(producto: Producto, onEliminar: () -> Unit) {
                 )
             }
         }
+    }
+
+    if (mostrarDialogo) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogo = false },
+            title = { Text("¿Eliminar este producto?") },
+            text = { Text("Se eliminará \"${producto.nombre}\" del carrito.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    mostrarDialogo = false
+                    onEliminar()
+                }) { Text("Eliminar", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarDialogo = false }) { Text("Cancelar") }
+            }
+        )
     }
 }

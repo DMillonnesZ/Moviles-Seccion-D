@@ -23,6 +23,12 @@ fun PantallaCarrito(modifier: Modifier = Modifier) {
     val igv = subtotal * 0.18
     val total = subtotal + igv
     val forma = RoundedCornerShape(12.dp)
+    val descuento = when {
+        total > 5000 -> total * 0.10
+        total > 3000 -> total * 0.05
+        else -> 0.0
+    }
+    val totalConDescuento = total - descuento
 
     Column(modifier = modifier.fillMaxSize()) {
         Column(
@@ -126,6 +132,9 @@ fun PantallaCarrito(modifier: Modifier = Modifier) {
                 if (productos.isNotEmpty()) {
                     FilaTotal("Subtotal", subtotal)
                     FilaTotal("IGV (18%)", igv)
+                    if (descuento > 0) {
+                        FilaTotal("Descuento", -descuento)
+                    }
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -135,12 +144,11 @@ fun PantallaCarrito(modifier: Modifier = Modifier) {
                     Text(
                         text = "TOTAL",
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold ,
+                        fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
-
                     )
                     Text(
-                        text = "S/ ${"%.2f".format(total)}",
+                        text = "S/ ${"%.2f".format(totalConDescuento)}",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
