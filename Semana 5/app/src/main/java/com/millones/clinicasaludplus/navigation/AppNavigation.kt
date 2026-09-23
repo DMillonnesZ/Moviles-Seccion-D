@@ -23,11 +23,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.millones.clinicasaludplus.screens.AgendarCitaScreen
 import com.millones.clinicasaludplus.screens.InicioScreen
 import com.millones.clinicasaludplus.screens.PerfilMedicoScreen
 import kotlinx.coroutines.launch
 import androidx.compose.ui.unit.dp
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,9 +40,8 @@ fun AppNavigation() {
         startDestination = Screen.Inicio.route
     ) {
 
-        composable(
-            route = Screen.Inicio.route
-        ) {
+        composable(Screen.Inicio.route) {
+
             val drawerState = rememberDrawerState(
                 initialValue = DrawerValue.Closed
             )
@@ -133,11 +132,11 @@ fun AppNavigation() {
                         onMedicoClick = { medico ->
 
                             val nombre = Uri.encode(medico.nombre)
-                            val especialidad = Uri.encode(medico.especialidad)
-                            val calificacion = medico.calificacion.toString()
+                            val especialidad =
+                                Uri.encode(medico.especialidad)
 
                             navController.navigate(
-                                "perfil_medico/$nombre/$especialidad/$calificacion"
+                                "perfil_medico/$nombre/$especialidad/${medico.calificacion}"
                             )
                         }
                     )
@@ -176,18 +175,57 @@ fun AppNavigation() {
                 especialidad = especialidad,
                 calificacion = calificacion,
                 onAgendarClick = {
+
+                    val nombreEncoded = Uri.encode(nombre)
+                    val especialidadEncoded =
+                        Uri.encode(especialidad)
+
                     navController.navigate(
-                        Screen.AgendarCita.route
+                        "agendar_cita/$nombreEncoded/$especialidadEncoded"
                     )
                 }
             )
         }
 
         composable(
-            route = Screen.AgendarCita.route
-        ) {
-            Text(
-                text = "Agendar cita"
+            route = Screen.AgendarCita.route,
+            arguments = listOf(
+                navArgument("nombre") {
+                    type = NavType.StringType
+                },
+                navArgument("especialidad") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+
+            val nombre = Uri.decode(
+                backStackEntry.arguments?.getString("nombre") ?: ""
+            )
+
+            val especialidad = Uri.decode(
+                backStackEntry.arguments?.getString("especialidad") ?: ""
+            )
+
+            AgendarCitaScreen(
+                nombre = nombre,
+                especialidad = especialidad,
+                onConfirmarClick = { fecha, horario ->
+
+                    val nombreEncoded = Uri.encode(nombre)
+                    val especialidadEncoded =
+                        Uri.encode(especialidad)
+                    val fechaEncoded = Uri.encode(fecha)
+                    val horarioEncoded = Uri.encode(horario)
+
+                    navController.navigate(
+                        "confirmacion/" +
+                                "$nombreEncoded/" +
+                                "$especialidadEncoded/" +
+                                "$fechaEncoded/" +
+                                horarioEncoded
+                    )
+                }
             )
         }
 
@@ -199,17 +237,13 @@ fun AppNavigation() {
             )
         }
 
-        composable(
-            route = Screen.MisCitas.route
-        ) {
+        composable(Screen.MisCitas.route) {
             Text(
                 text = "Mis citas"
             )
         }
 
-        composable(
-            route = Screen.HistorialMedico.route
-        ) {
+        composable(Screen.HistorialMedico.route) {
             Text(
                 text = "Historial médico"
             )
