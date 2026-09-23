@@ -21,6 +21,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
+import com.millones.clinicasaludplus.screens.InicioScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -114,8 +115,7 @@ fun AppNavigation() {
                     }
                 ) { paddingValues ->
 
-                    Text(
-                        text = "Inicio",
+                    InicioScreen(
                         modifier = Modifier.padding(paddingValues)
                     )
                 }
