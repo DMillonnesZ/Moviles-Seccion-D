@@ -28,6 +28,8 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VerifiedUser
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -69,18 +71,19 @@ fun InicioScreen(
     onMedicoClick: (Medico) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var selectedEspecialidad by remember { mutableStateOf("Cardiología") }
+    var selectedEspecialidad by remember { mutableStateOf("Todas") }
 
-    val especialidades = listOf("Cardiología", "Pediatría", "Dermatología")
+    val especialidades = listOf("Todas", "Cardiología", "Pediatría", "Dermatología")
 
     val medicosFiltrados = remember(selectedEspecialidad, searchQuery) {
         listaMedicos.filter { medico ->
-            val matchesCategory = selectedEspecialidad.isEmpty() ||
+            val matchesCategory = selectedEspecialidad == "Todas" ||
                     medico.especialidad.contains(selectedEspecialidad, ignoreCase = true) ||
                     (selectedEspecialidad == "Pediatría" && medico.especialidad.contains("Pediatra", ignoreCase = true)) ||
-                    (selectedEspecialidad == "Dermatología" && medico.especialidad.contains("Dermatóloga", ignoreCase = true))
+                    (selectedEspecialidad == "Dermatología" && medico.especialidad.contains("Dermatóloga", ignoreCase = true)) ||
+                    (selectedEspecialidad == "Cardiología" && medico.especialidad.contains("Cardióloga", ignoreCase = true))
 
-            val matchesSearch = searchQuery.isEmpty() ||
+            val matchesSearch = searchQuery.isBlank() ||
                     medico.nombre.contains(searchQuery, ignoreCase = true) ||
                     medico.especialidad.contains(searchQuery, ignoreCase = true) ||
                     medico.sedeLocation.contains(searchQuery, ignoreCase = true)
@@ -107,7 +110,7 @@ fun InicioScreen(
                         )
                     )
                     .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 12.dp, vertical = 12.dp)
             ) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
@@ -189,7 +192,7 @@ fun InicioScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Category Chips
+            // Category Chips Row (includes "Todas")
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -203,7 +206,7 @@ fun InicioScreen(
                                 if (isSelected) PurplePrimary else Color(0xFFEFEFF4)
                             )
                             .clickable {
-                                selectedEspecialidad = if (isSelected) "" else especialidad
+                                selectedEspecialidad = especialidad
                             }
                             .padding(horizontal = 18.dp, vertical = 10.dp)
                     ) {
@@ -219,7 +222,7 @@ fun InicioScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Quick Info Pill Banner
+            // Quick Info Banner
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -258,16 +261,54 @@ fun InicioScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Doctors List
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(if (medicosFiltrados.isNotEmpty()) medicosFiltrados else listaMedicos) { medico ->
-                    MedicoItemCard(
-                        medico = medico,
-                        onClick = { onMedicoClick(medico) }
-                    )
+            // Doctors List or Empty State
+            if (medicosFiltrados.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(24.dp)
+                    ) {
+                        Text(
+                            text = "No se encontraron médicos",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = Color(0xFF444444)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Prueba buscando otra especialidad o nombre",
+                            fontSize = 13.sp,
+                            color = Color(0xFF777777)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = {
+                                searchQuery = ""
+                                selectedEspecialidad = "Todas"
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = PurplePrimary),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Restablecer filtros", color = Color.White)
+                        }
+                    }
+                }
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(medicosFiltrados) { medico ->
+                        MedicoItemCard(
+                            medico = medico,
+                            onClick = { onMedicoClick(medico) }
+                        )
+                    }
                 }
             }
         }
