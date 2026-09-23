@@ -2,17 +2,15 @@ package com.millones.navlab.navigation
 
 sealed class Screen(val route: String) {
 
-    // Pantalla de inicio — punto de entrada de la app
-    object Home : Screen(route = "home")
+    object Login : Screen(route = "login")
 
-    // Pantalla que muestra la lista de elementos
-    object List : Screen(route = "list")
+    object Bienvenida : Screen(route = "bienvenida")
 
-    // Pantalla del perfil del usuario
-    object Profile : Screen(route = "profile")
+    object DirectorioAlumnos : Screen(route = "directorio")
 
-    object Detail : Screen(route = "detail/{itemId}") {
+    object ConfiguracionPerfil : Screen(route = "configuracion")
 
-        fun createRoute(itemId: Int): String = "detail/$itemId"
+    object ExpedienteAcademico : Screen(route = "expediente/{studentId}") {
+        fun createRoute(studentId: String): String = "expediente/$studentId"
     }
 }
