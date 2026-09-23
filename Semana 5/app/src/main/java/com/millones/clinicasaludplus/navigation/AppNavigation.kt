@@ -1,5 +1,6 @@
 package com.millones.clinicasaludplus.navigation
 
+import android.net.Uri
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -17,11 +18,16 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import kotlinx.coroutines.launch
+import androidx.navigation.navArgument
 import com.millones.clinicasaludplus.screens.InicioScreen
+import com.millones.clinicasaludplus.screens.PerfilMedicoScreen
+import kotlinx.coroutines.launch
+import androidx.compose.ui.unit.dp
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,8 +40,9 @@ fun AppNavigation() {
         startDestination = Screen.Inicio.route
     ) {
 
-        composable(Screen.Inicio.route) {
-
+        composable(
+            route = Screen.Inicio.route
+        ) {
             val drawerState = rememberDrawerState(
                 initialValue = DrawerValue.Closed
             )
@@ -45,10 +52,12 @@ fun AppNavigation() {
             ModalNavigationDrawer(
                 drawerState = drawerState,
                 drawerContent = {
-
                     ModalDrawerSheet {
 
-                        Text("Clínica Salud+")
+                        Text(
+                            text = "Clínica Salud+",
+                            modifier = Modifier.padding(16.dp)
+                        )
 
                         NavigationDrawerItem(
                             label = {
@@ -70,7 +79,9 @@ fun AppNavigation() {
                             onClick = {
                                 scope.launch {
                                     drawerState.close()
-                                    navController.navigate(Screen.MisCitas.route)
+                                    navController.navigate(
+                                        Screen.MisCitas.route
+                                    )
                                 }
                             }
                         )
@@ -83,7 +94,9 @@ fun AppNavigation() {
                             onClick = {
                                 scope.launch {
                                     drawerState.close()
-                                    navController.navigate(Screen.HistorialMedico.route)
+                                    navController.navigate(
+                                        Screen.HistorialMedico.route
+                                    )
                                 }
                             }
                         )
@@ -116,30 +129,90 @@ fun AppNavigation() {
                 ) { paddingValues ->
 
                     InicioScreen(
-                        modifier = Modifier.padding(paddingValues)
+                        modifier = Modifier.padding(paddingValues),
+                        onMedicoClick = { medico ->
+
+                            val nombre = Uri.encode(medico.nombre)
+                            val especialidad = Uri.encode(medico.especialidad)
+                            val calificacion = medico.calificacion.toString()
+
+                            navController.navigate(
+                                "perfil_medico/$nombre/$especialidad/$calificacion"
+                            )
+                        }
                     )
                 }
             }
         }
 
-        composable(Screen.PerfilMedico.route) {
-            Text("Perfil del médico")
+        composable(
+            route = Screen.PerfilMedico.route,
+            arguments = listOf(
+                navArgument("nombre") {
+                    type = NavType.StringType
+                },
+                navArgument("especialidad") {
+                    type = NavType.StringType
+                },
+                navArgument("calificacion") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+
+            val nombre = Uri.decode(
+                backStackEntry.arguments?.getString("nombre") ?: ""
+            )
+
+            val especialidad = Uri.decode(
+                backStackEntry.arguments?.getString("especialidad") ?: ""
+            )
+
+            val calificacion =
+                backStackEntry.arguments?.getString("calificacion") ?: ""
+
+            PerfilMedicoScreen(
+                nombre = nombre,
+                especialidad = especialidad,
+                calificacion = calificacion,
+                onAgendarClick = {
+                    navController.navigate(
+                        Screen.AgendarCita.route
+                    )
+                }
+            )
         }
 
-        composable(Screen.AgendarCita.route) {
-            Text("Agendar cita")
+        composable(
+            route = Screen.AgendarCita.route
+        ) {
+            Text(
+                text = "Agendar cita"
+            )
         }
 
-        composable(Screen.Confirmacion.route) {
-            Text("Confirmación")
+        composable(
+            route = Screen.Confirmacion.route
+        ) {
+            Text(
+                text = "Confirmación"
+            )
         }
 
-        composable(Screen.MisCitas.route) {
-            Text("Mis citas")
+        composable(
+            route = Screen.MisCitas.route
+        ) {
+            Text(
+                text = "Mis citas"
+            )
         }
 
-        composable(Screen.HistorialMedico.route) {
-            Text("Historial médico")
+        composable(
+            route = Screen.HistorialMedico.route
+        ) {
+            Text(
+                text = "Historial médico"
+            )
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.millones.clinicasaludplus.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,9 +23,9 @@ data class Medico(
 
 @Composable
 fun InicioScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onMedicoClick: (Medico) -> Unit
 ) {
-
     val especialidades = listOf(
         "Cardiología",
         "Pediatría",
@@ -54,7 +55,6 @@ fun InicioScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-
         Text(
             text = "Especialidades"
         )
@@ -66,7 +66,6 @@ fun InicioScreen(
                 .padding(vertical = 12.dp)
         ) {
             items(especialidades) { especialidad ->
-
                 Card {
                     Text(
                         text = especialidad,
@@ -80,19 +79,23 @@ fun InicioScreen(
         }
 
         Text(
-            text = "Médicos"
+            text = "Médicos disponibles"
         )
 
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier
                 .fillMaxWidth()
+                .weight(1f)
                 .padding(top = 12.dp)
         ) {
             items(medicos) { medico ->
-
                 Card(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onMedicoClick(medico)
+                        }
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp)
