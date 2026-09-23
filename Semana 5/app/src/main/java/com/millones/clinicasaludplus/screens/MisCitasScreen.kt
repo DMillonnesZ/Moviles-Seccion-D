@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -61,17 +62,28 @@ fun MisCitasScreen(
     onMenuClick: () -> Unit = {}
 ) {
     var selectedFilter by remember { mutableStateOf("Todas") }
-    val filtros = listOf("Todas", "Confirmadas", "Completadas")
+    val filtros = listOf("Todas", "Confirmadas", "Completadas", "Canceladas")
 
     var citaACancelar by remember { mutableStateOf<Cita?>(null) }
-    var refreshTrigger by remember { mutableStateOf(0) }
 
-    val citasFiltradas = remember(selectedFilter, refreshTrigger) {
-        val lista = CitasRepository.citas
+    // Reactive list that updates immediately on cancellation
+    val citasStateList = remember {
+        mutableStateListOf<Cita>().apply {
+            addAll(CitasRepository.citas)
+        }
+    }
+
+    fun syncCitas() {
+        citasStateList.clear()
+        citasStateList.addAll(CitasRepository.citas)
+    }
+
+    val citasFiltradas = remember(selectedFilter, citasStateList.toList()) {
         when (selectedFilter) {
-            "Confirmadas" -> lista.filter { it.estado == EstadoCita.CONFIRMADA }
-            "Completadas" -> lista.filter { it.estado == EstadoCita.COMPLETADA }
-            else -> lista
+            "Confirmadas" -> citasStateList.filter { it.estado == EstadoCita.CONFIRMADA }
+            "Completadas" -> citasStateList.filter { it.estado == EstadoCita.COMPLETADA }
+            "Canceladas" -> citasStateList.filter { it.estado == EstadoCita.CANCELADA }
+            else -> citasStateList
         }
     }
 
@@ -149,7 +161,7 @@ fun MisCitasScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                items(citasFiltradas) { cita ->
+                items(citasFiltradas, key = { it.id }) { cita ->
                     CitaCardItem(
                         cita = cita,
                         onCancelar = { citaACancelar = cita }
@@ -170,7 +182,7 @@ fun MisCitasScreen(
                     onClick = {
                         citaACancelar?.let { CitasRepository.cancelarCita(it.id) }
                         citaACancelar = null
-                        refreshTrigger++
+                        syncCitas() // Instantaneous list state update
                     }
                 ) {
                     Text("Sí, cancelar", color = RedBadgeText, fontWeight = FontWeight.Bold)
