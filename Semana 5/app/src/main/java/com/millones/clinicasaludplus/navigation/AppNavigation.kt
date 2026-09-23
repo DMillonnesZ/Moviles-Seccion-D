@@ -24,6 +24,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.millones.clinicasaludplus.screens.AgendarCitaScreen
+import com.millones.clinicasaludplus.screens.ConfirmacionScreen
 import com.millones.clinicasaludplus.screens.InicioScreen
 import com.millones.clinicasaludplus.screens.PerfilMedicoScreen
 import kotlinx.coroutines.launch
@@ -230,10 +231,53 @@ fun AppNavigation() {
         }
 
         composable(
-            route = Screen.Confirmacion.route
-        ) {
-            Text(
-                text = "Confirmación"
+            route = Screen.Confirmacion.route,
+            arguments = listOf(
+                navArgument("nombre") {
+                    type = NavType.StringType
+                },
+                navArgument("especialidad") {
+                    type = NavType.StringType
+                },
+                navArgument("fecha") {
+                    type = NavType.StringType
+                },
+                navArgument("horario") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+
+            val nombre = Uri.decode(
+                backStackEntry.arguments?.getString("nombre") ?: ""
+            )
+
+            val especialidad = Uri.decode(
+                backStackEntry.arguments?.getString("especialidad") ?: ""
+            )
+
+            val fecha = Uri.decode(
+                backStackEntry.arguments?.getString("fecha") ?: ""
+            )
+
+            val horario = Uri.decode(
+                backStackEntry.arguments?.getString("horario") ?: ""
+            )
+
+            ConfirmacionScreen(
+                nombre = nombre,
+                especialidad = especialidad,
+                fecha = fecha,
+                horario = horario,
+                onFinalizarClick = {
+                    navController.navigate(
+                        Screen.Inicio.route
+                    ) {
+                        popUpTo(Screen.Inicio.route) {
+                            inclusive = true
+                        }
+                    }
+                }
             )
         }
 
