@@ -30,8 +30,8 @@ fun AppDrawer(
 
     ModalDrawerSheet {
         DrawerHeader(
-            nombre = "Maria Rojas",
-            correo = "maria@tecsup.edu.pe"
+            nombre = "Daniel Millones",
+            correo = "daniel.millones@tecsup.edu.pe"
         )
 
         destinosDrawer.forEach { destino ->

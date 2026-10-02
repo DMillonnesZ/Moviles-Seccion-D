@@ -28,9 +28,11 @@ fun AppNavegacion() {
     // así el drawer siempre resalta la pantalla en la que estamos
     val backStackEntry by navController.currentBackStackEntryAsState()
     val rutaActual = backStackEntry?.destination?.route ?: Destino.Inicio.ruta
-    val tituloActual = destinosDrawer
-        .find { it.ruta == rutaActual }
-        ?.titulo ?: "Más vendidos"
+    val tituloActual = if (rutaActual == Destino.Inicio.ruta) {
+        "Más vendidos"
+    } else {
+        destinosDrawer.find { it.ruta == rutaActual }?.titulo ?: "Más vendidos"
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
