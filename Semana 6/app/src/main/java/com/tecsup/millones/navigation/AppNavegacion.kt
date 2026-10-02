@@ -7,32 +7,45 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.tecsup.millones.components.TiendaTopBar
 import com.tecsup.millones.screens.InicioScreen
+import com.tecsup.millones.screens.PantallaSimple
 import kotlinx.coroutines.launch
 
 @Composable
 fun AppNavegacion() {
+    val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    // Sección marcada como activa (en el Commit 5 vendrá del NavController)
-    var rutaActual by remember { mutableStateOf(Destino.Inicio.ruta) }
+    // La ruta activa se obtiene de la pila de navegación,
+    // así el drawer siempre resalta la pantalla en la que estamos
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val rutaActual = backStackEntry?.destination?.route ?: Destino.Inicio.ruta
+    val tituloActual = destinosDrawer
+        .find { it.ruta == rutaActual }
+        ?.titulo ?: "Más vendidos"
 
-    // ModalNavigationDrawer envuelve al Scaffold de la pantalla
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             AppDrawer(
                 rutaActual = rutaActual,
                 onDestinoClick = { destino ->
-                    rutaActual = destino.ruta
+                    // 1. Cerrar el menú lateral
                     scope.launch { drawerState.close() }
+                    // 2. Abrir la pantalla elegida
+                    navController.navigate(destino.ruta) {
+                        popUpTo(Destino.Inicio.ruta) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 },
                 onCerrarSesion = {
                     scope.launch { drawerState.close() }
@@ -43,12 +56,21 @@ fun AppNavegacion() {
         Scaffold(
             topBar = {
                 TiendaTopBar(
-                    subtitulo = "Más vendidos",
+                    subtitulo = tituloActual,
                     onMenuClick = { scope.launch { drawerState.open() } }
                 )
             }
         ) { padding ->
-            InicioScreen(modifier = Modifier.padding(padding))
+            NavHost(
+                navController = navController,
+                startDestination = Destino.Inicio.ruta,
+                modifier = Modifier.padding(padding)
+            ) {
+                composable(Destino.Inicio.ruta) { InicioScreen() }
+                composable(Destino.Pedidos.ruta) { PantallaSimple("Mis pedidos") }
+                composable(Destino.Favoritos.ruta) { PantallaSimple("Favoritos") }
+                composable(Destino.Perfil.ruta) { PantallaSimple("Perfil") }
+            }
         }
     }
 }
