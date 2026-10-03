@@ -3,17 +3,26 @@ package com.millones.clinicasaludplus.ui.theme
 import androidx.compose.ui.graphics.Color
 
 val PurplePrimary = Color(0xFF592384)
+val PurpleGradientStart = Color(0xFF6B26A0)
+val PurpleGradientEnd = Color(0xFF47176E)
 val PurpleSecondary = Color(0xFF7B3FA1)
 val PurpleLight = Color(0xFFE8DEF8)
 val PurpleContainer = Color(0xFFEAE0F5)
 val PurpleLightBg = Color(0xFFF5F2F8)
 val PurpleIconBg = Color(0xFFEDE7F6)
+val PurpleBorder = Color(0xFFE2D8EE)
 
 val GreenBadgeBg = Color(0xFFE2F7EB)
 val GreenBadgeText = Color(0xFF0F8A4B)
 
-val GrayBadgeBg = Color(0xFFE5E5E5)
+val GrayBadgeBg = Color(0xFFEEEEEE)
 val GrayBadgeText = Color(0xFF666666)
+
+val BlueBadgeBg = Color(0xFFE3F2FD)
+val BlueBadgeText = Color(0xFF1565C0)
+
+val RedBadgeBg = Color(0xFFFFEBEE)
+val RedBadgeText = Color(0xFFC62828)
 
 val StarYellow = Color(0xFFFFB800)
 
@@ -22,6 +31,7 @@ val BackgroundLight = Color(0xFFF8F7FA)
 
 val TextPrimary = Color(0xFF1F1B24)
 val TextSecondary = Color(0xFF6E6A75)
+val TextMuted = Color(0xFF9E9A9F)
 
 val Purple80 = Color(0xFFD0BCFF)
 val PurpleGrey80 = Color(0xFFCCC2DC)
