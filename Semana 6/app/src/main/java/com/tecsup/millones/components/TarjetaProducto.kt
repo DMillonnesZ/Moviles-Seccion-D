@@ -38,23 +38,22 @@ import com.tecsup.millones.ui.theme.MoradoIcono
 @Composable
 fun TarjetaProducto(
     producto: Producto,
+    esFavorito: Boolean = false,
+    onFavorito: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    // Recuerda si el menú de este producto está abierto
     var expanded by remember { mutableStateOf(false) }
 
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MoradoClaro),
-        // Mientras el menú está abierto, la tarjeta se resalta con borde morado
         border = if (expanded) BorderStroke(2.dp, Morado) else null
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.Top
         ) {
-            // Caja del ícono del producto
             Box(
                 modifier = Modifier
                     .size(64.dp)
@@ -72,7 +71,6 @@ fun TarjetaProducto(
 
             Spacer(Modifier.width(16.dp))
 
-            // Nombre y precio
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = producto.nombre,
@@ -86,8 +84,6 @@ fun TarjetaProducto(
                 )
             }
 
-            // El menú se declara dentro del Box, junto al ícono que lo abre,
-            // para que se despliegue anclado a ese botón
             Box {
                 IconButton(onClick = { expanded = true }) {
                     Icon(
@@ -98,7 +94,9 @@ fun TarjetaProducto(
 
                 MenuProducto(
                     expanded = expanded,
-                    onDismiss = { expanded = false }
+                    onDismiss = { expanded = false },
+                    esFavorito = esFavorito,
+                    onFavorito = onFavorito
                 )
             }
         }

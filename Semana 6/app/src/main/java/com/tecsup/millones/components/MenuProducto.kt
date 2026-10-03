@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 fun MenuProducto(
     expanded: Boolean,
     onDismiss: () -> Unit,
+    esFavorito: Boolean = false,
     onFavorito: () -> Unit = {},
     onCompartir: () -> Unit = {},
     onReportar: () -> Unit = {}

@@ -12,15 +12,22 @@ import com.tecsup.millones.components.TarjetaProducto
 import com.tecsup.millones.model.productosEjemplo
 
 @Composable
-fun InicioScreen(modifier: Modifier = Modifier) {
-    // Si conservas el LazyRow de categorías del Lab 4, colócalo aquí arriba
+fun InicioScreen(
+    favoritosIds: Set<Int> = emptySet(),
+    onToggleFavorito: (Int) -> Unit = {},
+    modifier: Modifier = Modifier
+) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(productosEjemplo, key = { it.id }) { producto ->
-            TarjetaProducto(producto = producto)
+            TarjetaProducto(
+                producto = producto,
+                esFavorito = producto.id in favoritosIds,
+                onFavorito = { onToggleFavorito(producto.id) }
+            )
         }
     }
 }

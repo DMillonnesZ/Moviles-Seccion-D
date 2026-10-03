@@ -7,7 +7,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -24,8 +27,17 @@ fun AppNavegacion() {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    // La ruta activa se obtiene de la pila de navegación,
-    // así el drawer siempre resalta la pantalla en la que estamos
+    // Estado centralizado de favoritos (IDs de productos) que sobrevive a rotaciones de pantalla
+    var favoritosIds by rememberSaveable { mutableStateOf(setOf<Int>()) }
+
+    fun toggleFavorito(id: Int) {
+        favoritosIds = if (id in favoritosIds) {
+            favoritosIds - id
+        } else {
+            favoritosIds + id
+        }
+    }
+
     val backStackEntry by navController.currentBackStackEntryAsState()
     val rutaActual = backStackEntry?.destination?.route ?: Destino.Inicio.ruta
     val tituloActual = if (rutaActual == Destino.Inicio.ruta) {
@@ -40,9 +52,7 @@ fun AppNavegacion() {
             AppDrawer(
                 rutaActual = rutaActual,
                 onDestinoClick = { destino ->
-                    // 1. Cerrar el menú lateral
                     scope.launch { drawerState.close() }
-                    // 2. Abrir la pantalla elegida
                     navController.navigate(destino.ruta) {
                         popUpTo(Destino.Inicio.ruta) { saveState = true }
                         launchSingleTop = true
@@ -68,7 +78,12 @@ fun AppNavegacion() {
                 startDestination = Destino.Inicio.ruta,
                 modifier = Modifier.padding(padding)
             ) {
-                composable(Destino.Inicio.ruta) { InicioScreen() }
+                composable(Destino.Inicio.ruta) {
+                    InicioScreen(
+                        favoritosIds = favoritosIds,
+                        onToggleFavorito = { id -> toggleFavorito(id) }
+                    )
+                }
                 composable(Destino.Pedidos.ruta) { PantallaSimple("Mis pedidos") }
                 composable(Destino.Favoritos.ruta) { PantallaSimple("Favoritos") }
                 composable(Destino.Perfil.ruta) { PantallaSimple("Perfil") }
