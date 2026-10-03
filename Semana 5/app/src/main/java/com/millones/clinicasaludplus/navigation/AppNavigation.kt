@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
@@ -235,7 +236,8 @@ fun AppNavigation() {
                         val fechaHoraStr = "$fecha, $horario"
                         CitasRepository.agregarCita(
                             medicoNombre = if (nombre.isNotEmpty()) nombre else "Dra. Ana Torres",
-                            fechaHora = fechaHoraStr
+                            fechaHora = fechaHoraStr,
+                            especialidad = if (especialidad.isNotEmpty()) especialidad else "Cardióloga"
                         )
 
                         val nombreEncoded = Uri.encode(nombre)
@@ -321,10 +323,10 @@ fun DrawerMenuItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Outlined.Circle,
+                imageVector = if (isSelected) Icons.Filled.Circle else Icons.Outlined.Circle,
                 contentDescription = null,
-                tint = if (isSelected) PurplePrimary else Color(0xFF444444),
-                modifier = Modifier.size(20.dp)
+                tint = if (isSelected) PurplePrimary else Color(0xFF666666),
+                modifier = Modifier.size(18.dp)
             )
 
             Spacer(modifier = Modifier.width(16.dp))
