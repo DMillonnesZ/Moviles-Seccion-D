@@ -4,10 +4,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -17,6 +20,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.tecsup.millones.components.TiendaTopBar
+import com.tecsup.millones.model.productosEjemplo
 import com.tecsup.millones.screens.InicioScreen
 import com.tecsup.millones.screens.PantallaSimple
 import kotlinx.coroutines.launch
@@ -25,16 +29,26 @@ import kotlinx.coroutines.launch
 fun AppNavegacion() {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // Estado centralizado de favoritos (IDs de productos) que sobrevive a rotaciones de pantalla
     var favoritosIds by rememberSaveable { mutableStateOf(setOf<Int>()) }
 
     fun toggleFavorito(id: Int) {
-        favoritosIds = if (id in favoritosIds) {
+        val producto = productosEjemplo.find { it.id == id }
+        val esFavActualmente = id in favoritosIds
+        favoritosIds = if (esFavActualmente) {
             favoritosIds - id
         } else {
             favoritosIds + id
+        }
+        val mensaje = if (!esFavActualmente) {
+            "${producto?.nombre ?: "Producto"} agregado a favoritos"
+        } else {
+            "${producto?.nombre ?: "Producto"} quitado de favoritos"
+        }
+        scope.launch {
+            snackbarHostState.showSnackbar(mensaje)
         }
     }
 
@@ -66,6 +80,7 @@ fun AppNavegacion() {
         }
     ) {
         Scaffold(
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             topBar = {
                 TiendaTopBar(
                     subtitulo = tituloActual,

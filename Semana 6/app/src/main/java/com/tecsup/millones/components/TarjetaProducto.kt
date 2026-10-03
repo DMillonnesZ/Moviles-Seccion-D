@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.Card
@@ -34,6 +35,7 @@ import com.tecsup.millones.model.Producto
 import com.tecsup.millones.ui.theme.Morado
 import com.tecsup.millones.ui.theme.MoradoClaro
 import com.tecsup.millones.ui.theme.MoradoIcono
+import com.tecsup.millones.ui.theme.RojoCorazon
 
 @Composable
 fun TarjetaProducto(
@@ -72,11 +74,22 @@ fun TarjetaProducto(
             Spacer(Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = producto.nombre,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleMedium
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = producto.nombre,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    if (esFavorito) {
+                        Spacer(Modifier.width(6.dp))
+                        Icon(
+                            imageVector = Icons.Default.Favorite,
+                            contentDescription = "Favorito",
+                            tint = RojoCorazon,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
                 Text(
                     text = "S/ %.2f".format(producto.precio),
                     style = MaterialTheme.typography.bodyMedium,
