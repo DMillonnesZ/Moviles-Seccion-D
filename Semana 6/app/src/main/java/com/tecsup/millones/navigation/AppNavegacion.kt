@@ -21,6 +21,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.tecsup.millones.components.TiendaTopBar
 import com.tecsup.millones.model.productosEjemplo
+import com.tecsup.millones.screens.FavoritosScreen
 import com.tecsup.millones.screens.InicioScreen
 import com.tecsup.millones.screens.PantallaSimple
 import kotlinx.coroutines.launch
@@ -101,7 +102,12 @@ fun AppNavegacion() {
                     )
                 }
                 composable(Destino.Pedidos.ruta) { PantallaSimple("Mis pedidos") }
-                composable(Destino.Favoritos.ruta) { PantallaSimple("Favoritos") }
+                composable(Destino.Favoritos.ruta) {
+                    FavoritosScreen(
+                        favoritosIds = favoritosIds,
+                        onToggleFavorito = { id -> toggleFavorito(id) }
+                    )
+                }
                 composable(Destino.Perfil.ruta) { PantallaSimple("Perfil") }
             }
         }
