@@ -15,6 +15,7 @@ import com.tecsup.millones.model.productosEjemplo
 fun InicioScreen(
     favoritosIds: Set<Int> = emptySet(),
     onToggleFavorito: (Int) -> Unit = {},
+    onReportado: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -26,7 +27,8 @@ fun InicioScreen(
             TarjetaProducto(
                 producto = producto,
                 esFavorito = producto.id in favoritosIds,
-                onFavorito = { onToggleFavorito(producto.id) }
+                onFavorito = { onToggleFavorito(producto.id) },
+                onReportado = onReportado
             )
         }
     }

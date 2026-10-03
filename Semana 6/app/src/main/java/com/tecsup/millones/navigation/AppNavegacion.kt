@@ -53,6 +53,12 @@ fun AppNavegacion() {
         }
     }
 
+    fun mostrarReporteEnviado() {
+        scope.launch {
+            snackbarHostState.showSnackbar("Reporte enviado")
+        }
+    }
+
     val backStackEntry by navController.currentBackStackEntryAsState()
     val rutaActual = backStackEntry?.destination?.route ?: Destino.Inicio.ruta
     val tituloActual = if (rutaActual == Destino.Inicio.ruta) {
@@ -98,14 +104,16 @@ fun AppNavegacion() {
                 composable(Destino.Inicio.ruta) {
                     InicioScreen(
                         favoritosIds = favoritosIds,
-                        onToggleFavorito = { id -> toggleFavorito(id) }
+                        onToggleFavorito = { id -> toggleFavorito(id) },
+                        onReportado = { mostrarReporteEnviado() }
                     )
                 }
                 composable(Destino.Pedidos.ruta) { PantallaSimple("Mis pedidos") }
                 composable(Destino.Favoritos.ruta) {
                     FavoritosScreen(
                         favoritosIds = favoritosIds,
-                        onToggleFavorito = { id -> toggleFavorito(id) }
+                        onToggleFavorito = { id -> toggleFavorito(id) },
+                        onReportado = { mostrarReporteEnviado() }
                     )
                 }
                 composable(Destino.Perfil.ruta) { PantallaSimple("Perfil") }

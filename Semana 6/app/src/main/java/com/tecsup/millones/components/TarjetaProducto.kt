@@ -1,5 +1,6 @@
 package com.tecsup.millones.components
 
+import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -29,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.tecsup.millones.model.Producto
@@ -42,9 +44,33 @@ fun TarjetaProducto(
     producto: Producto,
     esFavorito: Boolean = false,
     onFavorito: () -> Unit = {},
+    onReportado: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var mostrarReportarDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    fun compartirProducto() {
+        val textoCompartir = "Mira este producto en TECSUP Store: ${producto.nombre} por S/ %.2f".format(producto.precio)
+        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+            putExtra(Intent.EXTRA_TEXT, textoCompartir)
+            type = "text/plain"
+        }
+        val shareIntent = Intent.createChooser(sendIntent, null)
+        context.startActivity(shareIntent)
+    }
+
+    if (mostrarReportarDialog) {
+        ReportarDialog(
+            nombreProducto = producto.nombre,
+            onConfirmar = {
+                mostrarReportarDialog = false
+                onReportado()
+            },
+            onDismiss = { mostrarReportarDialog = false }
+        )
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -109,7 +135,9 @@ fun TarjetaProducto(
                     expanded = expanded,
                     onDismiss = { expanded = false },
                     esFavorito = esFavorito,
-                    onFavorito = onFavorito
+                    onFavorito = onFavorito,
+                    onCompartir = { compartirProducto() },
+                    onReportar = { mostrarReportarDialog = true }
                 )
             }
         }

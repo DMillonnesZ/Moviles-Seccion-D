@@ -27,6 +27,7 @@ import com.tecsup.millones.ui.theme.Morado
 fun FavoritosScreen(
     favoritosIds: Set<Int>,
     onToggleFavorito: (Int) -> Unit,
+    onReportado: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val productosFavoritos = productosEjemplo.filter { it.id in favoritosIds }
@@ -64,7 +65,8 @@ fun FavoritosScreen(
                 TarjetaProducto(
                     producto = producto,
                     esFavorito = true,
-                    onFavorito = { onToggleFavorito(producto.id) }
+                    onFavorito = { onToggleFavorito(producto.id) },
+                    onReportado = onReportado
                 )
             }
         }
