@@ -19,11 +19,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.tecsup.millones.components.CerrarSesionDialog
 import com.tecsup.millones.components.TiendaTopBar
 import com.tecsup.millones.model.productosEjemplo
+import com.tecsup.millones.model.usuarioActual
 import com.tecsup.millones.screens.FavoritosScreen
 import com.tecsup.millones.screens.InicioScreen
-import com.tecsup.millones.screens.PantallaSimple
+import com.tecsup.millones.screens.PedidosScreen
+import com.tecsup.millones.screens.PerfilScreen
 import kotlinx.coroutines.launch
 
 @Composable
@@ -34,6 +37,7 @@ fun AppNavegacion() {
     val scope = rememberCoroutineScope()
 
     var favoritosIds by rememberSaveable { mutableStateOf(setOf<Int>()) }
+    var mostrarCerrarSesionDialog by remember { mutableStateOf(false) }
 
     fun toggleFavorito(id: Int) {
         val producto = productosEjemplo.find { it.id == id }
@@ -59,6 +63,26 @@ fun AppNavegacion() {
         }
     }
 
+    fun ejecutarCerrarSesion() {
+        favoritosIds = emptySet()
+        navController.navigate(Destino.Inicio.ruta) {
+            popUpTo(0) { inclusive = true }
+        }
+        scope.launch {
+            snackbarHostState.showSnackbar("Sesión cerrada")
+        }
+    }
+
+    if (mostrarCerrarSesionDialog) {
+        CerrarSesionDialog(
+            onConfirmar = {
+                mostrarCerrarSesionDialog = false
+                ejecutarCerrarSesion()
+            },
+            onDismiss = { mostrarCerrarSesionDialog = false }
+        )
+    }
+
     val backStackEntry by navController.currentBackStackEntryAsState()
     val rutaActual = backStackEntry?.destination?.route ?: Destino.Inicio.ruta
     val tituloActual = if (rutaActual == Destino.Inicio.ruta) {
@@ -73,6 +97,7 @@ fun AppNavegacion() {
             AppDrawer(
                 rutaActual = rutaActual,
                 cantidadFavoritos = favoritosIds.size,
+                usuario = usuarioActual,
                 onDestinoClick = { destino ->
                     scope.launch { drawerState.close() }
                     navController.navigate(destino.ruta) {
@@ -83,6 +108,7 @@ fun AppNavegacion() {
                 },
                 onCerrarSesion = {
                     scope.launch { drawerState.close() }
+                    mostrarCerrarSesionDialog = true
                 }
             )
         }
@@ -108,7 +134,9 @@ fun AppNavegacion() {
                         onReportado = { mostrarReporteEnviado() }
                     )
                 }
-                composable(Destino.Pedidos.ruta) { PantallaSimple("Mis pedidos") }
+                composable(Destino.Pedidos.ruta) {
+                    PedidosScreen()
+                }
                 composable(Destino.Favoritos.ruta) {
                     FavoritosScreen(
                         favoritosIds = favoritosIds,
@@ -116,7 +144,9 @@ fun AppNavegacion() {
                         onReportado = { mostrarReporteEnviado() }
                     )
                 }
-                composable(Destino.Perfil.ruta) { PantallaSimple("Perfil") }
+                composable(Destino.Perfil.ruta) {
+                    PerfilScreen(usuario = usuarioActual)
+                }
             }
         }
     }

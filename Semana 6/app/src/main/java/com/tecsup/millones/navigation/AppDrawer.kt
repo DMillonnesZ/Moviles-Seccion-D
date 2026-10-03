@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.tecsup.millones.components.DrawerHeader
+import com.tecsup.millones.model.Usuario
+import com.tecsup.millones.model.usuarioActual
 import com.tecsup.millones.ui.theme.Morado
 import com.tecsup.millones.ui.theme.MoradoSeleccion
 
@@ -21,6 +23,7 @@ import com.tecsup.millones.ui.theme.MoradoSeleccion
 fun AppDrawer(
     rutaActual: String,
     cantidadFavoritos: Int = 0,
+    usuario: Usuario = usuarioActual,
     onDestinoClick: (Destino) -> Unit,
     onCerrarSesion: () -> Unit
 ) {
@@ -32,8 +35,8 @@ fun AppDrawer(
 
     ModalDrawerSheet {
         DrawerHeader(
-            nombre = "Daniel Millones",
-            correo = "daniel.millones@tecsup.edu.pe"
+            nombre = usuario.nombre,
+            correo = usuario.correo
         )
 
         destinosDrawer.forEach { destino ->
