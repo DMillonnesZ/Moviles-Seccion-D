@@ -14,6 +14,7 @@ import com.saludplus.citas.ui.screens.agendamiento.MedicosScreen
 import com.saludplus.citas.ui.screens.auth.LoginScreen
 import com.saludplus.citas.ui.screens.auth.RegistroScreen
 import com.saludplus.citas.ui.screens.auth.SplashScreen
+import com.saludplus.citas.ui.screens.citas.DetalleCitaScreen
 import com.saludplus.citas.ui.screens.citas.MisCitasScreen
 import com.saludplus.citas.ui.screens.home.HomeScreen
 import com.saludplus.citas.ui.screens.perfil.PerfilScreen
@@ -26,9 +27,8 @@ fun AppNavigation() {
     // Cambio de pestaña en la barra inferior: no apila pantallas repetidas
     val irA: (String) -> Unit = { ruta ->
         navController.navigate(ruta) {
-            popUpTo(Rutas.HOME) { saveState = true }
+            popUpTo(Rutas.HOME)
             launchSingleTop = true
-            restoreState = true
         }
     }
 
@@ -51,7 +51,7 @@ fun AppNavigation() {
                         popUpTo(Rutas.REGISTRO) { inclusive = true }
                     }
                 },
-                onTerminos = { /* se conecta con Términos en el reto extra */ }
+                onTerminos = { /* se conecta con Términos en el commit 21 */ }
             )
         }
         composable(Rutas.LOGIN) {
@@ -71,7 +71,7 @@ fun AppNavigation() {
         }
         composable(Rutas.HOME) {
             HomeScreen(
-                onNotificaciones = { /* se conecta con Notificaciones en el reto extra */ },
+                onNotificaciones = { /* se conecta con Notificaciones en el commit 20 */ },
                 onAgendar = { navController.navigate(Rutas.ESPECIALIDADES) },
                 onMisCitas = { irA(Rutas.MIS_CITAS) },
                 onMisDatos = { irA(Rutas.PERFIL) },
@@ -144,7 +144,19 @@ fun AppNavigation() {
         composable(Rutas.MIS_CITAS) {
             MisCitasScreen(
                 onNavegar = irA,
-                onAgendar = { navController.navigate(Rutas.ESPECIALIDADES) }
+                onAgendar = { navController.navigate(Rutas.ESPECIALIDADES) },
+                onCita = { citaId -> navController.navigate(Rutas.detalleCita(citaId)) }
+            )
+        }
+        composable(
+            route = Rutas.DETALLE_CITA,
+            arguments = listOf(navArgument("citaId") { type = NavType.IntType })
+        ) { entrada ->
+            val citaId = entrada.arguments?.getInt("citaId") ?: 0
+            DetalleCitaScreen(
+                citaId = citaId,
+                onAtras = { navController.popBackStack() },
+                onCancelada = { navController.popBackStack() }
             )
         }
         composable(Rutas.RESULTADOS) { ResultadosScreen(onNavegar = irA) }

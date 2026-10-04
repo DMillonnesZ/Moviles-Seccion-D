@@ -47,7 +47,8 @@ import com.saludplus.citas.ui.theme.GrisTexto
 @Composable
 fun MisCitasScreen(
     onNavegar: (String) -> Unit,
-    onAgendar: () -> Unit
+    onAgendar: () -> Unit,
+    onCita: (Int) -> Unit
 ) {
     // Citas del usuario en sesión, de la más próxima a la más lejana
     val citas = Repositorio.citasDelUsuario()
@@ -118,7 +119,10 @@ fun MisCitasScreen(
                     val medico = Repositorio.obtenerMedico(cita.medicoId)
                     val especialidad = Repositorio.obtenerEspecialidad(cita.especialidadId)
 
-                    TarjetaSuave(modifier = Modifier.fillMaxWidth()) {
+                    TarjetaSuave(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { onCita(cita.id) }
+                    ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
