@@ -11,7 +11,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.font.FontWeight
 import com.saludplus.citas.ui.theme.AzulOscuro
-import com.saludplus.citas.ui.theme.FondoPantalla
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,6 +25,6 @@ fun BarraSuperior(titulo: String, onAtras: (() -> Unit)? = null) {
                 }
             }
         },
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = FondoPantalla)
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
     )
 }

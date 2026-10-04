@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.saludplus.citas.ui.screens.auth.LoginScreen
 import com.saludplus.citas.ui.screens.auth.RegistroScreen
 import com.saludplus.citas.ui.screens.auth.SplashScreen
 
@@ -15,14 +16,33 @@ fun AppNavigation() {
         composable(Rutas.SPLASH) {
             SplashScreen(
                 onComenzar = { navController.navigate(Rutas.REGISTRO) },
-                onYaTengoCuenta = { /* se conecta con Login en el siguiente commit */ }
+                onYaTengoCuenta = { navController.navigate(Rutas.LOGIN) }
             )
         }
         composable(Rutas.REGISTRO) {
             RegistroScreen(
-                onRegistroExitoso = { /* se conecta con Login en el siguiente commit */ },
-                onIrLogin = { /* se conecta con Login en el siguiente commit */ },
+                onRegistroExitoso = {
+                    navController.navigate(Rutas.LOGIN) {
+                        popUpTo(Rutas.REGISTRO) { inclusive = true }
+                    }
+                },
+                onIrLogin = {
+                    navController.navigate(Rutas.LOGIN) {
+                        popUpTo(Rutas.REGISTRO) { inclusive = true }
+                    }
+                },
                 onTerminos = { /* se conecta con Términos en el reto extra */ }
+            )
+        }
+        composable(Rutas.LOGIN) {
+            LoginScreen(
+                onLoginExitoso = { /* se conecta con Inicio en el siguiente commit */ },
+                onIrRegistro = {
+                    navController.navigate(Rutas.REGISTRO) {
+                        popUpTo(Rutas.LOGIN) { inclusive = true }
+                    }
+                },
+                onAtras = { navController.popBackStack() }
             )
         }
     }
