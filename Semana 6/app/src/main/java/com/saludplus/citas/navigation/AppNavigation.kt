@@ -7,6 +7,7 @@ import androidx.navigation.compose.rememberNavController
 import com.saludplus.citas.ui.screens.auth.LoginScreen
 import com.saludplus.citas.ui.screens.auth.RegistroScreen
 import com.saludplus.citas.ui.screens.auth.SplashScreen
+import com.saludplus.citas.ui.screens.home.HomeScreen
 
 @Composable
 fun AppNavigation() {
@@ -36,13 +37,28 @@ fun AppNavigation() {
         }
         composable(Rutas.LOGIN) {
             LoginScreen(
-                onLoginExitoso = { /* se conecta con Inicio en el siguiente commit */ },
+                onLoginExitoso = {
+                    navController.navigate(Rutas.HOME) {
+                        popUpTo(Rutas.SPLASH) { inclusive = true }
+                    }
+                },
                 onIrRegistro = {
                     navController.navigate(Rutas.REGISTRO) {
                         popUpTo(Rutas.LOGIN) { inclusive = true }
                     }
                 },
                 onAtras = { navController.popBackStack() }
+            )
+        }
+        composable(Rutas.HOME) {
+            HomeScreen(
+                onNotificaciones = { /* se conecta con Notificaciones en el reto extra */ },
+                onAgendar = { /* se conecta con Especialidades en su commit */ },
+                onMisCitas = { /* se conecta con la barra de navegación en el siguiente commit */ },
+                onMisDatos = { /* se conecta con la barra de navegación en el siguiente commit */ },
+                onResultados = { /* se conecta con la barra de navegación en el siguiente commit */ },
+                onEspecialidad = { /* se conecta con Médicos en su commit */ },
+                onVerEspecialidades = { /* se conecta con Especialidades en su commit */ }
             )
         }
     }

@@ -33,12 +33,12 @@ object Repositorio {
     // ---------- ESPECIALIDADES ----------
     val especialidades = listOf(
         Especialidad(1, "Medicina General", "Consulta y control general de salud"),
-        Especialidad(2, "Cardiología", "Corazón y sistema circulatorio"),
-        Especialidad(3, "Pediatría", "Atención médica para niños"),
-        Especialidad(4, "Dermatología", "Cuidado de la piel, cabello y uñas"),
-        Especialidad(5, "Odontología", "Salud dental y bucal"),
-        Especialidad(6, "Oftalmología", "Salud visual y ocular"),
-        Especialidad(7, "Ginecología", "Salud de la mujer"),
+        Especialidad(2, "Pediatría", "Atención médica para niños"),
+        Especialidad(3, "Ginecología", "Salud de la mujer"),
+        Especialidad(4, "Cardiología", "Corazón y sistema circulatorio"),
+        Especialidad(5, "Dermatología", "Cuidado de la piel, cabello y uñas"),
+        Especialidad(6, "Odontología", "Salud dental y bucal"),
+        Especialidad(7, "Oftalmología", "Salud visual y ocular"),
         Especialidad(8, "Traumatología", "Huesos, músculos y articulaciones")
     )
 
@@ -47,9 +47,9 @@ object Repositorio {
         return especialidades.filter { it.nombre.contains(texto.trim(), ignoreCase = true) }
     }
 
-    // Las primeras 4 para el LazyRow de Inicio
+    // Las primeras 5 para el LazyRow de Inicio
     fun especialidadesDestacadas(): List<Especialidad> {
-        return especialidades.take(4)
+        return especialidades.take(5)
     }
 
     fun obtenerEspecialidad(id: Int): Especialidad? {
@@ -60,14 +60,14 @@ object Repositorio {
     val medicos = listOf(
         Medico(1, "Dra. Ana Torres", 1, 4.8, 12),
         Medico(2, "Dr. Luis Ramírez", 1, 4.5, 8),
-        Medico(3, "Dr. Carlos Mendoza", 2, 4.9, 15),
-        Medico(4, "Dra. Lucía Vargas", 2, 4.6, 10),
-        Medico(5, "Dra. Sofía Paredes", 3, 4.7, 9),
-        Medico(6, "Dr. Jorge Salazar", 3, 4.4, 6),
-        Medico(7, "Dra. Elena Rojas", 4, 4.8, 11),
-        Medico(8, "Dr. Miguel Castro", 5, 4.6, 7),
-        Medico(9, "Dra. Patricia Núñez", 6, 4.7, 13),
-        Medico(10, "Dra. Valeria Cruz", 7, 4.9, 14),
+        Medico(3, "Dr. Carlos Mendoza", 4, 4.9, 15),
+        Medico(4, "Dra. Lucía Vargas", 4, 4.6, 10),
+        Medico(5, "Dra. Sofía Paredes", 2, 4.7, 9),
+        Medico(6, "Dr. Jorge Salazar", 2, 4.4, 6),
+        Medico(7, "Dra. Elena Rojas", 5, 4.8, 11),
+        Medico(8, "Dr. Miguel Castro", 6, 4.6, 7),
+        Medico(9, "Dra. Patricia Núñez", 7, 4.7, 13),
+        Medico(10, "Dra. Valeria Cruz", 3, 4.9, 14),
         Medico(11, "Dr. Andrés Flores", 8, 4.5, 10)
     )
 
