@@ -148,6 +148,16 @@ fun AppNavigation() {
             )
         }
         composable(Rutas.RESULTADOS) { ResultadosScreen(onNavegar = irA) }
-        composable(Rutas.PERFIL) { PerfilScreen(onNavegar = irA) }
+        composable(Rutas.PERFIL) {
+            PerfilScreen(
+                onNavegar = irA,
+                onCerrarSesion = {
+                    // popUpTo borra Inicio y las pestañas del historial: Atrás ya no vuelve a la app
+                    navController.navigate(Rutas.SPLASH) {
+                        popUpTo(Rutas.HOME) { inclusive = true }
+                    }
+                }
+            )
+        }
     }
 }
