@@ -32,14 +32,14 @@ object Repositorio {
 
     // ---------- ESPECIALIDADES ----------
     val especialidades = listOf(
-        Especialidad(1, "Medicina General", "Consulta y control general de salud"),
-        Especialidad(2, "Pediatría", "Atención médica para niños"),
+        Especialidad(1, "Medicina General", "Atención integral"),
+        Especialidad(2, "Pediatría", "Niños y adolescentes"),
         Especialidad(3, "Ginecología", "Salud de la mujer"),
-        Especialidad(4, "Cardiología", "Corazón y sistema circulatorio"),
-        Especialidad(5, "Dermatología", "Cuidado de la piel, cabello y uñas"),
-        Especialidad(6, "Odontología", "Salud dental y bucal"),
-        Especialidad(7, "Oftalmología", "Salud visual y ocular"),
-        Especialidad(8, "Traumatología", "Huesos, músculos y articulaciones")
+        Especialidad(4, "Cardiología", "Corazón y vasos sanguíneos"),
+        Especialidad(5, "Dermatología", "Piel, cabello y uñas"),
+        Especialidad(8, "Traumatología", "Huesos y articulaciones"),
+        Especialidad(7, "Oftalmología", "Salud visual"),
+        Especialidad(6, "Odontología", "Salud dental y bucal")
     )
 
     // Filtra por nombre, sin importar mayúsculas
