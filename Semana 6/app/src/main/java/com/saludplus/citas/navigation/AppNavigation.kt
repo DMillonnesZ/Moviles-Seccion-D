@@ -6,6 +6,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.saludplus.citas.ui.screens.agendamiento.CitaExitosaScreen
+import com.saludplus.citas.ui.screens.agendamiento.ConfirmarCitaScreen
 import com.saludplus.citas.ui.screens.agendamiento.EspecialidadesScreen
 import com.saludplus.citas.ui.screens.agendamiento.FechaHoraScreen
 import com.saludplus.citas.ui.screens.agendamiento.MedicosScreen
@@ -105,8 +107,38 @@ fun AppNavigation() {
                 medicoId = medicoId,
                 onAtras = { navController.popBackStack() },
                 onContinuar = { fecha, hora ->
-                    /* se conecta con Confirmar cita en el siguiente commit */
+                    navController.navigate(Rutas.confirmarCita(medicoId, fecha, hora))
                 }
+            )
+        }
+        composable(
+            route = Rutas.CONFIRMAR_CITA,
+            arguments = listOf(
+                navArgument("medicoId") { type = NavType.IntType },
+                navArgument("fecha") { type = NavType.StringType },
+                navArgument("hora") { type = NavType.StringType }
+            )
+        ) { entrada ->
+            val medicoId = entrada.arguments?.getInt("medicoId") ?: 0
+            val fecha = entrada.arguments?.getString("fecha") ?: ""
+            val hora = entrada.arguments?.getString("hora") ?: ""
+            ConfirmarCitaScreen(
+                medicoId = medicoId,
+                fecha = fecha,
+                hora = hora,
+                onAtras = { navController.popBackStack() },
+                onConfirmada = {
+                    // popUpTo borra Especialidades, Médicos, Fecha y hora y Confirmar del historial
+                    navController.navigate(Rutas.CITA_EXITOSA) {
+                        popUpTo(Rutas.HOME)
+                    }
+                }
+            )
+        }
+        composable(Rutas.CITA_EXITOSA) {
+            CitaExitosaScreen(
+                onVerMisCitas = { irA(Rutas.MIS_CITAS) },
+                onIrInicio = { navController.popBackStack(Rutas.HOME, false) }
             )
         }
         composable(Rutas.MIS_CITAS) { MisCitasScreen(onNavegar = irA) }
