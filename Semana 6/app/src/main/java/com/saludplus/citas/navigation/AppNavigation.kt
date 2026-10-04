@@ -7,11 +7,23 @@ import androidx.navigation.compose.rememberNavController
 import com.saludplus.citas.ui.screens.auth.LoginScreen
 import com.saludplus.citas.ui.screens.auth.RegistroScreen
 import com.saludplus.citas.ui.screens.auth.SplashScreen
+import com.saludplus.citas.ui.screens.citas.MisCitasScreen
 import com.saludplus.citas.ui.screens.home.HomeScreen
+import com.saludplus.citas.ui.screens.perfil.PerfilScreen
+import com.saludplus.citas.ui.screens.resultados.ResultadosScreen
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+
+    // Cambio de pestaña en la barra inferior: no apila pantallas repetidas
+    val irA: (String) -> Unit = { ruta ->
+        navController.navigate(ruta) {
+            popUpTo(Rutas.HOME) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
 
     NavHost(navController = navController, startDestination = Rutas.SPLASH) {
         composable(Rutas.SPLASH) {
@@ -54,12 +66,16 @@ fun AppNavigation() {
             HomeScreen(
                 onNotificaciones = { /* se conecta con Notificaciones en el reto extra */ },
                 onAgendar = { /* se conecta con Especialidades en su commit */ },
-                onMisCitas = { /* se conecta con la barra de navegación en el siguiente commit */ },
-                onMisDatos = { /* se conecta con la barra de navegación en el siguiente commit */ },
-                onResultados = { /* se conecta con la barra de navegación en el siguiente commit */ },
+                onMisCitas = { irA(Rutas.MIS_CITAS) },
+                onMisDatos = { irA(Rutas.PERFIL) },
+                onResultados = { irA(Rutas.RESULTADOS) },
                 onEspecialidad = { /* se conecta con Médicos en su commit */ },
-                onVerEspecialidades = { /* se conecta con Especialidades en su commit */ }
+                onVerEspecialidades = { /* se conecta con Especialidades en su commit */ },
+                onNavegar = irA
             )
         }
+        composable(Rutas.MIS_CITAS) { MisCitasScreen(onNavegar = irA) }
+        composable(Rutas.RESULTADOS) { ResultadosScreen(onNavegar = irA) }
+        composable(Rutas.PERFIL) { PerfilScreen(onNavegar = irA) }
     }
 }

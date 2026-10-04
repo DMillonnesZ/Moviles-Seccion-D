@@ -46,6 +46,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saludplus.citas.data.repository.Repositorio
+import com.saludplus.citas.navigation.Rutas
+import com.saludplus.citas.ui.components.BarraNavegacion
 import com.saludplus.citas.ui.components.TarjetaSuave
 import com.saludplus.citas.ui.components.estiloEspecialidad
 import com.saludplus.citas.ui.theme.AzulOscuro
@@ -61,13 +63,17 @@ fun HomeScreen(
     onResultados: () -> Unit,
     onEspecialidad: (Int) -> Unit,
     onVerEspecialidades: () -> Unit,
+    onNavegar: (String) -> Unit,
     onMenu: () -> Unit = {}
 ) {
     val primerNombre = Repositorio.usuarioActual?.nombre
         ?.trim()?.split(" ")?.firstOrNull() ?: ""
     val destacadas = Repositorio.especialidadesDestacadas()
 
-    Scaffold(containerColor = Color.White) { padding ->
+    Scaffold(
+        containerColor = Color.White,
+        bottomBar = { BarraNavegacion(rutaActual = Rutas.HOME, onNavegar = onNavegar) }
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
