@@ -22,11 +22,14 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,10 +55,12 @@ fun RegistroScreen(
 ) {
     val contexto = LocalContext.current
 
-    var nombre by remember { mutableStateOf("") }
-    var telefono by remember { mutableStateOf("") }
-    var correo by remember { mutableStateOf("") }
-    var contrasena by remember { mutableStateOf("") }
+    // rememberSaveable: lo escrito no se pierde al ir a leer los Términos y volver
+    var nombre by rememberSaveable { mutableStateOf("") }
+    var telefono by rememberSaveable { mutableStateOf("") }
+    var correo by rememberSaveable { mutableStateOf("") }
+    var contrasena by rememberSaveable { mutableStateOf("") }
+    var aceptaTerminos by rememberSaveable { mutableStateOf(false) }
 
     var errorNombre by remember { mutableStateOf<String?>(null) }
     var errorTelefono by remember { mutableStateOf<String?>(null) }
@@ -63,6 +68,8 @@ fun RegistroScreen(
     var errorContrasena by remember { mutableStateOf<String?>(null) }
 
     fun registrar() {
+        if (!aceptaTerminos) return
+
         errorNombre = if (nombre.trim().length < 3) "Ingresa tu nombre completo" else null
         errorTelefono = if (telefono.length != 9) "El teléfono debe tener 9 dígitos" else null
         errorCorreo = if (!Patterns.EMAIL_ADDRESS.matcher(correo.trim()).matches())
@@ -154,24 +161,36 @@ fun RegistroScreen(
             error = errorContrasena
         )
 
-        Spacer(Modifier.height(4.dp))
-        BotonAzul(texto = "Registrarme", onClick = { registrar() })
-
-        // Términos y Condiciones debajo, pegado a la frase de aceptación
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        // Casilla de aceptación con enlace a los Términos y Condiciones
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = aceptaTerminos,
+                onCheckedChange = { aceptaTerminos = it },
+                colors = CheckboxDefaults.colors(checkedColor = AzulPrimario)
+            )
             Text(
-                text = "Al registrarte aceptas nuestros",
-                fontSize = 13.sp,
+                text = "Acepto los ",
+                fontSize = 14.sp,
                 color = GrisTexto
             )
             Text(
                 text = "Términos y Condiciones",
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = AzulPrimario,
                 modifier = Modifier.clickable { onTerminos() }
             )
         }
+
+        // Registrarme solo se habilita con la casilla marcada
+        BotonAzul(
+            texto = "Registrarme",
+            habilitado = aceptaTerminos,
+            onClick = { registrar() }
+        )
 
         Spacer(Modifier.height(8.dp))
 

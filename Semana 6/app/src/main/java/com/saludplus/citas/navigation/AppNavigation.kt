@@ -14,6 +14,7 @@ import com.saludplus.citas.ui.screens.agendamiento.MedicosScreen
 import com.saludplus.citas.ui.screens.auth.LoginScreen
 import com.saludplus.citas.ui.screens.auth.RegistroScreen
 import com.saludplus.citas.ui.screens.auth.SplashScreen
+import com.saludplus.citas.ui.screens.auth.TerminosScreen
 import com.saludplus.citas.ui.screens.citas.DetalleCitaScreen
 import com.saludplus.citas.ui.screens.citas.MisCitasScreen
 import com.saludplus.citas.ui.screens.home.HomeScreen
@@ -53,8 +54,11 @@ fun AppNavigation() {
                         popUpTo(Rutas.REGISTRO) { inclusive = true }
                     }
                 },
-                onTerminos = { /* se conecta con Términos en el commit 21 */ }
+                onTerminos = { navController.navigate(Rutas.TERMINOS) }
             )
+        }
+        composable(Rutas.TERMINOS) {
+            TerminosScreen(onAtras = { navController.popBackStack() })
         }
         composable(Rutas.LOGIN) {
             LoginScreen(
