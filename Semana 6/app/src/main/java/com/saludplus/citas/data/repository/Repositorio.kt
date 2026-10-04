@@ -4,6 +4,7 @@ import com.saludplus.citas.data.model.Especialidad
 import com.saludplus.citas.data.model.Medico
 import com.saludplus.citas.data.model.Usuario
 import com.saludplus.citas.data.model.Cita
+import com.saludplus.citas.data.model.Resultado
 
 object Repositorio {
 
@@ -147,4 +148,15 @@ object Repositorio {
     fun cancelarCita(id: Int): Boolean {
         return citas.removeIf { it.id == id }
     }
+
+    // ---------- RESULTADOS ----------
+    // Lista fija de ejemplo: es la misma para todos los usuarios
+    val resultados = listOf(
+        Resultado(1, "Hemograma completo", "2026-09-18", 1, "Disponible"),
+        Resultado(2, "Perfil lipídico", "2026-09-25", 4, "Disponible"),
+        Resultado(3, "Electrocardiograma", "2026-10-01", 4, "Disponible"),
+        Resultado(4, "Radiografía de rodilla", "2026-10-02", 8, "En proceso"),
+        Resultado(5, "Examen de la vista", "2026-09-10", 7, "Disponible"),
+        Resultado(6, "Glucosa en ayunas", "2026-10-03", 1, "En proceso")
+    )
 }
