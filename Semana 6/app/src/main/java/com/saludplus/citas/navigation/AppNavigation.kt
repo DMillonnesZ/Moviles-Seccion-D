@@ -17,6 +17,7 @@ import com.saludplus.citas.ui.screens.auth.SplashScreen
 import com.saludplus.citas.ui.screens.citas.DetalleCitaScreen
 import com.saludplus.citas.ui.screens.citas.MisCitasScreen
 import com.saludplus.citas.ui.screens.home.HomeScreen
+import com.saludplus.citas.ui.screens.notificaciones.NotificacionesScreen
 import com.saludplus.citas.ui.screens.perfil.PerfilScreen
 import com.saludplus.citas.ui.screens.resultados.ResultadosScreen
 
@@ -24,7 +25,8 @@ import com.saludplus.citas.ui.screens.resultados.ResultadosScreen
 fun AppNavigation() {
     val navController = rememberNavController()
 
-    // Cambio de pestaña en la barra inferior: no apila pantallas repetidas
+    // Cambio de pestaña en la barra inferior: cierra lo que haya sobre Inicio y no restaura
+    // pantallas anteriores (como Cita agendada), porque los datos viven en el Repositorio
     val irA: (String) -> Unit = { ruta ->
         navController.navigate(ruta) {
             popUpTo(Rutas.HOME)
@@ -71,7 +73,7 @@ fun AppNavigation() {
         }
         composable(Rutas.HOME) {
             HomeScreen(
-                onNotificaciones = { /* se conecta con Notificaciones en el commit 20 */ },
+                onNotificaciones = { navController.navigate(Rutas.NOTIFICACIONES) },
                 onAgendar = { navController.navigate(Rutas.ESPECIALIDADES) },
                 onMisCitas = { irA(Rutas.MIS_CITAS) },
                 onMisDatos = { irA(Rutas.PERFIL) },
@@ -80,6 +82,9 @@ fun AppNavigation() {
                 onVerEspecialidades = { navController.navigate(Rutas.ESPECIALIDADES) },
                 onNavegar = irA
             )
+        }
+        composable(Rutas.NOTIFICACIONES) {
+            NotificacionesScreen(onAtras = { navController.popBackStack() })
         }
         composable(Rutas.ESPECIALIDADES) {
             EspecialidadesScreen(
