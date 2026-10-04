@@ -3,6 +3,7 @@ package com.saludplus.citas.data.repository
 import com.saludplus.citas.data.model.Especialidad
 import com.saludplus.citas.data.model.Medico
 import com.saludplus.citas.data.model.Usuario
+import com.saludplus.citas.data.model.Cita
 
 object Repositorio {
 
@@ -85,5 +86,54 @@ object Repositorio {
     fun buscarMedicos(especialidadId: Int, texto: String): List<Medico> {
         return medicosPorEspecialidad(especialidadId)
             .filter { it.nombre.contains(texto.trim(), ignoreCase = true) }
+    }
+
+    // ---------- CITAS ----------
+    val citas = mutableListOf<Cita>()
+    private var siguienteIdCita = 1
+
+    // Horarios que ofrece cada médico todos los días
+    val horariosBase = listOf(
+        "08:00", "09:00", "10:00", "11:00",
+        "14:00", "15:00", "16:00", "17:00"
+    )
+
+    // Horarios libres de un médico en una fecha (fecha en formato "2026-10-06")
+    fun horariosDisponibles(medicoId: Int, fecha: String): List<String> {
+        val ocupados = citas
+            .filter { it.medicoId == medicoId && it.fecha == fecha }
+            .map { it.hora }
+        return horariosBase.filter { it !in ocupados }
+    }
+
+    // Crea la cita para el usuario en sesión. Devuelve false si no hay sesión
+    // o si ese médico ya tiene una cita en esa fecha y hora.
+    fun agendarCita(medicoId: Int, especialidadId: Int, fecha: String, hora: String): Boolean {
+        val usuario = usuarioActual ?: return false
+        val ocupado = citas.any {
+            it.medicoId == medicoId && it.fecha == fecha && it.hora == hora
+        }
+        if (ocupado) return false
+        citas.add(
+            Cita(siguienteIdCita++, usuario.correo, medicoId, especialidadId, fecha, hora)
+        )
+        return true
+    }
+
+    fun obtenerCita(id: Int): Cita? {
+        return citas.find { it.id == id }
+    }
+
+    // Citas del usuario en sesión, de la más próxima a la más lejana
+    fun citasDelUsuario(): List<Cita> {
+        val usuario = usuarioActual ?: return emptyList()
+        return citas
+            .filter { it.correoUsuario.equals(usuario.correo, ignoreCase = true) }
+            .sortedWith(compareBy({ it.fecha }, { it.hora }))
+    }
+
+    // Elimina la cita y libera su horario. Devuelve true si existía.
+    fun cancelarCita(id: Int): Boolean {
+        return citas.removeIf { it.id == id }
     }
 }
