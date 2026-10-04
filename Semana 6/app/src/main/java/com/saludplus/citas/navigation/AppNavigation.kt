@@ -141,7 +141,12 @@ fun AppNavigation() {
                 onIrInicio = { navController.popBackStack(Rutas.HOME, false) }
             )
         }
-        composable(Rutas.MIS_CITAS) { MisCitasScreen(onNavegar = irA) }
+        composable(Rutas.MIS_CITAS) {
+            MisCitasScreen(
+                onNavegar = irA,
+                onAgendar = { navController.navigate(Rutas.ESPECIALIDADES) }
+            )
+        }
         composable(Rutas.RESULTADOS) { ResultadosScreen(onNavegar = irA) }
         composable(Rutas.PERFIL) { PerfilScreen(onNavegar = irA) }
     }
