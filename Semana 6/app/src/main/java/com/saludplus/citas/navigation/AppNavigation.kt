@@ -1,10 +1,13 @@
 package com.saludplus.citas.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.saludplus.citas.ui.screens.agendamiento.EspecialidadesScreen
+import com.saludplus.citas.ui.screens.agendamiento.MedicosScreen
 import com.saludplus.citas.ui.screens.auth.LoginScreen
 import com.saludplus.citas.ui.screens.auth.RegistroScreen
 import com.saludplus.citas.ui.screens.auth.SplashScreen
@@ -70,7 +73,7 @@ fun AppNavigation() {
                 onMisCitas = { irA(Rutas.MIS_CITAS) },
                 onMisDatos = { irA(Rutas.PERFIL) },
                 onResultados = { irA(Rutas.RESULTADOS) },
-                onEspecialidad = { /* se conecta con Médicos en el siguiente commit */ },
+                onEspecialidad = { id -> navController.navigate(Rutas.medicos(id)) },
                 onVerEspecialidades = { navController.navigate(Rutas.ESPECIALIDADES) },
                 onNavegar = irA
             )
@@ -78,7 +81,18 @@ fun AppNavigation() {
         composable(Rutas.ESPECIALIDADES) {
             EspecialidadesScreen(
                 onAtras = { navController.popBackStack() },
-                onEspecialidad = { /* se conecta con Médicos en el siguiente commit */ }
+                onEspecialidad = { id -> navController.navigate(Rutas.medicos(id)) }
+            )
+        }
+        composable(
+            route = Rutas.MEDICOS,
+            arguments = listOf(navArgument("especialidadId") { type = NavType.IntType })
+        ) { entrada ->
+            val especialidadId = entrada.arguments?.getInt("especialidadId") ?: 0
+            MedicosScreen(
+                especialidadId = especialidadId,
+                onAtras = { navController.popBackStack() },
+                onMedico = { /* se conecta con Fecha y hora en el siguiente commit */ }
             )
         }
         composable(Rutas.MIS_CITAS) { MisCitasScreen(onNavegar = irA) }

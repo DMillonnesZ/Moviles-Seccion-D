@@ -56,19 +56,29 @@ object Repositorio {
         return especialidades.find { it.id == id }
     }
 
+    // Retrato de randomuser.me; genero = "men" o "women", numero = 0 a 99
+    private fun retrato(genero: String, numero: Int) =
+        "https://randomuser.me/api/portraits/$genero/$numero.jpg"
+
     // ---------- MÉDICOS ----------
     val medicos = listOf(
-        Medico(1, "Dra. Ana Torres", 1, 4.8, 12),
-        Medico(2, "Dr. Luis Ramírez", 1, 4.5, 8),
-        Medico(3, "Dr. Carlos Mendoza", 4, 4.9, 15),
-        Medico(4, "Dra. Lucía Vargas", 4, 4.6, 10),
-        Medico(5, "Dra. Sofía Paredes", 2, 4.7, 9),
-        Medico(6, "Dr. Jorge Salazar", 2, 4.4, 6),
-        Medico(7, "Dra. Elena Rojas", 5, 4.8, 11),
-        Medico(8, "Dr. Miguel Castro", 6, 4.6, 7),
-        Medico(9, "Dra. Patricia Núñez", 7, 4.7, 13),
-        Medico(10, "Dra. Valeria Cruz", 3, 4.9, 14),
-        Medico(11, "Dr. Andrés Flores", 8, 4.5, 10)
+        Medico(1, "Dra. Ana Torres", 1, 4.8, 12, 128, "Disponible hoy", retrato("women", 44)),
+        Medico(2, "Dr. Luis Ramírez", 1, 4.5, 8, 95, "Disponible mañana", retrato("men", 32)),
+        Medico(3, "Dr. Carlos Mendoza", 4, 4.9, 15, 210, "Disponible hoy", retrato("men", 45)),
+        Medico(4, "Dra. Lucía Vargas", 4, 4.6, 10, 87, "Disponible esta semana", retrato("women", 68)),
+        Medico(5, "Dra. Sofía Paredes", 2, 4.7, 9, 142, "Disponible hoy", retrato("women", 65)),
+        Medico(6, "Dr. Jorge Salazar", 2, 4.4, 6, 63, "Disponible mañana", retrato("men", 52)),
+        Medico(7, "Dra. Elena Rojas", 5, 4.8, 11, 119, "Disponible hoy", retrato("women", 26)),
+        Medico(8, "Dr. Miguel Castro", 6, 4.6, 7, 76, "Disponible esta semana", retrato("men", 75)),
+        Medico(9, "Dra. Patricia Núñez", 7, 4.7, 13, 134, "Disponible mañana", retrato("women", 33)),
+        Medico(10, "Dra. Valeria Cruz", 3, 4.9, 14, 156, "Disponible hoy", retrato("women", 90)),
+        Medico(11, "Dr. Andrés Flores", 8, 4.5, 10, 101, "Disponible esta semana", retrato("men", 18)),
+        Medico(12, "Dra. Claudia Rojas", 3, 4.8, 9, 112, "Disponible mañana", retrato("women", 17)),
+        Medico(13, "Dra. Mariana Soto", 3, 4.6, 7, 70, "Disponible esta semana", retrato("women", 79)),
+        Medico(14, "Dr. Ricardo León", 5, 4.5, 8, 64, "Disponible mañana", retrato("men", 61)),
+        Medico(15, "Dr. Fernando Ibarra", 6, 4.7, 10, 88, "Disponible hoy", retrato("men", 22)),
+        Medico(16, "Dr. Daniel Quispe", 7, 4.4, 6, 59, "Disponible hoy", retrato("men", 86)),
+        Medico(17, "Dra. Camila Herrera", 8, 4.8, 12, 97, "Disponible mañana", retrato("women", 12))
     )
 
     fun obtenerMedico(id: Int): Medico? {
