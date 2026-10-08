@@ -4,7 +4,7 @@ Aplicación móvil Android para el agendamiento y gestión de citas médicas ori
 
 ## 1. Título y descripción
 
-**Clínica SaludPlus — App Paciente** es una aplicación desarrollada en Kotlin con Jetpack Compose para facilitar la reserva y administración de citas médicas. Toda la información de la aplicación se gestiona en memoria sin persistencia local ni remota.
+**Clínica SaludPlus — App Paciente** es una aplicación desarrollada en Kotlin con Jetpack Compose para facilitar la reserva y administración de citas médicas. Toda la información de la aplicación se gestiona en memoria sin persistencia local ni remota. En la **Fase 2 (`con-ia`)**, la aplicación ha sido completamente rediseñada y mejorada con un calendario dinámico con `java.time.LocalDate`, notificaciones locales con sonido, sistema de mensajes globales, selector desplegable de mes y mejoras de accesibilidad y experiencia de usuario.
 
 ## 2. Objetivos
 
@@ -13,7 +13,7 @@ Aplicación móvil Android para el agendamiento y gestión de citas médicas ori
 - Aplicar `LazyRow` (especialidades destacadas), `LazyColumn` (especialidades, médicos y citas) y `LazyVerticalGrid` (horarios) trabajando con colecciones en memoria.
 - Aplicar navegación con paso de parámetros (`especialidadId`, `medicoId`, `fecha`, `hora`) y `popUpTo`.
 - Diseñar las vistas requeridas respetando el estilo visual del proyecto.
-- Aplicar control de versiones con GitHub en dos fases: desarrollo propio y mejora asistida por IA.
+- Aplicar control de versiones con GitHub en dos fases: desarrollo propio (`sin-ia`) y mejora asistida por IA (`con-ia`).
 
 ## 3. Tecnologías
 
@@ -22,6 +22,8 @@ Aplicación móvil Android para el agendamiento y gestión de citas médicas ori
 - **Navegación:** Navigation Compose 2.8.5
 - **Carga de imágenes:** Coil 2.7.0 (fotos de médicos desde `randomuser.me`, requiere internet)
 - **Íconos:** `material-icons-extended`
+- **Manejo de Fechas:** `java.time.LocalDate` y `java.time.YearMonth` (minSdk 26)
+- **Notificaciones:** `NotificationChannel` con sonido y permiso `POST_NOTIFICATIONS`
 - **Paquete principal:** `com.saludplus.citas`
 
 ## 4. Cómo ejecutar
@@ -30,13 +32,13 @@ Aplicación móvil Android para el agendamiento y gestión de citas médicas ori
    ```bash
    git clone https://github.com/DMillonnesZ/Moviles-Seccion-D.git
    ```
-2. Cambiar a la rama de la Fase 1:
+2. Cambiar a la rama de la Fase 2:
    ```bash
-   git checkout sin-ia
+   git checkout con-ia
    ```
 3. Abrir en Android Studio la carpeta del proyecto que está dentro de `Semana 6` (`File > Open`).
-4. Esperar el Sync de Gradle y ejecutar en un emulador o celular con internet.
-5. Como los datos viven en memoria, hay que registrarse cada vez que se abre la app desde cero.
+4. Esperar el Sync de Gradle y ejecutar en un emulador o celular con internet (Android 8.0 / API 26 o superior).
+5. Como los datos viven en memoria, hay que registrarse o iniciar sesión cada vez que se abre la app desde cero.
 
 ## 5. Estructura del proyecto
 
@@ -55,67 +57,55 @@ com.saludplus.citas
 ├── navigation
 │   ├── Rutas.kt
 │   └── AppNavigation.kt
+├── util
+│   └── Fechas.kt
 └── ui
     ├── theme
+    │   ├── Color.kt
+    │   ├── Disenio.kt
+    │   ├── Theme.kt
+    │   └── Type.kt
     ├── components
-    │   ├── BotonAzul.kt
-    │   ├── EnlaceTexto.kt
-    │   ├── BarraSuperior.kt
-    │   ├── BarraNavegacion.kt
-    │   ├── CampoTextoIcono.kt
-    │   ├── TarjetaSuave.kt
     │   ├── AvatarMedico.kt
+    │   ├── BarraNavegacion.kt
+    │   ├── BarraSuperior.kt
+    │   ├── BotonAzul.kt
+    │   ├── CampoTextoIcono.kt
+    │   ├── ComponentesDisenio.kt
+    │   ├── EnlaceTexto.kt
+    │   ├── EstiloEspecialidad.kt
     │   ├── FilaDetalle.kt
-    │   └── EstiloEspecialidad.kt
+    │   ├── Mensajes.kt
+    │   └── TarjetaSuave.kt
     └── screens
+        ├── agendamiento
+        │   ├── CitaExitosaScreen.kt
+        │   ├── ConfirmarCitaScreen.kt
+        │   ├── EspecialidadesScreen.kt
+        │   ├── FechaHoraScreen.kt
+        │   └── MedicosScreen.kt
         ├── auth
-        │   ├── SplashScreen.kt
-        │   ├── RegistroScreen.kt
         │   ├── LoginScreen.kt
+        │   ├── RegistroScreen.kt
+        │   ├── SplashScreen.kt
         │   └── TerminosScreen.kt
+        ├── citas
+        │   ├── DetalleCitaScreen.kt
+        │   └── MisCitasScreen.kt
         ├── home
         │   └── HomeScreen.kt
-        ├── agendamiento
-        │   ├── EspecialidadesScreen.kt
-        │   ├── MedicosScreen.kt
-        │   ├── FechaHoraScreen.kt
-        │   ├── ConfirmarCitaScreen.kt
-        │   └── CitaExitosaScreen.kt
-        ├── citas
-        │   ├── MisCitasScreen.kt
-        │   └── DetalleCitaScreen.kt
+        ├── notificaciones
+        │   └── NotificacionesScreen.kt
         ├── perfil
         │   └── PerfilScreen.kt
-        ├── resultados
-        │   └── ResultadosScreen.kt
-        └── notificaciones
-            └── NotificacionesScreen.kt
+        └── resultados
+            ├── ResultadoDetalleScreen.kt
+            └── ResultadosScreen.kt
 ```
 
 ## 6. Pantallas y capturas
 
-### Pantallas obligatorias
-
-1. **Splash:** Imagen, columnas y botones. Practica `Image`, `Column` y botones.
-2. **Registro:** Estados, campos con validación (nombre, teléfono de 9 dígitos, correo, contraseña de 6 caracteres), casilla de aceptación de Términos que habilita "Registrarme", y `add` a la lista de usuarios.
-3. **Login:** Búsqueda con `find` y gestión de sesión.
-4. **Inicio:** Layout con `Scaffold`, `NavigationBar`, accesos rápidos y `LazyRow` de especialidades destacadas.
-5. **Especialidades:** `LazyColumn` y búsqueda en tiempo real con `filter`.
-6. **Médicos:** Recibe parámetro `especialidadId`, aplica `filter` + `sortedByDescending`, e incluye buscador con lupa.
-7. **Fecha y hora:** `LazyVerticalGrid`, selección de día y muestra de horarios disponibles.
-8. **Confirmar cita:** Recibe parámetros `medicoId`, `fecha` y `hora`; guarda la cita (`any` + `add`).
-9. **Cita agendada:** Resumen de la cita y limpieza del historial con `popUpTo`.
-10. **Mis citas:** `LazyColumn` y mensaje de lista vacía.
-11. **Perfil:** Datos de sesión y opción de cerrar sesión.
-
-### Retos extra
-
-12. **Detalle de cita:** Diálogo de confirmación `AlertDialog` y eliminación de la cita con `removeIf`.
-13. **Resultados:** Modelo de datos propio `Resultado` y lista fija.
-14. **Notificaciones:** Generación de notificaciones aplicando `map` sobre las citas del usuario.
-15. **Términos y condiciones:** Texto legal con scroll basado en la Ley 29733, su Reglamento (D.S. 016-2024-JUS), la Ley General de Salud, la Ley 29414 y la Ley 30024. Es un texto de ejemplo con fines educativos, no asesoría legal.
-
-### Capturas
+### Capturas Fase 1 (`sin-ia`)
 
 | Pantalla | Captura |
 |---|---|
@@ -136,23 +126,42 @@ com.saludplus.citas
 | Resultados | <img src="docs/capturas/15_resultados.jpeg" width="220" alt="Resultados"> |
 | Notificaciones | <img src="docs/capturas/16_notificaciones.jpeg" width="220" alt="Notificaciones"> |
 
+### Capturas adicionales de la Fase 2 (`con-ia`)
+
+Secuencia completa de capturas de pantalla para todas las funcionalidades e interacciones integradas en la Fase 2:
+
+| Nº | Funcionalidad / Pantalla | Captura | Descripción |
+|---|---|---|---|
+| 17 | Selector desplegable de mes | <img src="docs/capturas/17_selector_mes.jpeg" width="220" alt="Selector de mes"> | `ModalBottomSheet` desplegado en FechaHoraScreen con 12 meses futuros |
+| 18 | Mensaje de bienvenida dinámico | <img src="docs/capturas/18_mensaje_bienvenida.jpeg" width="220" alt="Mensaje de bienvenida"> | Banner flotante en Inicio con saludo y recomendación o cita del día |
+| 19 | Menú lateral deslizable (Drawer) | <img src="docs/capturas/19_menu_drawer.jpeg" width="220" alt="Menú Drawer"> | `ModalNavigationDrawer` abierto con datos del paciente y opciones navegables |
+| 20 | Confeti y Ticket de Agendamiento | <img src="docs/capturas/20_cita_agendada_confeti.jpeg" width="220" alt="Confeti agendamiento"> | CitaExitosaScreen con confeti animado Canvas y botón "Agregar al calendario" |
+| 21 | Integración con Google Calendar | <img src="docs/capturas/21_agregar_calendario.jpeg" width="220" alt="Agregar al calendario"> | Lanzamiento de Intent nativo `ACTION_INSERT` de CalendarContract para guardar el evento |
+| 22 | Mis Citas — Pestañas Próximas y Pasadas | <img src="docs/capturas/22_mis_citas_pestanas.jpeg" width="220" alt="Mis citas pestañas"> | MisCitasScreen separando atenciones pendientes de historial pasadas |
+| 23 | Mis Citas — Deslizar para cancelar | <img src="docs/capturas/23_mis_citas_deslizar.jpeg" width="220" alt="Deslizar cancelar"> | Acción `SwipeToDismissBox` hacia la izquierda con fondo rojo e ícono de papelera |
+| 24 | Detalle de Cita y Cancelación | <img src="docs/capturas/24_detalle_cita_opciones.jpeg" width="220" alt="Detalle cita opciones"> | DetalleCitaScreen con cabecera degradada, botón de calendario y AlertDialog de cancelación |
+| 25 | Filtros y Buscador en Resultados | <img src="docs/capturas/25_resultados_filtros.jpeg" width="220" alt="Resultados filtros"> | ResultadosScreen con chips "Todos", "Disponible", "En proceso" y buscador en tiempo real |
+| 26 | Detalle de Resultado y Compartir | <img src="docs/capturas/26_resultado_detalle.jpeg" width="220" alt="Detalle resultado compartir"> | `ResultadoDetalleScreen` con tabla de parámetros de laboratorio y función "Compartir resultado" |
+| 27 | Edición de Perfil y Estadísticas | <img src="docs/capturas/27_perfil_edicion.jpeg" width="220" alt="Edición de perfil"> | PerfilScreen con contadores animados, toggle de sonido y diálogo de actualización de datos |
+| 28 | Notificaciones Clicables e Indicadores | <img src="docs/capturas/28_notificaciones_leidas.jpeg" width="220" alt="Notificaciones clicables"> | NotificacionesScreen con punto azul para no leídas y agrupación por fecha ("Hoy / Anteriores") |
+| 29 | Notificación Nativa del Sistema | <img src="docs/capturas/29_notificacion_sistema.jpeg" width="220" alt="Notificación del sistema"> | Notificación emergente Android (`NotificationChannel`) con sonido o silenciosa al agendar |
+| 30 | Barra de Progreso en Términos | <img src="docs/capturas/30_terminos_progreso.jpeg" width="220" alt="Progreso en términos"> | TerminosScreen con indicador superior de lectura según scroll y botón "Entendido" fijo |
+
 ## 7. Flujo de navegación
 
 ```text
 Splash → Registro o Login → Inicio → Especialidades → Médicos(especialidadId) → FechaHora(medicoId) → ConfirmarCita(medicoId, fecha, hora) → Cita agendada → Mis citas
 ```
 
-- Al confirmar, `popUpTo(HOME)` borra el flujo de agendamiento del historial.
-- `Mis citas` → `Detalle(citaId)`.
-- `Perfil` → `Splash` al cerrar sesión.
-- Campana de `Inicio` → `Notificaciones`.
-- Enlace del `Registro` → `Términos`.
-- `NavigationBar` con 4 destinos: Inicio, Citas, Resultados, Perfil.
+- Menú lateral hamburguesa (`ModalNavigationDrawer`) en `Inicio` con navegación a todas las secciones.
+- `NavigationBar` animada con píldora de selección e `Insignia` sobre Citas.
+- `AppNavigation` maneja transiciones suaves de entrada y salida con deslizamiento y fundido.
 
 ## 8. Funciones del Repositorio
 
 - `registrarUsuario`: Comprueba duplicado con `any` y agrega con `add`.
 - `iniciarSesion` y `cerrarSesion`: Búsqueda con `find` y actualización de `usuarioActual`.
+- `actualizarUsuario`: Actualiza nombre y teléfono del usuario en sesión.
 - `buscarEspecialidades`: Filtrado con `filter` + `contains`.
 - `especialidadesDestacadas`: Retorna los primeros elementos con `take(5)`.
 - `obtenerEspecialidad`, `obtenerMedico`, `obtenerCita`: Búsqueda por id con `find`.
@@ -161,74 +170,50 @@ Splash → Registro o Login → Inicio → Especialidades → Médicos(especiali
 - `agendarCita`: Comprobación con `any` y guardado con `add`.
 - `citasDelUsuario`: Filtrado con `filter` y ordenamiento con `sortedWith`.
 - `cancelarCita`: Eliminación de cita con `removeIf`.
+- `consumirMensajeBienvenida`: Control de exhibición única del mensaje de bienvenida por inicio de sesión.
 
 ## 9. Pruebas manuales
 
 | Caso | Pasos | Resultado esperado | Estado |
 |---|---|---|---|
-| 1 | Registro con campos vacíos | Muestra los 4 errores en pantalla | Pendiente |
-| 2 | Teléfono solo de 9 dígitos | Intenta ingresar teléfono distinto de 9 dígitos | Solo permite exactamente 9 dígitos | Pendiente |
-| 3 | Casilla de Términos | Intentar registrarse sin marcar la casilla | El botón "Registrarme" permanece deshabilitado | Pendiente |
-| 4 | Conservación de datos | Escribir datos en Registro, abrir Términos y volver | Los campos se conservan al volver | Pendiente |
-| 5 | Correo repetido | Intentar registrar un correo que ya existe | Muestra "Este correo ya está registrado" | Pendiente |
-| 6 | Validaciones de Login | Probar credenciales incorrectas y correctas | Muestra error con incorrectas; entra a Inicio con correctas | Pendiente |
-| 7 | Atrás en Inicio | Presionar el botón Atrás desde la pantalla de Inicio | Cierra la aplicación | Pendiente |
-| 8 | Búsqueda en Especialidades | Buscar "car" y buscar "zzz" | "car" muestra Cardiología; "zzz" muestra mensaje de lista vacía | Pendiente |
-| 9 | Ordenamiento de Médicos | Abrir el listado de médicos de una especialidad | Aparecen ordenados de mayor a menor calificación | Pendiente |
-| 10 | Selección de día y hora | Elegir día y cambiar de día en Fecha y hora | "Continuar" solo se habilita con día y hora elegidos; cambiar día reinicia la hora | Pendiente |
-| 11 | Bloqueo de horario reservado | Reservar un horario y revisar disponibilidad | El horario reservado no aparece para ese médico y fecha, pero sigue libre con otro médico | Pendiente |
-| 12 | Navegación tras confirmar | Confirmar cita y presionar Atrás desde Cita agendada | No regresa al flujo de agendamiento | Pendiente |
-| 13 | Mis citas | Entrar a Mis citas sin citas y con citas | Muestra mensaje y botón "Agendar cita" si no hay citas; con citas las ordena por fecha y hora | Pendiente |
-| 14 | Cancelación de cita | Cancelar una cita desde Detalle de cita aceptando el AlertDialog | Elimina la cita y libera el horario | Pendiente |
-| 15 | Cierre de sesión | Presionar "Cerrar sesión" en Perfil y presionar Atrás | Lleva a Splash y presionar Atrás cierra la app | Pendiente |
-| 16 | Citas por usuario | Iniciar sesión con usuarios distintos | Cada usuario ve únicamente sus propias citas y notificaciones | Pendiente |
+| 1 | Registro con campos vacíos | Muestra los errores en pantalla | OK |
+| 2 | Teléfono solo de 9 dígitos | Intenta ingresar teléfono distinto de 9 dígitos | Solo permite exactamente 9 dígitos | OK |
+| 3 | Casilla de Términos | Intentar registrarse sin marcar la casilla | El botón "Registrarme" permanece deshabilitado | OK |
+| 4 | Conservación de datos | Escribir datos en Registro, abrir Términos y volver | Los campos se conservan al volver | OK |
+| 5 | Correo repetido | Intentar registrar un correo que ya existe | Muestra "Este correo ya está registrado" | OK |
+| 6 | Validaciones de Login | Probar credenciales incorrectas y correctas | Muestra error con incorrectas; entra a Inicio con correctas | OK |
+| 7 | Atrás en Inicio | Presionar el botón Atrás desde la pantalla de Inicio | Cierra la aplicación | OK |
+| 8 | Búsqueda en Especialidades | Buscar "car" y buscar "zzz" | "car" muestra Cardiología; "zzz" muestra mensaje de lista vacía | OK |
+| 9 | Ordenamiento de Médicos | Abrir el listado de médicos de una especialidad | Aparecen ordenados de mayor a menor calificación | OK |
+| 10 | Selección de día y hora | Elegir día y cambiar de día en Fecha y hora | "Continuar" solo se habilita con día y hora elegidos; cambiar día reinicia la hora | OK |
+| 11 | Bloqueo de horario reservado | Reservar un horario y revisar disponibilidad | El horario reservado no aparece para ese médico y fecha, pero sigue libre con otro médico | OK |
+| 12 | Navegación tras confirmar | Confirmar cita y presionar Atrás desde Cita agendada | No regresa al flujo de agendamiento | OK |
+| 13 | Mis citas | Entrar a Mis citas sin citas y con citas | Muestra mensaje y botón "Agendar cita" si no hay citas; con citas las ordena por fecha y hora | OK |
+| 14 | Cancelación de cita | Cancelar una cita desde Detalle de cita aceptando el AlertDialog | Elimina la cita y libera el horario | OK |
+| 15 | Cierre de sesión | Presionar "Cerrar sesión" en Perfil y presionar Atrás | Lleva a Splash y presionar Atrás cierra la app | OK |
+| 16 | Citas por usuario | Iniciar sesión con usuarios distintos | Cada usuario ve únicamente sus propias citas y notificaciones | OK |
 
 ## 10. Limitaciones y decisiones de diseño
 
-- **Fecha y hora fija:** Usa una lista fija de 5 días hábiles (lunes 5 a viernes 9 de octubre de 2026); las flechas del mes no realizan acciones y la fecha se muestra como `2026-10-06`. Se resuelve en la Fase 2 (rama `mejora-ia`) con `java.time.LocalDate`.
-- **Datos en memoria:** Los datos se pierden al cerrar la app.
-- **Conexión a internet para fotos:** Las fotos de los médicos necesitan internet; sin conexión se muestran las iniciales.
-- **Valores de ejemplo:** El código CMP y la dirección de la clínica en Confirmar cita son valores de ejemplo.
-- **Motivo de consulta:** El motivo de consulta se escribe pero no se guarda en el modelo.
-- **Pruebas:** No hay pruebas automatizadas; solo se contemplan pruebas manuales.
-- **Cumplimiento de reglas:** No se usa base de datos (Room, SQLite, Firebase) ni se cambian nombres ni parámetros de las funciones del Repositorio ni de las pantallas.
+- **Datos en memoria:** Todo vive en memoria en `Repositorio`. No se utiliza base de datos ni persistencia local (Room, SharedPreferences, DataStore).
+- **Notificaciones locales:** Se emplean `NotificationChannel` y `PendingIntent` locales sin backend ni Firebase FCM.
+- **Formato del selector de mes:** Muestra 12 meses futuros a partir del mes actual del sistema.
+- **Fotos de médicos:** Coil 2.7.0 requiere internet para cargar fotos desde `randomuser.me`; sin conexión se muestran iniciales.
 
-## 11. Historial de commits
+## 11. Fase 2 — Mejoras con IA (`con-ia`)
 
-| Nº | Mensaje |
-|---|---|
-| 1 | Commit inicial: Esqueleto del proyecto Clínica SaludPlus - App Paciente |
-| 2 | Agregar esqueleto: paquetes data, navigation y ui con pantallas en construcción |
-| 3 | Crear modelos de datos: Usuario, Especialidad, Medico y Cita |
-| 4 | Implementar funciones de autenticación en Repositorio (registro, inicio y cierre de sesión) |
-| 5 | Implementar búsqueda y filtros de especialidades y médicos en Repositorio |
-| 6 | Implementar gestión de citas y horarios en Repositorio |
-| 7 | Crear paleta de colores y componentes UI reutilizables |
-| 8 | Agregar navegación base, tema de la clínica y pantalla Splash |
-| 9 | Completar RegistroScreen con validaciones y conectar desde Splash |
-| 10 | Completar LoginScreen con inicio de sesión y flujo de navegación hacia Login |
-| 11 | Completar HomeScreen con saludo, accesos rápidos y LazyRow de especialidades destacadas |
-| 12 | Agregar NavigationBar con los destinos Inicio, Citas, Resultados y Perfil |
-| 13 | Completar EspecialidadesScreen con búsqueda en tiempo real y LazyColumn |
-| 14 | Completar MedicosScreen recibiendo especialidadId y ordenando por calificación |
-| 15 | Completar FechaHoraScreen con LazyVerticalGrid y horarios disponibles |
-| 16 | Completar ConfirmarCitaScreen y CitaExitosaScreen con popUpTo |
-| 17 | Completar MisCitasScreen con LazyColumn y mensaje de lista vacía |
-| 18 | Completar PerfilScreen con datos de sesión y cierre de sesión |
-| 19 | Completar DetalleCitaScreen con AlertDialog y cancelación de cita |
-| 20 | Completar ResultadosScreen con modelo Resultado y lista fija |
-| 21 | Completar NotificacionesScreen con map sobre las citas del usuario |
-| 22 | Completar TerminosScreen con texto legal y agregar casilla de aceptación en el Registro |
+En la Fase 2 (`con-ia`) se completaron la mejora obligatoria y las mejoras integrales del sistema:
 
-## 12. Fase 2 (pendiente)
+1. **Calendario dinámico (`java.time.LocalDate`):** Días hábiles dinámicos a partir de hoy, navegación semanal, bloqueo de fechas pasadas y formato en texto extendido en español ("Martes 16 de setiembre 2026").
+2. **Selector desplegable de mes:** Despliegue de 12 meses futuros con `ModalBottomSheet` e integración fluida con la cuadrícula del calendario.
+3. **Sistema de diseño y tokens:** `Disenio.kt`, `Type.kt` con tipografía de Material 3, degradados, esquinas redondeadas (20-24 dp), `EstadoVacio`, `ChipFiltro`, `Insignia`, `Esqueleto` shimmer y microinteracciones.
+4. **Mensajes globales y transiciones:** `MensajeController` y `MensajeHost` para reemplazar los `Toast`, junto con animaciones de entrada/salida en el `NavHost`.
+5. **Notificaciones del sistema:** Canales con sonido y silencioso (`citas_sonido`, `citas_silencioso`), permiso `POST_NOTIFICATIONS` en Android 13+ y apertura directa de `DetalleCitaScreen` mediante `PendingIntent`.
+6. **Rediseño completo de pantallas:** Splash animado, Login/Registro con animaciones y validación, Inicio con cuenta regresiva y mensaje de bienvenida dinámico, menú hamburguesa con `ModalNavigationDrawer`, navegación con píldora animada, Especialidades y Médicos con resaltado y estrellas, Confirmar/Cita agendada con ticket y confeti, Mis Citas con pestañas y swipe to dismiss, Resultados con pantalla de detalle y opción de compartir, Perfil con estadísticas y edición, Notificaciones clicables y Términos con barra de progreso.
 
-En la Fase 2 (`mejora-ia`) se abordará la implementación del calendario dinámico con `java.time.LocalDate`:
-- Mostrar los próximos 5 días hábiles a partir de hoy (sin sábados, domingos ni días pasados).
-- Flechas `<` y `>` para avanzar o retroceder una semana (sin retroceder antes de la semana actual).
-- Cambio dinámico del mes y año ("Octubre 2026").
-- Recálculo automático de horarios disponibles al cambiar de día e inicialización de la hora seleccionada.
-- Formato de fecha en texto en español en la pantalla de Confirmar cita.
-- Se requerirá un mínimo de 3 commits descriptivos en la rama `mejora-ia` y la documentación de cada prompt en `PROMPTS.md`.
+## 12. Registro de Prompts
+
+La documentación del prompt principal asignado, la respuesta resumida y el detalle de las correcciones realizadas se encuentra registrada en el archivo [PROMPTS.md](./PROMPTS.md).
 
 ## 13. Autor
 
