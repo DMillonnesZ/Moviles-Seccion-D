@@ -35,6 +35,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,11 +49,17 @@ import androidx.compose.ui.unit.sp
 import com.saludplus.citas.data.repository.Repositorio
 import com.saludplus.citas.navigation.Rutas
 import com.saludplus.citas.ui.components.BarraNavegacion
+import com.saludplus.citas.ui.components.MensajeController
 import com.saludplus.citas.ui.components.TarjetaSuave
+import com.saludplus.citas.ui.components.TipoMensaje
+import com.saludplus.citas.ui.components.efectoPresion
 import com.saludplus.citas.ui.components.estiloEspecialidad
 import com.saludplus.citas.ui.theme.AzulOscuro
 import com.saludplus.citas.ui.theme.AzulPrimario
 import com.saludplus.citas.ui.theme.GrisTexto
+import com.saludplus.citas.util.Fechas
+import java.time.LocalDate
+import java.time.LocalTime
 
 @Composable
 fun HomeScreen(
@@ -69,6 +76,60 @@ fun HomeScreen(
     val primerNombre = Repositorio.usuarioActual?.nombre
         ?.trim()?.split(" ")?.firstOrNull() ?: ""
     val destacadas = Repositorio.especialidadesDestacadas()
+
+    // Lógica para disparar el mensaje de bienvenida dinámico una sola vez por inicio de sesión
+    LaunchedEffect(Unit) {
+        if (Repositorio.consumirMensajeBienvenida()) {
+            val horaActual = LocalTime.now().hour
+            val saludoTime = when {
+                horaActual in 5..11 -> "Buenos días"
+                horaActual in 12..18 -> "Buenas tardes"
+                else -> "Buenas noches"
+            }
+
+            val hoy = LocalDate.now()
+            val hoyIso = hoy.toString()
+            val mananaIso = hoy.plusDays(1).toString()
+
+            val citasUsuario = Repositorio.citasDelUsuario()
+            val citaHoy = citasUsuario.find { it.fecha == hoyIso }
+            val citaManana = citasUsuario.find { it.fecha == mananaIso }
+            val proximaCita = citasUsuario.filter { it.fecha >= hoyIso }.minByOrNull { it.fecha }
+
+            val lineaContextual = when {
+                citaHoy != null -> {
+                    val medico = Repositorio.obtenerMedico(citaHoy.medicoId)
+                    "Hoy tienes cita con ${medico?.nombre ?: "tu médico"} a las ${citaHoy.hora}."
+                }
+                citaManana != null -> {
+                    val medico = Repositorio.obtenerMedico(citaManana.medicoId)
+                    "Mañana tienes cita con ${medico?.nombre ?: "tu médico"} a las ${citaManana.hora}."
+                }
+                proximaCita != null -> {
+                    "Tu próxima cita es el ${Fechas.fechaEnTexto(proximaCita.fecha)}."
+                }
+                else -> {
+                    val consejos = listOf(
+                        "Consejo del día: toma agua durante el día, aunque no sientas sed.",
+                        "Consejo del día: camina al menos 30 minutos diarios para cuidar tu corazón.",
+                        "Consejo del día: recuerda descansar entre 7 y 8 horas diarias.",
+                        "Consejo del día: consume frutas y verduras frescas para fortalecer tus defensas.",
+                        "Consejo del día: realiza pausas activas durante tu jornada de trabajo.",
+                        "Consejo del día: la prevención es salud, programa tus chequeos preventivos.",
+                        "Consejo del día: cuida tu postura al sentarte y mantén la espalda erguida."
+                    )
+                    val indiceConsejo = (hoy.dayOfYear % consejos.size)
+                    consejos[indiceConsejo]
+                }
+            }
+
+            MensajeController.mostrar(
+                texto = "$saludoTime, $primerNombre. $lineaContextual",
+                tipo = TipoMensaje.BIENVENIDA,
+                duracionMs = 3500L
+            )
+        }
+    }
 
     Scaffold(
         containerColor = Color.White,
@@ -89,14 +150,20 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onMenu) {
+                IconButton(
+                    onClick = onMenu,
+                    modifier = Modifier.efectoPresion { onMenu() }
+                ) {
                     Icon(
                         imageVector = Icons.Default.Menu,
                         contentDescription = "Menú",
                         tint = AzulOscuro
                     )
                 }
-                IconButton(onClick = onNotificaciones) {
+                IconButton(
+                    onClick = onNotificaciones,
+                    modifier = Modifier.efectoPresion { onNotificaciones() }
+                ) {
                     Icon(
                         imageVector = Icons.Default.Notifications,
                         contentDescription = "Notificaciones",
@@ -186,7 +253,9 @@ fun HomeScreen(
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = AzulPrimario,
-                    modifier = Modifier.clickable { onVerEspecialidades() }
+                    modifier = Modifier
+                        .efectoPresion { onVerEspecialidades() }
+                        .clickable { onVerEspecialidades() }
                 )
             }
 
@@ -253,7 +322,9 @@ private fun AccesoRapido(
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier.height(120.dp),
+        modifier = modifier
+            .height(120.dp)
+            .efectoPresion { onClick() },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = fondo),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)

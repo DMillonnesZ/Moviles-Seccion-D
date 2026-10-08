@@ -8,6 +8,17 @@ import com.saludplus.citas.data.model.Resultado
 
 object Repositorio {
 
+    // Indicador consumible para mostrar el mensaje de bienvenida dinámico una sola vez por inicio de sesión
+    var mensajeBienvenidaPendiente = false
+
+    fun consumirMensajeBienvenida(): Boolean {
+        if (mensajeBienvenidaPendiente) {
+            mensajeBienvenidaPendiente = false
+            return true
+        }
+        return false
+    }
+
     // ---------- USUARIOS ----------
     val usuarios = mutableListOf<Usuario>()
     var usuarioActual: Usuario? = null
@@ -24,11 +35,15 @@ object Repositorio {
             it.correo.equals(correo, ignoreCase = true) && it.contrasena == contrasena
         }
         usuarioActual = usuario
+        if (usuario != null) {
+            mensajeBienvenidaPendiente = true
+        }
         return usuario != null
     }
 
     fun cerrarSesion() {
         usuarioActual = null
+        mensajeBienvenidaPendiente = false
     }
 
     // ---------- ESPECIALIDADES ----------
