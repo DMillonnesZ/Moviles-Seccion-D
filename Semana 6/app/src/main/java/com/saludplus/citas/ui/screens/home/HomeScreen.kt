@@ -204,9 +204,12 @@ fun HomeScreen(
                                     tint = Color.White
                                 )
                             }
-                            if (citasUsuario.isNotEmpty()) {
+                            val notificacionesNoLeidas = remember(citasUsuario, Repositorio.notificacionesLeidas.size) {
+                                citasUsuario.count { it.id !in Repositorio.notificacionesLeidas }
+                            }
+                            if (notificacionesNoLeidas > 0) {
                                 Insignia(
-                                    numero = citasUsuario.size,
+                                    numero = notificacionesNoLeidas,
                                     modifier = Modifier
                                         .align(Alignment.TopEnd)
                                         .padding(top = 6.dp, end = 6.dp)

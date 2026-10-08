@@ -61,7 +61,7 @@ fun BarraNavegacion(
     onNavegar: (String) -> Unit
 ) {
     val hoyIso = remember { LocalDate.now().toString() }
-    val citasProximasCount = remember {
+    val citasProximasCount = remember(Repositorio.citas.size, hoyIso) {
         Repositorio.citasDelUsuario().count { it.fecha >= hoyIso }
     }
 

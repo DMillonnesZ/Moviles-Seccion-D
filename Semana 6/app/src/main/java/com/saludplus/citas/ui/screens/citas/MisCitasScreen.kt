@@ -50,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saludplus.citas.data.model.Cita
@@ -321,7 +322,7 @@ private fun TarjetaCita(
                             fontWeight = FontWeight.Bold,
                             color = AzulOscuro
                         )
-                        Spacer(Modifier.height(2.dp))
+                        Spacer(Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Default.DateRange,
@@ -333,9 +334,13 @@ private fun TarjetaCita(
                             Text(
                                 text = Fechas.fechaEnTexto(cita.fecha),
                                 fontSize = 12.sp,
-                                color = GrisTexto
+                                color = GrisTexto,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
-                            Spacer(Modifier.width(10.dp))
+                        }
+                        Spacer(Modifier.height(2.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Default.AccessTime,
                                 contentDescription = null,
