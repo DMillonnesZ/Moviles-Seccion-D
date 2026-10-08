@@ -1,5 +1,14 @@
 package com.saludplus.citas.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -8,14 +17,24 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,12 +46,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saludplus.citas.ui.theme.AzulOscuro
 import com.saludplus.citas.ui.theme.AzulPrimario
 import com.saludplus.citas.ui.theme.GrisTexto
 import com.saludplus.citas.ui.theme.RojoError
+import kotlin.math.roundToInt
 
 // Caja grande con el ícono (fondo casi blanco) y, pegada a ella, una caja de texto más baja
 // con el título encima. Muestra un texto de ejemplo (placeholder) mientras el campo está vacío.
@@ -48,11 +69,28 @@ fun CampoTextoIcono(
     teclado: KeyboardType = KeyboardType.Text,
     error: String? = null
 ) {
+    var contrasenaVisible by remember { mutableStateOf(false) }
+
+    val shakeOffset = remember { Animatable(0f) }
+    LaunchedEffect(error) {
+        if (error != null) {
+            repeat(2) {
+                shakeOffset.animateTo(10f, tween(40))
+                shakeOffset.animateTo(-10f, tween(40))
+            }
+            shakeOffset.animateTo(0f, spring(stiffness = Spring.StiffnessHigh))
+        }
+    }
+
     val forma = RoundedCornerShape(16.dp)
     val colorBorde = if (error != null) RojoError else Color(0xFFBFC8D6)
     val fondoIcono = Color(0xFFF7FAFF)
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .offset { IntOffset(shakeOffset.value.dp.roundToPx(), 0) }
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -80,7 +118,7 @@ fun CampoTextoIcono(
                         .clip(forma)
                         .background(Color.White)
                         .border(1.5.dp, colorBorde, forma)
-                        .padding(start = 45.dp, end = 14.dp),
+                        .padding(start = 45.dp, end = if (oculto) 40.dp else 14.dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
                     BasicTextField(
@@ -93,7 +131,7 @@ fun CampoTextoIcono(
                             color = AzulOscuro
                         ),
                         cursorBrush = SolidColor(AzulPrimario),
-                        visualTransformation = if (oculto) PasswordVisualTransformation()
+                        visualTransformation = if (oculto && !contrasenaVisible) PasswordVisualTransformation()
                         else VisualTransformation.None,
                         keyboardOptions = KeyboardOptions(keyboardType = teclado),
                         modifier = Modifier.fillMaxWidth(),
@@ -110,6 +148,22 @@ fun CampoTextoIcono(
                             }
                         }
                     )
+
+                    if (oculto) {
+                        IconButton(
+                            onClick = { contrasenaVisible = !contrasenaVisible },
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (contrasenaVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = if (contrasenaVisible) "Ocultar contraseña" else "Mostrar contraseña",
+                                tint = GrisTexto,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
                 }
             }
 
@@ -132,13 +186,19 @@ fun CampoTextoIcono(
             }
         }
 
-        if (error != null) {
-            Text(
-                text = error,
-                fontSize = 12.sp,
-                color = RojoError,
-                modifier = Modifier.padding(start = 78.dp, top = 3.dp)
-            )
+        AnimatedVisibility(
+            visible = error != null,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            error?.let {
+                Text(
+                    text = it,
+                    fontSize = 12.sp,
+                    color = RojoError,
+                    modifier = Modifier.padding(start = 78.dp, top = 3.dp)
+                )
+            }
         }
     }
 }
