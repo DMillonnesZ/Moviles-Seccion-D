@@ -1,11 +1,23 @@
 package com.saludplus.citas.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.saludplus.citas.ui.components.MensajeHost
 import com.saludplus.citas.ui.screens.agendamiento.CitaExitosaScreen
 import com.saludplus.citas.ui.screens.agendamiento.ConfirmarCitaScreen
 import com.saludplus.citas.ui.screens.agendamiento.EspecialidadesScreen
@@ -21,10 +33,14 @@ import com.saludplus.citas.ui.screens.home.HomeScreen
 import com.saludplus.citas.ui.screens.notificaciones.NotificacionesScreen
 import com.saludplus.citas.ui.screens.perfil.PerfilScreen
 import com.saludplus.citas.ui.screens.resultados.ResultadosScreen
+import com.saludplus.citas.ui.theme.Duraciones
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+
+    // Rutas de la barra inferior (pestañas principales)
+    val rutasPestanias = listOf(Rutas.HOME, Rutas.MIS_CITAS, Rutas.RESULTADOS, Rutas.PERFIL)
 
     // Cambio de pestaña en la barra inferior: cierra lo que haya sobre Inicio y no restaura
     // pantallas anteriores (como Cita agendada), porque los datos viven en el Repositorio
@@ -35,150 +51,210 @@ fun AppNavigation() {
         }
     }
 
-    NavHost(navController = navController, startDestination = Rutas.SPLASH) {
-        composable(Rutas.SPLASH) {
-            SplashScreen(
-                onComenzar = { navController.navigate(Rutas.REGISTRO) },
-                onYaTengoCuenta = { navController.navigate(Rutas.LOGIN) }
-            )
-        }
-        composable(Rutas.REGISTRO) {
-            RegistroScreen(
-                onRegistroExitoso = {
-                    navController.navigate(Rutas.LOGIN) {
-                        popUpTo(Rutas.REGISTRO) { inclusive = true }
-                    }
-                },
-                onIrLogin = {
-                    navController.navigate(Rutas.LOGIN) {
-                        popUpTo(Rutas.REGISTRO) { inclusive = true }
-                    }
-                },
-                onTerminos = { navController.navigate(Rutas.TERMINOS) }
-            )
-        }
-        composable(Rutas.TERMINOS) {
-            TerminosScreen(onAtras = { navController.popBackStack() })
-        }
-        composable(Rutas.LOGIN) {
-            LoginScreen(
-                onLoginExitoso = {
-                    navController.navigate(Rutas.HOME) {
-                        popUpTo(Rutas.SPLASH) { inclusive = true }
-                    }
-                },
-                onIrRegistro = {
-                    navController.navigate(Rutas.REGISTRO) {
-                        popUpTo(Rutas.LOGIN) { inclusive = true }
-                    }
-                },
-                onAtras = { navController.popBackStack() }
-            )
-        }
-        composable(Rutas.HOME) {
-            HomeScreen(
-                onNotificaciones = { navController.navigate(Rutas.NOTIFICACIONES) },
-                onAgendar = { navController.navigate(Rutas.ESPECIALIDADES) },
-                onMisCitas = { irA(Rutas.MIS_CITAS) },
-                onMisDatos = { irA(Rutas.PERFIL) },
-                onResultados = { irA(Rutas.RESULTADOS) },
-                onEspecialidad = { id -> navController.navigate(Rutas.medicos(id)) },
-                onVerEspecialidades = { navController.navigate(Rutas.ESPECIALIDADES) },
-                onNavegar = irA
-            )
-        }
-        composable(Rutas.NOTIFICACIONES) {
-            NotificacionesScreen(onAtras = { navController.popBackStack() })
-        }
-        composable(Rutas.ESPECIALIDADES) {
-            EspecialidadesScreen(
-                onAtras = { navController.popBackStack() },
-                onEspecialidad = { id -> navController.navigate(Rutas.medicos(id)) }
-            )
-        }
-        composable(
-            route = Rutas.MEDICOS,
-            arguments = listOf(navArgument("especialidadId") { type = NavType.IntType })
-        ) { entrada ->
-            val especialidadId = entrada.arguments?.getInt("especialidadId") ?: 0
-            MedicosScreen(
-                especialidadId = especialidadId,
-                onAtras = { navController.popBackStack() },
-                onMedico = { medicoId -> navController.navigate(Rutas.fechaHora(medicoId)) }
-            )
-        }
-        composable(
-            route = Rutas.FECHA_HORA,
-            arguments = listOf(navArgument("medicoId") { type = NavType.IntType })
-        ) { entrada ->
-            val medicoId = entrada.arguments?.getInt("medicoId") ?: 0
-            FechaHoraScreen(
-                medicoId = medicoId,
-                onAtras = { navController.popBackStack() },
-                onContinuar = { fecha, hora ->
-                    navController.navigate(Rutas.confirmarCita(medicoId, fecha, hora))
+    Box(modifier = Modifier.fillMaxSize()) {
+        NavHost(
+            navController = navController,
+            startDestination = Rutas.SPLASH,
+            enterTransition = {
+                val esPestania = initialState.destination.route in rutasPestanias &&
+                        targetState.destination.route in rutasPestanias
+                if (esPestania) {
+                    fadeIn(animationSpec = tween(Duraciones.media))
+                } else {
+                    slideInHorizontally(
+                        initialOffsetX = { it },
+                        animationSpec = tween(Duraciones.media)
+                    ) + fadeIn(animationSpec = tween(Duraciones.media))
                 }
-            )
-        }
-        composable(
-            route = Rutas.CONFIRMAR_CITA,
-            arguments = listOf(
-                navArgument("medicoId") { type = NavType.IntType },
-                navArgument("fecha") { type = NavType.StringType },
-                navArgument("hora") { type = NavType.StringType }
-            )
-        ) { entrada ->
-            val medicoId = entrada.arguments?.getInt("medicoId") ?: 0
-            val fecha = entrada.arguments?.getString("fecha") ?: ""
-            val hora = entrada.arguments?.getString("hora") ?: ""
-            ConfirmarCitaScreen(
-                medicoId = medicoId,
-                fecha = fecha,
-                hora = hora,
-                onAtras = { navController.popBackStack() },
-                onConfirmada = {
-                    // popUpTo borra Especialidades, Médicos, Fecha y hora y Confirmar del historial
-                    navController.navigate(Rutas.CITA_EXITOSA) {
-                        popUpTo(Rutas.HOME)
-                    }
+            },
+            exitTransition = {
+                val esPestania = initialState.destination.route in rutasPestanias &&
+                        targetState.destination.route in rutasPestanias
+                if (esPestania) {
+                    fadeOut(animationSpec = tween(Duraciones.media))
+                } else {
+                    slideOutHorizontally(
+                        targetOffsetX = { -it / 3 },
+                        animationSpec = tween(Duraciones.media)
+                    ) + fadeOut(animationSpec = tween(Duraciones.media))
                 }
-            )
-        }
-        composable(Rutas.CITA_EXITOSA) {
-            CitaExitosaScreen(
-                onVerMisCitas = { irA(Rutas.MIS_CITAS) },
-                onIrInicio = { navController.popBackStack(Rutas.HOME, false) }
-            )
-        }
-        composable(Rutas.MIS_CITAS) {
-            MisCitasScreen(
-                onNavegar = irA,
-                onAgendar = { navController.navigate(Rutas.ESPECIALIDADES) },
-                onCita = { citaId -> navController.navigate(Rutas.detalleCita(citaId)) }
-            )
-        }
-        composable(
-            route = Rutas.DETALLE_CITA,
-            arguments = listOf(navArgument("citaId") { type = NavType.IntType })
-        ) { entrada ->
-            val citaId = entrada.arguments?.getInt("citaId") ?: 0
-            DetalleCitaScreen(
-                citaId = citaId,
-                onAtras = { navController.popBackStack() },
-                onCancelada = { navController.popBackStack() }
-            )
-        }
-        composable(Rutas.RESULTADOS) { ResultadosScreen(onNavegar = irA) }
-        composable(Rutas.PERFIL) {
-            PerfilScreen(
-                onNavegar = irA,
-                onCerrarSesion = {
-                    // popUpTo borra Inicio y las pestañas del historial: Atrás ya no vuelve a la app
-                    navController.navigate(Rutas.SPLASH) {
-                        popUpTo(Rutas.HOME) { inclusive = true }
-                    }
+            },
+            popEnterTransition = {
+                val esPestania = initialState.destination.route in rutasPestanias &&
+                        targetState.destination.route in rutasPestanias
+                if (esPestania) {
+                    fadeIn(animationSpec = tween(Duraciones.media))
+                } else {
+                    slideInHorizontally(
+                        initialOffsetX = { -it / 3 },
+                        animationSpec = tween(Duraciones.media)
+                    ) + fadeIn(animationSpec = tween(Duraciones.media))
                 }
-            )
+            },
+            popExitTransition = {
+                val esPestania = initialState.destination.route in rutasPestanias &&
+                        targetState.destination.route in rutasPestanias
+                if (esPestania) {
+                    fadeOut(animationSpec = tween(Duraciones.media))
+                } else {
+                    slideOutHorizontally(
+                        targetOffsetX = { it },
+                        animationSpec = tween(Duraciones.media)
+                    ) + fadeOut(animationSpec = tween(Duraciones.media))
+                }
+            }
+        ) {
+            composable(Rutas.SPLASH) {
+                SplashScreen(
+                    onComenzar = { navController.navigate(Rutas.REGISTRO) },
+                    onYaTengoCuenta = { navController.navigate(Rutas.LOGIN) }
+                )
+            }
+            composable(Rutas.REGISTRO) {
+                RegistroScreen(
+                    onRegistroExitoso = {
+                        navController.navigate(Rutas.LOGIN) {
+                            popUpTo(Rutas.REGISTRO) { inclusive = true }
+                        }
+                    },
+                    onIrLogin = {
+                        navController.navigate(Rutas.LOGIN) {
+                            popUpTo(Rutas.REGISTRO) { inclusive = true }
+                        }
+                    },
+                    onTerminos = { navController.navigate(Rutas.TERMINOS) }
+                )
+            }
+            composable(Rutas.TERMINOS) {
+                TerminosScreen(onAtras = { navController.popBackStack() })
+            }
+            composable(Rutas.LOGIN) {
+                LoginScreen(
+                    onLoginExitoso = {
+                        navController.navigate(Rutas.HOME) {
+                            popUpTo(Rutas.SPLASH) { inclusive = true }
+                        }
+                    },
+                    onIrRegistro = {
+                        navController.navigate(Rutas.REGISTRO) {
+                            popUpTo(Rutas.LOGIN) { inclusive = true }
+                        }
+                    },
+                    onAtras = { navController.popBackStack() }
+                )
+            }
+            composable(Rutas.HOME) {
+                HomeScreen(
+                    onNotificaciones = { navController.navigate(Rutas.NOTIFICACIONES) },
+                    onAgendar = { navController.navigate(Rutas.ESPECIALIDADES) },
+                    onMisCitas = { irA(Rutas.MIS_CITAS) },
+                    onMisDatos = { irA(Rutas.PERFIL) },
+                    onResultados = { irA(Rutas.RESULTADOS) },
+                    onEspecialidad = { id -> navController.navigate(Rutas.medicos(id)) },
+                    onVerEspecialidades = { navController.navigate(Rutas.ESPECIALIDADES) },
+                    onNavegar = irA
+                )
+            }
+            composable(Rutas.NOTIFICACIONES) {
+                NotificacionesScreen(onAtras = { navController.popBackStack() })
+            }
+            composable(Rutas.ESPECIALIDADES) {
+                EspecialidadesScreen(
+                    onAtras = { navController.popBackStack() },
+                    onEspecialidad = { id -> navController.navigate(Rutas.medicos(id)) }
+                )
+            }
+            composable(
+                route = Rutas.MEDICOS,
+                arguments = listOf(navArgument("especialidadId") { type = NavType.IntType })
+            ) { entrada ->
+                val especialidadId = entrada.arguments?.getInt("especialidadId") ?: 0
+                MedicosScreen(
+                    especialidadId = especialidadId,
+                    onAtras = { navController.popBackStack() },
+                    onMedico = { medicoId -> navController.navigate(Rutas.fechaHora(medicoId)) }
+                )
+            }
+            composable(
+                route = Rutas.FECHA_HORA,
+                arguments = listOf(navArgument("medicoId") { type = NavType.IntType })
+            ) { entrada ->
+                val medicoId = entrada.arguments?.getInt("medicoId") ?: 0
+                FechaHoraScreen(
+                    medicoId = medicoId,
+                    onAtras = { navController.popBackStack() },
+                    onContinuar = { fecha, hora ->
+                        navController.navigate(Rutas.confirmarCita(medicoId, fecha, hora))
+                    }
+                )
+            }
+            composable(
+                route = Rutas.CONFIRMAR_CITA,
+                arguments = listOf(
+                    navArgument("medicoId") { type = NavType.IntType },
+                    navArgument("fecha") { type = NavType.StringType },
+                    navArgument("hora") { type = NavType.StringType }
+                )
+            ) { entrada ->
+                val medicoId = entrada.arguments?.getInt("medicoId") ?: 0
+                val fecha = entrada.arguments?.getString("fecha") ?: ""
+                val hora = entrada.arguments?.getString("hora") ?: ""
+                ConfirmarCitaScreen(
+                    medicoId = medicoId,
+                    fecha = fecha,
+                    hora = hora,
+                    onAtras = { navController.popBackStack() },
+                    onConfirmada = {
+                        // popUpTo borra Especialidades, Médicos, Fecha y hora y Confirmar del historial
+                        navController.navigate(Rutas.CITA_EXITOSA) {
+                            popUpTo(Rutas.HOME)
+                        }
+                    }
+                )
+            }
+            composable(Rutas.CITA_EXITOSA) {
+                CitaExitosaScreen(
+                    onVerMisCitas = { irA(Rutas.MIS_CITAS) },
+                    onIrInicio = { navController.popBackStack(Rutas.HOME, false) }
+                )
+            }
+            composable(Rutas.MIS_CITAS) {
+                MisCitasScreen(
+                    onNavegar = irA,
+                    onAgendar = { navController.navigate(Rutas.ESPECIALIDADES) },
+                    onCita = { citaId -> navController.navigate(Rutas.detalleCita(citaId)) }
+                )
+            }
+            composable(
+                route = Rutas.DETALLE_CITA,
+                arguments = listOf(navArgument("citaId") { type = NavType.IntType })
+            ) { entrada ->
+                val citaId = entrada.arguments?.getInt("citaId") ?: 0
+                DetalleCitaScreen(
+                    citaId = citaId,
+                    onAtras = { navController.popBackStack() },
+                    onCancelada = { navController.popBackStack() }
+                )
+            }
+            composable(Rutas.RESULTADOS) { ResultadosScreen(onNavegar = irA) }
+            composable(Rutas.PERFIL) {
+                PerfilScreen(
+                    onNavegar = irA,
+                    onCerrarSesion = {
+                        // popUpTo borra Inicio y las pestañas del historial: Atrás ya no vuelve a la app
+                        navController.navigate(Rutas.SPLASH) {
+                            popUpTo(Rutas.HOME) { inclusive = true }
+                        }
+                    }
+                )
+            }
         }
+
+        MensajeHost(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .statusBarsPadding()
+                .zIndex(99f)
+        )
     }
 }

@@ -1,6 +1,5 @@
 package com.saludplus.citas.ui.screens.auth
 
-import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,7 +26,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -36,6 +34,8 @@ import com.saludplus.citas.data.repository.Repositorio
 import com.saludplus.citas.ui.components.BarraSuperior
 import com.saludplus.citas.ui.components.BotonAzul
 import com.saludplus.citas.ui.components.CampoTextoIcono
+import com.saludplus.citas.ui.components.MensajeController
+import com.saludplus.citas.ui.components.TipoMensaje
 import com.saludplus.citas.ui.theme.AzulOscuro
 import com.saludplus.citas.ui.theme.AzulPrimario
 import com.saludplus.citas.ui.theme.GrisTexto
@@ -46,8 +46,6 @@ fun LoginScreen(
     onIrRegistro: () -> Unit,
     onAtras: () -> Unit
 ) {
-    val contexto = LocalContext.current
-
     var correo by remember { mutableStateOf("") }
     var contrasena by remember { mutableStateOf("") }
     var errorCorreo by remember { mutableStateOf<String?>(null) }
@@ -60,7 +58,7 @@ fun LoginScreen(
 
         if (Repositorio.iniciarSesion(correo.trim(), contrasena)) {
             val nombre = Repositorio.usuarioActual?.nombre ?: ""
-            Toast.makeText(contexto, "Bienvenido, $nombre", Toast.LENGTH_SHORT).show()
+            MensajeController.mostrar("Bienvenido, $nombre", TipoMensaje.BIENVENIDA)
             onLoginExitoso()
         } else {
             errorContrasena = "Correo o contraseña incorrectos"

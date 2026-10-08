@@ -1,6 +1,5 @@
 package com.saludplus.citas.ui.screens.citas
 
-import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -36,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -46,6 +44,8 @@ import com.saludplus.citas.ui.components.AvatarMedico
 import com.saludplus.citas.ui.components.BarraSuperior
 import com.saludplus.citas.ui.components.BotonAzul
 import com.saludplus.citas.ui.components.FilaDetalle
+import com.saludplus.citas.ui.components.MensajeController
+import com.saludplus.citas.ui.components.TipoMensaje
 import com.saludplus.citas.ui.theme.AzulOscuro
 import com.saludplus.citas.ui.theme.GrisTexto
 import com.saludplus.citas.ui.theme.RojoError
@@ -66,7 +66,6 @@ fun DetalleCitaScreen(
     onAtras: () -> Unit,
     onCancelada: () -> Unit
 ) {
-    val contexto = LocalContext.current
     val cita = Repositorio.obtenerCita(citaId)
     val medico = cita?.let { Repositorio.obtenerMedico(it.medicoId) }
     val especialidad = cita?.let { Repositorio.obtenerEspecialidad(it.especialidadId) }
@@ -218,7 +217,7 @@ fun DetalleCitaScreen(
                 TextButton(onClick = {
                     mostrarDialogo = false
                     Repositorio.cancelarCita(citaId)
-                    Toast.makeText(contexto, "Cita cancelada", Toast.LENGTH_SHORT).show()
+                    MensajeController.mostrar("Cita cancelada", TipoMensaje.INFORMACION)
                     onCancelada()
                 }) {
                     Text("Sí, cancelar", color = RojoError, fontWeight = FontWeight.SemiBold)

@@ -1,7 +1,6 @@
 package com.saludplus.citas.ui.screens.auth
 
 import android.util.Patterns
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -43,6 +41,8 @@ import com.saludplus.citas.data.model.Usuario
 import com.saludplus.citas.data.repository.Repositorio
 import com.saludplus.citas.ui.components.BotonAzul
 import com.saludplus.citas.ui.components.CampoTextoIcono
+import com.saludplus.citas.ui.components.MensajeController
+import com.saludplus.citas.ui.components.TipoMensaje
 import com.saludplus.citas.ui.theme.AzulOscuro
 import com.saludplus.citas.ui.theme.AzulPrimario
 import com.saludplus.citas.ui.theme.GrisTexto
@@ -53,8 +53,6 @@ fun RegistroScreen(
     onIrLogin: () -> Unit,
     onTerminos: () -> Unit
 ) {
-    val contexto = LocalContext.current
-
     // rememberSaveable: lo escrito no se pierde al ir a leer los Términos y volver
     var nombre by rememberSaveable { mutableStateOf("") }
     var telefono by rememberSaveable { mutableStateOf("") }
@@ -87,7 +85,7 @@ fun RegistroScreen(
             contrasena = contrasena
         )
         if (Repositorio.registrarUsuario(usuario)) {
-            Toast.makeText(contexto, "Cuenta creada correctamente", Toast.LENGTH_SHORT).show()
+            MensajeController.mostrar("Cuenta creada correctamente", TipoMensaje.EXITO)
             onRegistroExitoso()
         } else {
             errorCorreo = "Este correo ya está registrado"
