@@ -30,10 +30,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -61,6 +65,7 @@ import com.saludplus.citas.ui.theme.AzulPrimario
 import com.saludplus.citas.ui.theme.GrisTexto
 import com.saludplus.citas.util.Fechas
 import java.time.LocalDate
+import java.time.YearMonth
 
 @Composable
 fun FechaHoraScreen(
@@ -73,6 +78,7 @@ fun FechaHoraScreen(
 
     val hoy = remember { LocalDate.now() }
     var offsetSemanas by rememberSaveable { mutableLongStateOf(0L) }
+    var mostrarSelectorMes by rememberSaveable { mutableStateOf(false) }
 
     var fechaSeleccionada by rememberSaveable { mutableStateOf<String?>(null) }
     var horaSeleccionada by rememberSaveable { mutableStateOf<String?>(null) }
@@ -81,6 +87,15 @@ fun FechaHoraScreen(
     val semana = remember(offsetSemanas) { Fechas.semanaDeCalendario(hoy, offsetSemanas) }
     val primerDiaSemana = semana.firstOrNull() ?: hoy
     val tituloMesAnio = Fechas.mesYAnio(primerDiaSemana)
+    val mesActualMostrado = remember(primerDiaSemana) { YearMonth.from(primerDiaSemana) }
+
+    val puedeAvanzarSemana = remember(offsetSemanas) { Fechas.puedeAvanzar(hoy, offsetSemanas) }
+
+    val rotacionFlecha by animateFloatAsState(
+        targetValue = if (mostrarSelectorMes) 180f else 0f,
+        animationSpec = tween(200),
+        label = "RotacionFlecha"
+    )
 
     // Horas libres de este médico en la fecha seleccionada
     val horarios = fechaSeleccionada
@@ -137,7 +152,7 @@ fun FechaHoraScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Mes y año con navegación por semanas
+            // Mes y año con navegación por semanas y selector desplegable de mes
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -160,24 +175,42 @@ fun FechaHoraScreen(
                     )
                 }
 
-                Text(
-                    text = tituloMesAnio,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AzulOscuro
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { mostrarSelectorMes = true }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = tituloMesAnio,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AzulOscuro
+                    )
+                    Spacer(Modifier.width(2.dp))
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = "Elegir mes",
+                        tint = AzulOscuro,
+                        modifier = Modifier.graphicsLayer { rotationZ = rotacionFlecha }
+                    )
+                }
 
                 IconButton(
                     onClick = {
-                        offsetSemanas++
-                        fechaSeleccionada = null
-                        horaSeleccionada = null
-                    }
+                        if (puedeAvanzarSemana) {
+                            offsetSemanas++
+                            fechaSeleccionada = null
+                            horaSeleccionada = null
+                        }
+                    },
+                    enabled = puedeAvanzarSemana
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = "Semana siguiente",
-                        tint = AzulOscuro
+                        tint = if (puedeAvanzarSemana) AzulOscuro else Color.LightGray
                     )
                 }
             }
@@ -264,6 +297,111 @@ fun FechaHoraScreen(
             )
 
             Spacer(Modifier.height(16.dp))
+        }
+    }
+
+    if (mostrarSelectorMes) {
+        SelectorMesBottomSheet(
+            hoy = hoy,
+            mesSeleccionado = mesActualMostrado,
+            onSeleccionarMes = { mesTarget ->
+                val nuevoOffset = Fechas.indiceSemanaDeMes(hoy, mesTarget)
+                offsetSemanas = nuevoOffset
+                fechaSeleccionada = null
+                horaSeleccionada = null
+            },
+            onDismiss = { mostrarSelectorMes = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SelectorMesBottomSheet(
+    hoy: LocalDate,
+    mesSeleccionado: YearMonth,
+    onSeleccionarMes: (YearMonth) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val meses = remember(hoy) { Fechas.mesesDisponibles(hoy, 12) }
+    val mesActual = remember(hoy) { YearMonth.from(hoy) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = Color.White
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+        ) {
+            Text(
+                text = "Elegir mes",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = AzulOscuro
+            )
+            Spacer(Modifier.height(16.dp))
+
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.padding(bottom = 24.dp)
+            ) {
+                items(meses, key = { it.toString() }) { ym ->
+                    val esMesActual = ym == mesActual
+                    val esSeleccionado = ym == mesSeleccionado
+
+                    val fondo = when {
+                        esSeleccionado -> AzulPrimario
+                        esMesActual -> AzulClaro
+                        else -> Color(0xFFF1F5FB)
+                    }
+                    val colorTexto = when {
+                        esSeleccionado -> Color.White
+                        esMesActual -> AzulPrimario
+                        else -> AzulOscuro
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .height(60.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(fondo)
+                            .clickable {
+                                onSeleccionarMes(ym)
+                                onDismiss()
+                            }
+                            .padding(6.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = Fechas.nombreMes(ym.monthValue),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colorTexto
+                            )
+                            Text(
+                                text = ym.year.toString(),
+                                fontSize = 11.sp,
+                                color = colorTexto.copy(alpha = 0.8f)
+                            )
+                            if (esMesActual) {
+                                Text(
+                                    text = "(Actual)",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = colorTexto
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
