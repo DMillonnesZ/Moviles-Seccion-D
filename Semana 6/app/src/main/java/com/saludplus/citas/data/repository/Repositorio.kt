@@ -174,4 +174,8 @@ object Repositorio {
         Resultado(5, "Examen de la vista", "2026-09-10", 7, "Disponible"),
         Resultado(6, "Glucosa en ayunas", "2026-10-03", 1, "En proceso")
     )
+
+    fun obtenerResultado(id: Int): Resultado? {
+        return resultados.find { it.id == id }
+    }
 }

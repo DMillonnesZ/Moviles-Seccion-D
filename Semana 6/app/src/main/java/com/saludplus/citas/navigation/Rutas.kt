@@ -15,6 +15,7 @@ object Rutas {
     const val DETALLE_CITA = "detalleCita/{citaId}"
     const val PERFIL = "perfil"
     const val RESULTADOS = "resultados"
+    const val RESULTADO_DETALLE = "resultadoDetalle/{resultadoId}"
     const val NOTIFICACIONES = "notificaciones"
 
     // Funciones que arman la ruta con el parámetro ya puesto
@@ -23,4 +24,5 @@ object Rutas {
     fun confirmarCita(medicoId: Int, fecha: String, hora: String) =
         "confirmarCita/$medicoId/$fecha/$hora"
     fun detalleCita(citaId: Int) = "detalleCita/$citaId"
+    fun resultadoDetalle(resultadoId: Int) = "resultadoDetalle/$resultadoId"
 }

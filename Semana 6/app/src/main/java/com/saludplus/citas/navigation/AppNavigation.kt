@@ -66,6 +66,7 @@ import com.saludplus.citas.ui.screens.citas.MisCitasScreen
 import com.saludplus.citas.ui.screens.home.HomeScreen
 import com.saludplus.citas.ui.screens.notificaciones.NotificacionesScreen
 import com.saludplus.citas.ui.screens.perfil.PerfilScreen
+import com.saludplus.citas.ui.screens.resultados.ResultadoDetalleScreen
 import com.saludplus.citas.ui.screens.resultados.ResultadosScreen
 import com.saludplus.citas.ui.theme.Degradados
 import com.saludplus.citas.ui.theme.Duraciones
@@ -412,7 +413,22 @@ fun AppNavigation() {
                         onCancelada = { navController.popBackStack() }
                     )
                 }
-                composable(Rutas.RESULTADOS) { ResultadosScreen(onNavegar = irA) }
+                composable(Rutas.RESULTADOS) {
+                    ResultadosScreen(
+                        onNavegar = irA,
+                        onResultado = { id -> navController.navigate(Rutas.resultadoDetalle(id)) }
+                    )
+                }
+                composable(
+                    route = Rutas.RESULTADO_DETALLE,
+                    arguments = listOf(navArgument("resultadoId") { type = NavType.IntType })
+                ) { entrada ->
+                    val resultadoId = entrada.arguments?.getInt("resultadoId") ?: 0
+                    ResultadoDetalleScreen(
+                        resultadoId = resultadoId,
+                        onAtras = { navController.popBackStack() }
+                    )
+                }
                 composable(Rutas.PERFIL) {
                     PerfilScreen(
                         onNavegar = irA,
