@@ -1,5 +1,16 @@
 package com.saludplus.citas.ui.screens.agendamiento
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,13 +36,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -40,25 +54,13 @@ import com.saludplus.citas.data.repository.Repositorio
 import com.saludplus.citas.ui.components.AvatarMedico
 import com.saludplus.citas.ui.components.BarraSuperior
 import com.saludplus.citas.ui.components.BotonAzul
+import com.saludplus.citas.ui.components.efectoPresion
+import com.saludplus.citas.ui.theme.AzulClaro
 import com.saludplus.citas.ui.theme.AzulOscuro
 import com.saludplus.citas.ui.theme.AzulPrimario
 import com.saludplus.citas.ui.theme.GrisTexto
-
-// Día mostrado en el selector. La fecha se guarda en formato ISO (año-mes-día).
-private data class DiaCalendario(
-    val fecha: String,
-    val diaSemana: String,
-    val numero: Int
-)
-
-// Fase 1: lista fija de días hábiles. En la Fase 2 se genera con LocalDate.
-private val diasDeLaSemana = listOf(
-    DiaCalendario("2026-10-05", "Lun", 5),
-    DiaCalendario("2026-10-06", "Mar", 6),
-    DiaCalendario("2026-10-07", "Mié", 7),
-    DiaCalendario("2026-10-08", "Jue", 8),
-    DiaCalendario("2026-10-09", "Vie", 9)
-)
+import com.saludplus.citas.util.Fechas
+import java.time.LocalDate
 
 @Composable
 fun FechaHoraScreen(
@@ -69,15 +71,31 @@ fun FechaHoraScreen(
     val medico = Repositorio.obtenerMedico(medicoId)
     val especialidad = medico?.let { Repositorio.obtenerEspecialidad(it.especialidadId) }
 
-    var fechaSeleccionada by remember { mutableStateOf<String?>(null) }
-    var horaSeleccionada by remember { mutableStateOf<String?>(null) }
+    val hoy = remember { LocalDate.now() }
+    var offsetSemanas by rememberSaveable { mutableLongStateOf(0L) }
 
-    // Horas libres de este médico en el día elegido (las reservadas no aparecen)
+    var fechaSeleccionada by rememberSaveable { mutableStateOf<String?>(null) }
+    var horaSeleccionada by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // Generar la semana dinámica con LocalDate
+    val semana = remember(offsetSemanas) { Fechas.semanaDeCalendario(hoy, offsetSemanas) }
+    val primerDiaSemana = semana.firstOrNull() ?: hoy
+    val tituloMesAnio = Fechas.mesYAnio(primerDiaSemana)
+
+    // Horas libres de este médico en la fecha seleccionada
     val horarios = fechaSeleccionada
         ?.let { Repositorio.horariosDisponibles(medicoId, it) }
         ?: emptyList()
 
     val puedeContinuar = fechaSeleccionada != null && horaSeleccionada != null
+
+    val textoBoton = if (puedeContinuar && fechaSeleccionada != null && horaSeleccionada != null) {
+        val parsed = LocalDate.parse(fechaSeleccionada)
+        val diaNombre = Fechas.nombreDiaLargo(parsed.dayOfWeek)
+        "Continuar ($diaNombre ${parsed.dayOfMonth} de ${Fechas.nombreMesMinuscula(parsed.monthValue)} · $horaSeleccionada)"
+    } else {
+        "Continuar"
+    }
 
     Scaffold(
         containerColor = Color.White,
@@ -117,53 +135,87 @@ fun FechaHoraScreen(
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(16.dp))
 
-            // Mes y año con flechas (se activan en la Fase 2)
+            // Mes y año con navegación por semanas
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = { /* Fase 2: semana anterior */ }) {
+                IconButton(
+                    onClick = {
+                        if (offsetSemanas > 0) {
+                            offsetSemanas--
+                            fechaSeleccionada = null
+                            horaSeleccionada = null
+                        }
+                    },
+                    enabled = offsetSemanas > 0
+                ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                         contentDescription = "Semana anterior",
-                        tint = GrisTexto
+                        tint = if (offsetSemanas > 0) AzulOscuro else Color.LightGray
                     )
                 }
+
                 Text(
-                    text = "Octubre 2026",
-                    fontSize = 16.sp,
+                    text = tituloMesAnio,
+                    fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = AzulOscuro
                 )
-                IconButton(onClick = { /* Fase 2: semana siguiente */ }) {
+
+                IconButton(
+                    onClick = {
+                        offsetSemanas++
+                        fechaSeleccionada = null
+                        horaSeleccionada = null
+                    }
+                ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = "Semana siguiente",
-                        tint = GrisTexto
+                        tint = AzulOscuro
                     )
                 }
             }
 
             Spacer(Modifier.height(8.dp))
 
-            // Selector de día
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                diasDeLaSemana.forEach { dia ->
-                    DiaChip(
-                        dia = dia,
-                        seleccionado = dia.fecha == fechaSeleccionada,
-                        onClick = {
-                            fechaSeleccionada = dia.fecha
-                            horaSeleccionada = null // al cambiar de día se reinicia la hora
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
+            // Selector de día con transición al cambiar de semana
+            AnimatedContent(
+                targetState = offsetSemanas,
+                transitionSpec = {
+                    val avanzando = targetState > initialState
+                    slideInHorizontally(
+                        initialOffsetX = { if (avanzando) it else -it },
+                        animationSpec = tween(300)
+                    ) + fadeIn() togetherWith slideOutHorizontally(
+                        targetOffsetX = { if (avanzando) -it else it },
+                        animationSpec = tween(300)
+                    ) + fadeOut()
+                },
+                label = "TransicionSemana"
+            ) { targetOffset ->
+                val semanaAnimada = remember(targetOffset) { Fechas.semanaDeCalendario(hoy, targetOffset) }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    semanaAnimada.forEach { fecha ->
+                        val fechaIso = fecha.toString()
+                        DiaChip(
+                            fecha = fecha,
+                            seleccionado = fechaIso == fechaSeleccionada,
+                            onClick = {
+                                fechaSeleccionada = fechaIso
+                                horaSeleccionada = null
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
 
@@ -197,9 +249,14 @@ fun FechaHoraScreen(
             Spacer(Modifier.height(12.dp))
 
             BotonAzul(
-                texto = "Continuar",
+                texto = textoBoton,
                 habilitado = puedeContinuar,
                 onClick = {
+                    val fecha = fechaSeleccionada
+                    val hora = horaSeleccionada
+                    if (fecha != null && hora != null) onContinuar(fecha, hora)
+                },
+                modifier = Modifier.efectoPresion(habilitado = puedeContinuar) {
                     val fecha = fechaSeleccionada
                     val hora = horaSeleccionada
                     if (fecha != null && hora != null) onContinuar(fecha, hora)
@@ -231,29 +288,64 @@ private fun MensajeCentrado(texto: String) {
 
 @Composable
 private fun DiaChip(
-    dia: DiaCalendario,
+    fecha: LocalDate,
     seleccionado: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val fondo = if (seleccionado) AzulPrimario else Color(0xFFF1F5FB)
-    val textoDia = if (seleccionado) Color.White else GrisTexto
+    val esHoy = fecha == LocalDate.now()
+    val fondo by animateColorAsState(
+        targetValue = if (seleccionado) AzulPrimario else Color(0xFFF1F5FB),
+        animationSpec = tween(200),
+        label = "FondoDia"
+    )
+    val textoDia = if (seleccionado) Color.White.copy(alpha = 0.9f) else GrisTexto
     val textoNumero = if (seleccionado) Color.White else AzulOscuro
+
+    val escala by animateFloatAsState(
+        targetValue = if (seleccionado) 1.03f else 1.0f,
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "EscalaDia"
+    )
 
     Column(
         modifier = modifier
-            .height(72.dp)
+            .graphicsLayer {
+                scaleX = escala
+                scaleY = escala
+            }
+            .height(78.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(fondo)
-            .clickable { onClick() },
+            .clickable { onClick() }
+            .padding(vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = dia.diaSemana, fontSize = 12.sp, color = textoDia)
-        Spacer(Modifier.height(4.dp))
+        if (esHoy) {
+            Text(
+                text = "HOY",
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (seleccionado) Color.White else AzulPrimario,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(if (seleccionado) Color.White.copy(alpha = 0.25f) else AzulClaro)
+                    .padding(horizontal = 4.dp, vertical = 1.dp)
+            )
+        } else {
+            Spacer(Modifier.height(12.dp))
+        }
+
         Text(
-            text = dia.numero.toString(),
-            fontSize = 18.sp,
+            text = Fechas.nombreDiaCorto(fecha),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = textoDia
+        )
+        Text(
+            text = fecha.dayOfMonth.toString(),
+            fontSize = 17.sp,
             fontWeight = FontWeight.Bold,
             color = textoNumero
         )
@@ -266,12 +358,25 @@ private fun HoraChip(
     seleccionada: Boolean,
     onClick: () -> Unit
 ) {
-    val fondo = if (seleccionada) AzulPrimario else Color(0xFFF1F5FB)
+    val fondo by animateColorAsState(
+        targetValue = if (seleccionada) AzulPrimario else Color(0xFFF1F5FB),
+        animationSpec = tween(200),
+        label = "FondoHora"
+    )
     val colorTexto = if (seleccionada) Color.White else AzulOscuro
+    val escala by animateFloatAsState(
+        targetValue = if (seleccionada) 1.03f else 1.0f,
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "EscalaHora"
+    )
 
     Box(
         modifier = Modifier
-            .height(52.dp)
+            .height(50.dp)
+            .graphicsLayer {
+                scaleX = escala
+                scaleY = escala
+            }
             .clip(RoundedCornerShape(14.dp))
             .background(fondo)
             .clickable { onClick() },
