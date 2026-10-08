@@ -38,6 +38,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -48,6 +49,7 @@ import com.saludplus.citas.ui.components.BarraSuperior
 import com.saludplus.citas.ui.components.BotonAzul
 import com.saludplus.citas.ui.components.FilaDetalle
 import com.saludplus.citas.ui.components.efectoPresion
+import com.saludplus.citas.util.NotificacionesSistema
 import com.saludplus.citas.ui.theme.AzulOscuro
 import com.saludplus.citas.ui.theme.AzulPrimario
 import com.saludplus.citas.ui.theme.Formas
@@ -132,6 +134,7 @@ fun ConfirmarCitaScreen(
 
     val fechaEnTexto = Fechas.fechaEnTexto(fecha)
     val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
 
     Scaffold(
         containerColor = Color.White,
@@ -257,40 +260,35 @@ fun ConfirmarCitaScreen(
                 Spacer(Modifier.height(16.dp))
             }
 
-            BotonAzul(
-                texto = "Agendar cita",
-                onClick = {
-                    if (medico != null) {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        val guardada = Repositorio.agendarCita(
-                            medicoId = medico.id,
-                            especialidadId = medico.especialidadId,
-                            fecha = fecha,
-                            hora = hora
+            val procesarConfirmacion = {
+                if (medico != null) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    val guardada = Repositorio.agendarCita(
+                        medicoId = medico.id,
+                        especialidadId = medico.especialidadId,
+                        fecha = fecha,
+                        hora = hora
+                    )
+                    if (guardada) {
+                        val citaAgendada = Repositorio.citasDelUsuario().lastOrNull()
+                        val citaId = citaAgendada?.id ?: 1
+                        NotificacionesSistema.mostrarNotificacionCita(
+                            context = context,
+                            citaId = citaId,
+                            titulo = "¡Cita agendada con éxito!",
+                            mensaje = "Tu cita con ${medico.nombre} es el $fechaEnTexto a las $hora."
                         )
-                        if (guardada) {
-                            onConfirmada()
-                        } else {
-                            error = "Ese horario ya no está disponible. Regresa y elige otro."
-                        }
-                    }
-                },
-                modifier = Modifier.efectoPresion {
-                    if (medico != null) {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        val guardada = Repositorio.agendarCita(
-                            medicoId = medico.id,
-                            especialidadId = medico.especialidadId,
-                            fecha = fecha,
-                            hora = hora
-                        )
-                        if (guardada) {
-                            onConfirmada()
-                        } else {
-                            error = "Ese horario ya no está disponible. Regresa y elige otro."
-                        }
+                        onConfirmada()
+                    } else {
+                        error = "Ese horario ya no está disponible. Regresa y elige otro."
                     }
                 }
+            }
+
+            BotonAzul(
+                texto = "Agendar cita",
+                onClick = procesarConfirmacion,
+                modifier = Modifier.efectoPresion { procesarConfirmacion() }
             )
 
             Spacer(Modifier.height(16.dp))

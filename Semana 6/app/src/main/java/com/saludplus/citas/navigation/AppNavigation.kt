@@ -68,16 +68,28 @@ import com.saludplus.citas.ui.screens.notificaciones.NotificacionesScreen
 import com.saludplus.citas.ui.screens.perfil.PerfilScreen
 import com.saludplus.citas.ui.screens.resultados.ResultadoDetalleScreen
 import com.saludplus.citas.ui.screens.resultados.ResultadosScreen
+import androidx.compose.runtime.LaunchedEffect
 import com.saludplus.citas.ui.theme.Degradados
 import com.saludplus.citas.ui.theme.Duraciones
 import com.saludplus.citas.ui.theme.RojoError
 import kotlinx.coroutines.launch
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(citaIdInicial: Int? = null) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    // Navegar directamente al detalle si la app fue abierta desde una notificación
+    LaunchedEffect(citaIdInicial) {
+        if (citaIdInicial != null && citaIdInicial != -1) {
+            if (Repositorio.usuarioActual != null) {
+                navController.navigate(Rutas.detalleCita(citaIdInicial)) {
+                    launchSingleTop = true
+                }
+            }
+        }
+    }
 
     // Manejar el botón Atrás cuando el drawer está abierto
     BackHandler(enabled = drawerState.isOpen) {
