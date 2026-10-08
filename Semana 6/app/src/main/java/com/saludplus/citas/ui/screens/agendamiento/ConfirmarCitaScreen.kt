@@ -1,6 +1,9 @@
 package com.saludplus.citas.ui.screens.agendamiento
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,7 +34,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,6 +50,7 @@ import com.saludplus.citas.ui.components.FilaDetalle
 import com.saludplus.citas.ui.components.efectoPresion
 import com.saludplus.citas.ui.theme.AzulOscuro
 import com.saludplus.citas.ui.theme.AzulPrimario
+import com.saludplus.citas.ui.theme.Formas
 import com.saludplus.citas.ui.theme.GrisTexto
 import com.saludplus.citas.ui.theme.RojoError
 import com.saludplus.citas.util.Fechas
@@ -54,7 +62,7 @@ private fun horaFin(hora: String): String {
     return "%02d:%02d".format(minutos / 60, minutos % 60)
 }
 
-// Código CMP de relleno, calculated a partir del id del médico
+// Código CMP de relleno, calculado a partir del id del médico
 private fun codigoCmp(medicoId: Int): Int = 11111 + medicoId * 1234
 
 @Composable
@@ -65,6 +73,47 @@ private fun Separador() {
             .height(1.dp)
             .background(Color(0xFFE6EBF3))
     )
+}
+
+// Tarjeta con formato de ticket y linea punteada de corte
+@Composable
+private fun TarjetaTicket(
+    modifier: Modifier = Modifier,
+    contenidoSuperior: @Composable () -> Unit,
+    contenidoInferior: @Composable () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(Formas.grande)
+            .background(Color(0xFFF8FAFC))
+            .border(1.5.dp, Color(0xFFE2E8F0), Formas.grande)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Box(modifier = Modifier.padding(16.dp)) {
+                contenidoSuperior()
+            }
+
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .padding(horizontal = 12.dp)
+            ) {
+                drawLine(
+                    color = Color(0xFFCBD5E1),
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, 0f),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f),
+                    strokeWidth = 2f
+                )
+            }
+
+            Box(modifier = Modifier.padding(16.dp)) {
+                contenidoInferior()
+            }
+        }
+    }
 }
 
 @Composable
@@ -82,6 +131,7 @@ fun ConfirmarCitaScreen(
     var error by remember { mutableStateOf<String?>(null) }
 
     val fechaEnTexto = Fechas.fechaEnTexto(fecha)
+    val haptic = LocalHapticFeedback.current
 
     Scaffold(
         containerColor = Color.White,
@@ -94,77 +144,81 @@ fun ConfirmarCitaScreen(
                 .imePadding()
                 .padding(horizontal = 20.dp)
         ) {
-            // Zona con scroll: así el teclado no tapa el cuadro de motivo
+            // Zona con scroll
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
             ) {
-                // Card del médico
-                if (medico != null) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(Color(0xFFEFF4FC))
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        AvatarMedico(nombre = medico.nombre, foto = medico.foto)
-                        Spacer(Modifier.width(16.dp))
+                Spacer(Modifier.height(8.dp))
+
+                // Resumen tipo ticket
+                TarjetaTicket(
+                    contenidoSuperior = {
+                        if (medico != null) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                AvatarMedico(nombre = medico.nombre, foto = medico.foto)
+                                Spacer(Modifier.width(16.dp))
+                                Column {
+                                    Text(
+                                        text = medico.nombre,
+                                        fontSize = 17.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = AzulOscuro
+                                    )
+                                    Text(
+                                        text = especialidad?.nombre ?: "",
+                                        fontSize = 14.sp,
+                                        color = GrisTexto
+                                    )
+                                    Text(
+                                        text = "CMP: ${codigoCmp(medico.id)}",
+                                        fontSize = 13.sp,
+                                        color = GrisTexto
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    contenidoInferior = {
                         Column {
-                            Text(
-                                text = medico.nombre,
-                                fontSize = 17.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = AzulOscuro
+                            FilaDetalle(
+                                icono = Icons.Default.DateRange,
+                                titulo = "Fecha",
+                                valor = fechaEnTexto
                             )
-                            Text(
-                                text = especialidad?.nombre ?: "",
-                                fontSize = 14.sp,
-                                color = GrisTexto
+                            Spacer(Modifier.height(10.dp))
+                            Separador()
+                            Spacer(Modifier.height(10.dp))
+                            FilaDetalle(
+                                icono = Icons.Default.AccessTime,
+                                titulo = "Hora",
+                                valor = "$hora a ${horaFin(hora)}"
                             )
-                            Text(
-                                text = "CMP: ${codigoCmp(medico.id)}",
-                                fontSize = 13.sp,
-                                color = GrisTexto
+                            Spacer(Modifier.height(10.dp))
+                            Separador()
+                            Spacer(Modifier.height(10.dp))
+                            FilaDetalle(
+                                icono = Icons.Default.MedicalServices,
+                                titulo = "Tipo de atención",
+                                valor = "Consulta presencial"
+                            )
+                            Spacer(Modifier.height(10.dp))
+                            Separador()
+                            Spacer(Modifier.height(10.dp))
+                            FilaDetalle(
+                                icono = Icons.Default.LocationOn,
+                                titulo = "Dirección",
+                                valor = "Av. Los Olivos 123, Lima"
                             )
                         }
                     }
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                // Datos de la cita: la fecha ISO se convierte a texto descriptivo en español
-                FilaDetalle(
-                    icono = Icons.Default.DateRange,
-                    titulo = "Fecha",
-                    valor = fechaEnTexto,
-                    modifier = Modifier.padding(vertical = 14.dp)
-                )
-                Separador()
-                FilaDetalle(
-                    icono = Icons.Default.AccessTime,
-                    titulo = "Hora",
-                    valor = "$hora a ${horaFin(hora)}",
-                    modifier = Modifier.padding(vertical = 14.dp)
-                )
-                Separador()
-                FilaDetalle(
-                    icono = Icons.Default.MedicalServices,
-                    titulo = "Tipo de atención",
-                    valor = "Consulta presencial",
-                    modifier = Modifier.padding(vertical = 14.dp)
-                )
-                Separador()
-                FilaDetalle(
-                    icono = Icons.Default.LocationOn,
-                    titulo = "Dirección",
-                    valor = "Av. Los Olivos 123, Lima",
-                    modifier = Modifier.padding(vertical = 14.dp)
                 )
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(20.dp))
 
                 // Motivo de consulta (opcional)
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -207,6 +261,7 @@ fun ConfirmarCitaScreen(
                 texto = "Agendar cita",
                 onClick = {
                     if (medico != null) {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         val guardada = Repositorio.agendarCita(
                             medicoId = medico.id,
                             especialidadId = medico.especialidadId,
@@ -222,6 +277,7 @@ fun ConfirmarCitaScreen(
                 },
                 modifier = Modifier.efectoPresion {
                     if (medico != null) {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         val guardada = Repositorio.agendarCita(
                             medicoId = medico.id,
                             especialidadId = medico.especialidadId,
