@@ -1,8 +1,10 @@
 package com.saludplus.citas.ui.screens.auth
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,9 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -22,7 +27,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saludplus.citas.ui.components.BarraSuperior
 import com.saludplus.citas.ui.components.BotonAzul
+import com.saludplus.citas.ui.components.efectoPresion
+import com.saludplus.citas.ui.theme.AzulClaro
 import com.saludplus.citas.ui.theme.AzulOscuro
+import com.saludplus.citas.ui.theme.AzulPrimario
 import com.saludplus.citas.ui.theme.GrisTexto
 
 private data class Seccion(val titulo: String, val cuerpo: String)
@@ -155,6 +163,16 @@ private val secciones = listOf(
 
 @Composable
 fun TerminosScreen(onAtras: () -> Unit) {
+    val scrollState = rememberScrollState()
+
+    val progreso = if (scrollState.maxValue > 0) {
+        (scrollState.value.toFloat() / scrollState.maxValue.toFloat()).coerceIn(0f, 1f)
+    } else {
+        1f
+    }
+
+    val porcentaje = (progreso * 100).toInt()
+
     Scaffold(
         containerColor = Color.White,
         topBar = { BarraSuperior(titulo = "Términos y Condiciones", onAtras = onAtras) }
@@ -163,14 +181,54 @@ fun TerminosScreen(onAtras: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 20.dp)
         ) {
+            // Barra superior de progreso de lectura
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(horizontal = 20.dp, vertical = 6.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Progreso de lectura",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = GrisTexto
+                    )
+                    Text(
+                        text = "$porcentaje%",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AzulPrimario
+                    )
+                }
+
+                Spacer(Modifier.height(4.dp))
+
+                LinearProgressIndicator(
+                    progress = { progreso },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp)),
+                    color = AzulPrimario,
+                    trackColor = AzulClaro
+                )
+            }
+
             // Zona con scroll para leer todo el texto
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = 20.dp)
             ) {
+                Spacer(Modifier.height(8.dp))
+
                 Text(
                     text = "Términos y Condiciones de Uso y Política de Privacidad",
                     fontSize = 20.sp,
@@ -231,12 +289,21 @@ fun TerminosScreen(onAtras: () -> Unit) {
                     fontSize = 12.sp,
                     color = GrisTexto
                 )
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(24.dp))
             }
 
-            Spacer(Modifier.height(8.dp))
-            BotonAzul(texto = "Entendido", onClick = onAtras)
-            Spacer(Modifier.height(16.dp))
+            // Botón "Entendido" fijo abajo
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
+            ) {
+                BotonAzul(
+                    texto = "Entendido",
+                    onClick = onAtras,
+                    modifier = Modifier.efectoPresion { onAtras() }
+                )
+            }
         }
     }
 }
