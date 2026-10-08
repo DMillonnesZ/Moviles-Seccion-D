@@ -40,10 +40,12 @@ import com.saludplus.citas.ui.components.AvatarMedico
 import com.saludplus.citas.ui.components.BarraSuperior
 import com.saludplus.citas.ui.components.BotonAzul
 import com.saludplus.citas.ui.components.FilaDetalle
+import com.saludplus.citas.ui.components.efectoPresion
 import com.saludplus.citas.ui.theme.AzulOscuro
 import com.saludplus.citas.ui.theme.AzulPrimario
 import com.saludplus.citas.ui.theme.GrisTexto
 import com.saludplus.citas.ui.theme.RojoError
+import com.saludplus.citas.util.Fechas
 
 // La cita dura 30 minutos: la hora de fin es la hora elegida + 30 min
 private fun horaFin(hora: String): String {
@@ -52,7 +54,7 @@ private fun horaFin(hora: String): String {
     return "%02d:%02d".format(minutos / 60, minutos % 60)
 }
 
-// Código CMP de relleno, calculado a partir del id del médico
+// Código CMP de relleno, calculated a partir del id del médico
 private fun codigoCmp(medicoId: Int): Int = 11111 + medicoId * 1234
 
 @Composable
@@ -78,6 +80,8 @@ fun ConfirmarCitaScreen(
 
     var motivo by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+
+    val fechaEnTexto = Fechas.fechaEnTexto(fecha)
 
     Scaffold(
         containerColor = Color.White,
@@ -131,11 +135,11 @@ fun ConfirmarCitaScreen(
 
                 Spacer(Modifier.height(8.dp))
 
-                // Datos de la cita: fecha y hora llegan por parámetro
+                // Datos de la cita: la fecha ISO se convierte a texto descriptivo en español
                 FilaDetalle(
                     icono = Icons.Default.DateRange,
                     titulo = "Fecha",
-                    valor = fecha,
+                    valor = fechaEnTexto,
                     modifier = Modifier.padding(vertical = 14.dp)
                 )
                 Separador()
@@ -202,6 +206,21 @@ fun ConfirmarCitaScreen(
             BotonAzul(
                 texto = "Agendar cita",
                 onClick = {
+                    if (medico != null) {
+                        val guardada = Repositorio.agendarCita(
+                            medicoId = medico.id,
+                            especialidadId = medico.especialidadId,
+                            fecha = fecha,
+                            hora = hora
+                        )
+                        if (guardada) {
+                            onConfirmada()
+                        } else {
+                            error = "Ese horario ya no está disponible. Regresa y elige otro."
+                        }
+                    }
+                },
+                modifier = Modifier.efectoPresion {
                     if (medico != null) {
                         val guardada = Repositorio.agendarCita(
                             medicoId = medico.id,
