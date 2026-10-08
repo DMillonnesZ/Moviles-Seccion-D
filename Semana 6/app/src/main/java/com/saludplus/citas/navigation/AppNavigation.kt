@@ -333,7 +333,10 @@ fun AppNavigation() {
                     )
                 }
                 composable(Rutas.NOTIFICACIONES) {
-                    NotificacionesScreen(onAtras = { navController.popBackStack() })
+                    NotificacionesScreen(
+                        onAtras = { navController.popBackStack() },
+                        onCita = { citaId -> navController.navigate(Rutas.detalleCita(citaId)) }
+                    )
                 }
                 composable(Rutas.ESPECIALIDADES) {
                     EspecialidadesScreen(

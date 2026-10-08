@@ -49,6 +49,13 @@ object Repositorio {
     // Preferencia de sonido de notificaciones en memoria
     var sonidoNotificacionesHabilitado: Boolean = true
 
+    // IDs de citas cuyas notificaciones ya fueron leídas
+    val notificacionesLeidas = mutableSetOf<Int>()
+
+    fun marcarNotificacionComoLeida(citaId: Int) {
+        notificacionesLeidas.add(citaId)
+    }
+
     fun actualizarUsuario(nombre: String, telefono: String): Boolean {
         val actual = usuarioActual ?: return false
         val nombreLimpio = nombre.trim()
