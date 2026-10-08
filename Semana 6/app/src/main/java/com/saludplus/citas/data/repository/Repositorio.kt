@@ -46,6 +46,30 @@ object Repositorio {
         mensajeBienvenidaPendiente = false
     }
 
+    // Preferencia de sonido de notificaciones en memoria
+    var sonidoNotificacionesHabilitado: Boolean = true
+
+    fun actualizarUsuario(nombre: String, telefono: String): Boolean {
+        val actual = usuarioActual ?: return false
+        val nombreLimpio = nombre.trim()
+        val telefonoLimpio = telefono.trim()
+        if (nombreLimpio.isBlank() || telefonoLimpio.isBlank()) return false
+
+        val usuarioActualizado = actual.copy(
+            nombre = nombreLimpio,
+            telefono = telefonoLimpio
+        )
+
+        val idx = usuarios.indexOfFirst { it.correo.equals(actual.correo, ignoreCase = true) }
+        if (idx != -1) {
+            usuarios[idx] = usuarioActualizado
+        } else {
+            usuarios.add(usuarioActualizado)
+        }
+        usuarioActual = usuarioActualizado
+        return true
+    }
+
     // ---------- ESPECIALIDADES ----------
     val especialidades = listOf(
         Especialidad(1, "Medicina General", "Atención integral"),
