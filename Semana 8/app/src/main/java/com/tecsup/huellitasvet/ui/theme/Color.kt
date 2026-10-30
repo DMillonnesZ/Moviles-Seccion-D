@@ -37,4 +37,9 @@ fun EstadoCita.color(): Color = when (this) {
 // ===== Neutros =====
 val GrisApagado = Color(0xFFE5E7EB)   // switch apagado
 val BordeSuave = Color(0xFFEEF0F4)    // borde de tarjetas
-val GrisSelector = Color(0xFFF1F3F5)   // fondo del selector de rol
+val GrisSelector = Color(0xFFF1F3F5)
+
+// ===== Recordatorio (aviso ámbar) =====
+val AvisoFondo = Color(0xFFFEF3C7)
+val AvisoIcono = Color(0xFFD97706)
+val AvisoTexto = Color(0xFF92400E)// fondo del selector de rol

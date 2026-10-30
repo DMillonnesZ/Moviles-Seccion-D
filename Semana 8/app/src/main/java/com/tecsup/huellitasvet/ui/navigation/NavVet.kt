@@ -10,14 +10,18 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.tecsup.huellitasvet.VetApp
 import com.tecsup.huellitasvet.model.Rol
 import com.tecsup.huellitasvet.ui.components.VetButton
+import com.tecsup.huellitasvet.ui.dueno.InicioScreen
 import com.tecsup.huellitasvet.ui.dueno.LoginScreen
+import com.tecsup.huellitasvet.ui.dueno.MascotasScreen
 import com.tecsup.huellitasvet.ui.dueno.SplashScreen
 import com.tecsup.huellitasvet.ui.theme.VetTheme
 import com.tecsup.huellitasvet.ui.veterinario.ServiciosScreen
+import com.tecsup.huellitasvet.viewmodel.InicioViewModel
 import com.tecsup.huellitasvet.viewmodel.ServiciosViewModel
 import com.tecsup.huellitasvet.viewmodel.SesionViewModel
 import com.tecsup.huellitasvet.viewmodel.VetViewModelFactory
@@ -32,10 +36,14 @@ fun NavVet() {
     val sesionVm: SesionViewModel = viewModel(factory = factory)
     val rolActivo by sesionVm.rolActivo.collectAsState()
     val oscuro by sesionVm.modoOscuro.collectAsState()
+    val usuario by sesionVm.usuarioActual.collectAsState()
+
+    val entrada by nav.currentBackStackEntryAsState()
+    val rutaActual = entrada?.destination?.route
 
     val irAPrincipal: (Rol) -> Unit = { rol ->
         nav.navigate(if (rol == Rol.CLIENTE) Rutas.INICIO else Rutas.PANEL) {
-            popUpTo(nav.graph.id) { inclusive = true }   // limpia la pila
+            popUpTo(nav.graph.id) { inclusive = true }
         }
     }
     val cerrarSesion: () -> Unit = {
@@ -43,53 +51,99 @@ fun NavVet() {
             nav.navigate(Rutas.LOGIN) { popUpTo(nav.graph.id) { inclusive = true } }
         }
     }
+    val irAPestana: (String) -> Unit = { ruta ->
+        nav.navigate(ruta) {
+            popUpTo(Rutas.INICIO) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
 
-    // Tema según el rol activo: verde (Dueño) / azul (Veterinario)
     VetTheme(rol = rolActivo ?: Rol.CLIENTE, oscuro = oscuro) {
-        NavHost(navController = nav, startDestination = Rutas.SPLASH) {
-
-            composable(Rutas.SPLASH) {
-                // Si ya hay perfil guardado → salta el login
-                LaunchedEffect(Unit) {
-                    sesionVm.restaurarSesion()?.let(irAPrincipal)
-                }
-                SplashScreen(
-                    onComenzar = { nav.navigate(Rutas.LOGIN) },
-                    onYaTengoCuenta = { nav.navigate(Rutas.LOGIN) }
-                )
-            }
-
-            composable(Rutas.LOGIN) {
-                LoginScreen(vm = sesionVm, onIngresar = irAPrincipal)
-            }
-
-            // TODO Paso 7: reemplazar por InicioScreen
-            composable(Rutas.INICIO) {
-                val usuario by sesionVm.usuarioActual.collectAsState()
-                PantallaTemporal("Inicio del dueño", usuario?.nombre, cerrarSesion)
-            }
-
-            // TODO Paso 11: reemplazar por PanelScreen
-            composable(Rutas.PANEL) {
-                val usuario by sesionVm.usuarioActual.collectAsState()
-                PantallaTemporal("Panel del veterinario", usuario?.nombre, cerrarSesion) {
-                    nav.navigate(Rutas.SERVICIOS)
+        Scaffold(
+            contentWindowInsets = WindowInsets(0),
+            bottomBar = {
+                if (itemsDueno.any { it.ruta == rutaActual }) {
+                    BarraInferior(itemsDueno, rutaActual, irAPestana)
                 }
             }
+        ) { inner ->
+            NavHost(
+                navController = nav,
+                startDestination = Rutas.SPLASH,
+                modifier = Modifier.padding(inner)
+            ) {
 
-            composable(Rutas.SERVICIOS) {
-                val vm: ServiciosViewModel = viewModel(factory = factory)
-                ServiciosScreen(
-                    vm = vm,
-                    onEditar = { /* TODO Paso 13 */ },
-                    onAtras = { nav.popBackStack() }
-                )
+                composable(Rutas.SPLASH) {
+                    LaunchedEffect(Unit) {
+                        sesionVm.restaurarSesion()?.let(irAPrincipal)
+                    }
+                    SplashScreen(
+                        onComenzar = { nav.navigate(Rutas.LOGIN) },
+                        onYaTengoCuenta = { nav.navigate(Rutas.LOGIN) }
+                    )
+                }
+
+                composable(Rutas.LOGIN) {
+                    LoginScreen(vm = sesionVm, onIngresar = irAPrincipal)
+                }
+
+                // ===== Dueño =====
+                composable(Rutas.INICIO) {
+                    val vm: InicioViewModel = viewModel(factory = factory)
+                    LaunchedEffect(usuario?.id) { usuario?.let { vm.cargar(it.id) } }
+                    InicioScreen(
+                        vm = vm,
+                        nombreDueno = usuario?.nombre ?: "",
+                        onVerMascota = { /* TODO Paso 8: nav.navigate(Rutas.fichaMascota(it)) */ },
+                        onAgregarMascota = { /* TODO Paso 8: nav.navigate(Rutas.formMascota()) */ },
+                        onVerTodas = { irAPestana(Rutas.MASCOTAS) },
+                        onPedirCita = { /* TODO Paso 9: nav.navigate(Rutas.pedirCita()) */ }
+                    )
+                }
+
+                composable(Rutas.MASCOTAS) {
+                    val vm: InicioViewModel = viewModel(factory = factory)
+                    LaunchedEffect(usuario?.id) { usuario?.let { vm.cargar(it.id) } }
+                    MascotasScreen(
+                        vm = vm,
+                        onVerMascota = { /* TODO Paso 8 */ },
+                        onAgregar = { /* TODO Paso 8 */ }
+                    )
+                }
+
+                // TODO Paso 10: reemplazar por MisCitasScreen
+                composable(Rutas.MIS_CITAS) {
+                    PantallaTemporal("Mis citas", usuario?.nombre, cerrarSesion)
+                }
+
+                // TODO Paso 13: reemplazar por PerfilScreen
+                composable(Rutas.PERFIL) {
+                    PantallaTemporal("Perfil", usuario?.nombre, cerrarSesion)
+                }
+
+                // ===== Veterinario =====
+                // TODO Paso 11: reemplazar por PanelScreen
+                composable(Rutas.PANEL) {
+                    PantallaTemporal("Panel del veterinario", usuario?.nombre, cerrarSesion) {
+                        nav.navigate(Rutas.SERVICIOS)
+                    }
+                }
+
+                composable(Rutas.SERVICIOS) {
+                    val vm: ServiciosViewModel = viewModel(factory = factory)
+                    ServiciosScreen(
+                        vm = vm,
+                        onEditar = { /* TODO Paso 13 */ },
+                        onAtras = { nav.popBackStack() }
+                    )
+                }
             }
         }
     }
 }
 
-/** Pantalla provisional para probar el login (se reemplaza en los siguientes pasos) */
+/** Pantalla provisional (se reemplaza en los siguientes pasos) */
 @Composable
 private fun PantallaTemporal(
     titulo: String,
@@ -98,7 +152,7 @@ private fun PantallaTemporal(
     onServicios: (() -> Unit)? = null
 ) {
     Column(
-        Modifier.fillMaxSize().padding(24.dp),
+        Modifier.fillMaxSize().statusBarsPadding().padding(24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

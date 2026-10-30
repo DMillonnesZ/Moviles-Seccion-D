@@ -5,6 +5,9 @@ import androidx.room.Relation
 import com.tecsup.huellitasvet.data.local.entity.Cita
 import com.tecsup.huellitasvet.data.local.entity.Mascota
 import com.tecsup.huellitasvet.data.local.entity.Servicio
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 
 data class CitaConDetalle(
     @Embedded val cita: Cita,
@@ -22,4 +25,8 @@ data class CitaConDetalle(
         entityColumn = "id"
     )
     val servicio: Servicio
-)
+) {
+    /** Fecha + hora como LocalDateTime (Room ignora las funciones) */
+    fun fechaHora(): LocalDateTime =
+        LocalDateTime.of(LocalDate.parse(cita.fecha), LocalTime.parse(cita.hora))
+}
