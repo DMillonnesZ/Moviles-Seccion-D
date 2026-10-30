@@ -7,6 +7,7 @@ import com.tecsup.huellitasvet.data.local.relation.CitaConDetalle
 import com.tecsup.huellitasvet.data.local.relation.MascotaConDueno
 import com.tecsup.huellitasvet.model.ConteoServicio
 import com.tecsup.huellitasvet.model.EstadoCita
+import com.tecsup.huellitasvet.model.Rol
 import com.tecsup.huellitasvet.model.UltimaVisita
 import kotlinx.coroutines.flow.Flow
 
@@ -14,6 +15,7 @@ interface VetRepository {
     // Usuarios
     suspend fun login(correo: String, clave: String): Usuario?
     suspend fun obtenerUsuario(id: Int): Usuario?
+    suspend fun obtenerUsuarioPorRol(rol: Rol): Usuario?
 
     // Servicios (ejemplo resuelto)
     fun observarServicios(): Flow<List<Servicio>>

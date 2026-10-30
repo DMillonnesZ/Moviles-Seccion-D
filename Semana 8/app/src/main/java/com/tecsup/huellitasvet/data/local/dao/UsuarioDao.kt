@@ -16,4 +16,6 @@ interface UsuarioDao {
     suspend fun insertarTodos(lista: List<Usuario>)
     @Query("SELECT COUNT(*) FROM usuarios")
     suspend fun contar(): Int
+    @Query("SELECT * FROM usuarios WHERE rol = :rol ORDER BY id LIMIT 1")
+    suspend fun obtenerPorRol(rol: String): Usuario?
 }

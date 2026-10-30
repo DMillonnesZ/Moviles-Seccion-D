@@ -46,6 +46,11 @@ class MisCitasViewModel(private val repo: VetRepository) : ViewModel() {
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    /** Total de atenciones (para el Perfil) */
+    val atenciones: StateFlow<Int> = citas
+        .map { l -> l.count { it.cita.estado == EstadoCita.ATENDIDA.name } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
     /** Regla: solo PENDIENTE o CONFIRMADA y si faltan MÁS de 2 horas */
     fun puedeCancelar(c: CitaConDetalle): Boolean {
         if (!esActiva(c)) return false

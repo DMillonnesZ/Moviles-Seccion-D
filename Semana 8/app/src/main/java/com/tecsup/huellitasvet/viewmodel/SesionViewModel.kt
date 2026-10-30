@@ -20,10 +20,15 @@ class SesionViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    // ===== Preferencias (DataStore) =====
     val modoOscuro: StateFlow<Boolean> = prefs.modoOscuro
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val notificaciones: StateFlow<Boolean> = prefs.notificaciones
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val aceptarCitas: StateFlow<Boolean> = prefs.aceptarCitas
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
-    // Rol con el que se pinta el tema (null = sin sesión)
+    /** Rol con el que se pinta el tema (null = sin sesión) */
     val rolActivo: StateFlow<Rol?> = prefs.perfilActivo
         .map { if (it.isBlank()) null else Rol.valueOf(it) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -38,7 +43,6 @@ class SesionViewModel(
     }
 
     fun login(correo: String, clave: String, rolSeleccionado: Rol, onExito: (Rol) -> Unit) {
-        // Regla 1: campos vacíos
         if (correo.isBlank() || clave.isBlank()) {
             _error.value = "Completa correo y contraseña"
             return
@@ -46,14 +50,9 @@ class SesionViewModel(
         viewModelScope.launch {
             val usuario = repo.login(correo, clave)
             when {
-                // Regla 2: credenciales incorrectas
                 usuario == null -> _error.value = "Correo o contraseña incorrectos"
-
-                // Regla 3: el rol no coincide con la pestaña
                 usuario.rol != rolSeleccionado.name ->
                     _error.value = "Esta cuenta no pertenece al perfil ${rolSeleccionado.etiqueta}"
-
-                // Éxito
                 else -> {
                     _error.value = null
                     _usuarioActual.value = usuario
@@ -66,8 +65,20 @@ class SesionViewModel(
 
     fun limpiarError() { _error.value = null }
 
-    fun cambiarModoOscuro(b: Boolean) {
-        viewModelScope.launch { prefs.guardarModoOscuro(b) }
+    fun cambiarModoOscuro(b: Boolean) { viewModelScope.launch { prefs.guardarModoOscuro(b) } }
+    fun cambiarNotificaciones(b: Boolean) { viewModelScope.launch { prefs.guardarNotificaciones(b) } }
+    fun cambiarAceptarCitas(b: Boolean) { viewModelScope.launch { prefs.guardarAceptarCitas(b) } }
+
+    /** Modo práctica: guarda el OTRO perfil y avisa para navegar a su grafo */
+    fun cambiarPerfil(onListo: (Rol) -> Unit) {
+        viewModelScope.launch {
+            val actual = rolActivo.value ?: return@launch
+            val otro = if (actual == Rol.CLIENTE) Rol.ADMIN else Rol.CLIENTE
+            val usuario = repo.obtenerUsuarioPorRol(otro) ?: return@launch
+            prefs.guardarSesion(otro, usuario.id)
+            _usuarioActual.value = usuario
+            onListo(otro)
+        }
     }
 
     fun cerrarSesion(onListo: () -> Unit) {

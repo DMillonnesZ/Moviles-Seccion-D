@@ -3,10 +3,8 @@ package com.tecsup.huellitasvet.ui.navigation
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -18,11 +16,7 @@ import com.tecsup.huellitasvet.VetApp
 import com.tecsup.huellitasvet.model.Rol
 import com.tecsup.huellitasvet.ui.dueno.*
 import com.tecsup.huellitasvet.ui.theme.VetTheme
-import com.tecsup.huellitasvet.ui.veterinario.AgendaScreen
-import com.tecsup.huellitasvet.ui.veterinario.AtenderCitaScreen
-import com.tecsup.huellitasvet.ui.veterinario.PacientesScreen
-import com.tecsup.huellitasvet.ui.veterinario.PanelScreen
-import com.tecsup.huellitasvet.ui.veterinario.ServiciosScreen
+import com.tecsup.huellitasvet.ui.veterinario.*
 import com.tecsup.huellitasvet.viewmodel.*
 
 @Composable
@@ -49,6 +43,7 @@ fun NavVet() {
     }
     val mostrarBarra = itemsBarra.any { it.ruta == rutaBarra }
 
+    /** Navega a la pantalla principal del rol y limpia la pila */
     val irAPrincipal: (Rol) -> Unit = { rol ->
         nav.navigate(if (rol == Rol.CLIENTE) Rutas.INICIO else Rutas.PANEL) {
             popUpTo(nav.graph.id) { inclusive = true }
@@ -59,6 +54,7 @@ fun NavVet() {
             nav.navigate(Rutas.LOGIN) { popUpTo(nav.graph.id) { inclusive = true } }
         }
     }
+    val cambiarPerfil: () -> Unit = { sesionVm.cambiarPerfil(irAPrincipal) }
     val irAPestana: (String) -> Unit = { ruta ->
         nav.navigate(ruta) {
             popUpTo(if (esVet) Rutas.PANEL else Rutas.INICIO) { saveState = true }
@@ -129,9 +125,7 @@ fun NavVet() {
                         duenoId = usuario?.id ?: 0,
                         mascotaId = id,
                         onGuardado = { nav.popBackStack() },
-                        onEliminada = {
-                            nav.navigate(Rutas.MASCOTAS) { popUpTo(Rutas.INICIO) }
-                        },
+                        onEliminada = { nav.navigate(Rutas.MASCOTAS) { popUpTo(Rutas.INICIO) } },
                         onCancelar = { nav.popBackStack() }
                     )
                 }
@@ -178,9 +172,20 @@ fun NavVet() {
                     )
                 }
 
-                // TODO Paso 13: reemplazar por PerfilScreen
                 composable(Rutas.PERFIL) {
-                    PantallaTemporal("Perfil", usuario?.nombre, cerrarSesion)
+                    val inicioVm: InicioViewModel = viewModel(factory = factory)
+                    val citasVm: MisCitasViewModel = viewModel(factory = factory)
+                    LaunchedEffect(usuario?.id) {
+                        usuario?.let { inicioVm.cargar(it.id); citasVm.cargar(it.id) }
+                    }
+                    PerfilScreen(
+                        sesionVm = sesionVm,
+                        inicioVm = inicioVm,
+                        citasVm = citasVm,
+                        onCambiarPerfil = cambiarPerfil,
+                        onCerrarSesion = cerrarSesion,
+                        onAtras = { nav.popBackStack() }
+                    )
                 }
 
                 // ================= VETERINARIO =================
@@ -225,37 +230,35 @@ fun NavVet() {
                     val vm: ServiciosViewModel = viewModel(factory = factory)
                     ServiciosScreen(
                         vm = vm,
-                        onEditar = { /* TODO Paso 13 */ },
+                        onEditar = { nav.navigate(Rutas.formServicio(it)) },
+                        onNuevo = { nav.navigate(Rutas.formServicio()) },
                         onAtras = { nav.popBackStack() }
                     )
                 }
 
-                // TODO Paso 13: reemplazar por AjustesScreen
+                composable(
+                    Rutas.FORM_SERVICIO,
+                    arguments = listOf(navArgument("id") { type = NavType.IntType; defaultValue = -1 })
+                ) { back ->
+                    val id = back.arguments?.getInt("id")?.takeIf { it > 0 }
+                    val vm: ServiciosViewModel = viewModel(factory = factory)
+                    FormularioServicioScreen(
+                        vm = vm,
+                        servicioId = id,
+                        onGuardado = { nav.popBackStack() },
+                        onCancelar = { nav.popBackStack() }
+                    )
+                }
+
                 composable(Rutas.AJUSTES) {
-                    PantallaTemporal("Ajustes", usuario?.nombre, cerrarSesion)
+                    AjustesScreen(
+                        sesionVm = sesionVm,
+                        onCambiarPerfil = cambiarPerfil,
+                        onCerrarSesion = cerrarSesion,
+                        onAtras = { nav.popBackStack() }
+                    )
                 }
             }
-        }
-    }
-}
-
-/** Pantalla provisional (se reemplaza en el Paso 13) */
-@Composable
-private fun PantallaTemporal(
-    titulo: String,
-    nombre: String?,
-    onCerrarSesion: () -> Unit
-) {
-    Column(
-        Modifier.fillMaxSize().statusBarsPadding().padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(titulo, style = MaterialTheme.typography.headlineSmall)
-        Text("Hola, ${nombre ?: ""}", style = MaterialTheme.typography.bodyLarge)
-        Spacer(Modifier.height(24.dp))
-        OutlinedButton(onClick = onCerrarSesion, modifier = Modifier.fillMaxWidth()) {
-            Text("Cerrar sesión")
         }
     }
 }
