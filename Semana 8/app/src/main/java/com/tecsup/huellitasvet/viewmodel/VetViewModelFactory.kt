@@ -14,6 +14,7 @@ class VetViewModelFactory(
         modelClass.isAssignableFrom(ServiciosViewModel::class.java) -> ServiciosViewModel(repo)
         modelClass.isAssignableFrom(SesionViewModel::class.java) -> SesionViewModel(repo, prefs)
         modelClass.isAssignableFrom(InicioViewModel::class.java) -> InicioViewModel(repo)
+        modelClass.isAssignableFrom(MascotaViewModel::class.java) -> MascotaViewModel(repo)
         else -> throw IllegalArgumentException("ViewModel desconocido: ${modelClass.name}")
     } as T
 }

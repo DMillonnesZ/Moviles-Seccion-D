@@ -8,23 +8,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.tecsup.huellitasvet.VetApp
 import com.tecsup.huellitasvet.model.Rol
 import com.tecsup.huellitasvet.ui.components.VetButton
-import com.tecsup.huellitasvet.ui.dueno.InicioScreen
-import com.tecsup.huellitasvet.ui.dueno.LoginScreen
-import com.tecsup.huellitasvet.ui.dueno.MascotasScreen
-import com.tecsup.huellitasvet.ui.dueno.SplashScreen
+import com.tecsup.huellitasvet.ui.dueno.*
 import com.tecsup.huellitasvet.ui.theme.VetTheme
 import com.tecsup.huellitasvet.ui.veterinario.ServiciosScreen
-import com.tecsup.huellitasvet.viewmodel.InicioViewModel
-import com.tecsup.huellitasvet.viewmodel.ServiciosViewModel
-import com.tecsup.huellitasvet.viewmodel.SesionViewModel
-import com.tecsup.huellitasvet.viewmodel.VetViewModelFactory
+import com.tecsup.huellitasvet.viewmodel.*
 
 @Composable
 fun NavVet() {
@@ -40,6 +36,10 @@ fun NavVet() {
 
     val entrada by nav.currentBackStackEntryAsState()
     val rutaActual = entrada?.destination?.route
+
+    // La ficha pertenece a la pestaña Mascotas
+    val rutaBarra = if (rutaActual == Rutas.FICHA_MASCOTA) Rutas.MASCOTAS else rutaActual
+    val mostrarBarra = itemsDueno.any { it.ruta == rutaBarra }
 
     val irAPrincipal: (Rol) -> Unit = { rol ->
         nav.navigate(if (rol == Rol.CLIENTE) Rutas.INICIO else Rutas.PANEL) {
@@ -63,9 +63,7 @@ fun NavVet() {
         Scaffold(
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
-                if (itemsDueno.any { it.ruta == rutaActual }) {
-                    BarraInferior(itemsDueno, rutaActual, irAPestana)
-                }
+                if (mostrarBarra) BarraInferior(itemsDueno, rutaBarra, irAPestana)
             }
         ) { inner ->
             NavHost(
@@ -95,8 +93,8 @@ fun NavVet() {
                     InicioScreen(
                         vm = vm,
                         nombreDueno = usuario?.nombre ?: "",
-                        onVerMascota = { /* TODO Paso 8: nav.navigate(Rutas.fichaMascota(it)) */ },
-                        onAgregarMascota = { /* TODO Paso 8: nav.navigate(Rutas.formMascota()) */ },
+                        onVerMascota = { nav.navigate(Rutas.fichaMascota(it)) },
+                        onAgregarMascota = { nav.navigate(Rutas.formMascota()) },
                         onVerTodas = { irAPestana(Rutas.MASCOTAS) },
                         onPedirCita = { /* TODO Paso 9: nav.navigate(Rutas.pedirCita()) */ }
                     )
@@ -107,8 +105,41 @@ fun NavVet() {
                     LaunchedEffect(usuario?.id) { usuario?.let { vm.cargar(it.id) } }
                     MascotasScreen(
                         vm = vm,
-                        onVerMascota = { /* TODO Paso 8 */ },
-                        onAgregar = { /* TODO Paso 8 */ }
+                        onVerMascota = { nav.navigate(Rutas.fichaMascota(it)) },
+                        onAgregar = { nav.navigate(Rutas.formMascota()) }
+                    )
+                }
+
+                composable(
+                    Rutas.FORM_MASCOTA,
+                    arguments = listOf(navArgument("id") { type = NavType.IntType; defaultValue = -1 })
+                ) { back ->
+                    val id = back.arguments?.getInt("id")?.takeIf { it > 0 }
+                    val vm: MascotaViewModel = viewModel(factory = factory)
+                    FormularioMascotaScreen(
+                        vm = vm,
+                        duenoId = usuario?.id ?: 0,
+                        mascotaId = id,
+                        onGuardado = { nav.popBackStack() },
+                        onEliminada = {
+                            nav.navigate(Rutas.MASCOTAS) { popUpTo(Rutas.INICIO) }
+                        },
+                        onCancelar = { nav.popBackStack() }
+                    )
+                }
+
+                composable(
+                    Rutas.FICHA_MASCOTA,
+                    arguments = listOf(navArgument("id") { type = NavType.IntType })
+                ) { back ->
+                    val id = back.arguments?.getInt("id") ?: return@composable
+                    val vm: MascotaViewModel = viewModel(factory = factory)
+                    FichaMascotaScreen(
+                        vm = vm,
+                        mascotaId = id,
+                        onPedirCita = { /* TODO Paso 9: nav.navigate(Rutas.pedirCita(it)) */ },
+                        onEditar = { nav.navigate(Rutas.formMascota(it)) },
+                        onAtras = { nav.popBackStack() }
                     )
                 }
 
