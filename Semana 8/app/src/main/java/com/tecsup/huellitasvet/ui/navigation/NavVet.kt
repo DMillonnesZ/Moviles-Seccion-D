@@ -96,7 +96,7 @@ fun NavVet() {
                         onVerMascota = { nav.navigate(Rutas.fichaMascota(it)) },
                         onAgregarMascota = { nav.navigate(Rutas.formMascota()) },
                         onVerTodas = { irAPestana(Rutas.MASCOTAS) },
-                        onPedirCita = { /* TODO Paso 9: nav.navigate(Rutas.pedirCita()) */ }
+                        onPedirCita = { nav.navigate(Rutas.pedirCita()) }
                     )
                 }
 
@@ -137,12 +137,29 @@ fun NavVet() {
                     FichaMascotaScreen(
                         vm = vm,
                         mascotaId = id,
-                        onPedirCita = { /* TODO Paso 9: nav.navigate(Rutas.pedirCita(it)) */ },
+                        onPedirCita = { nav.navigate(Rutas.pedirCita(it)) },
                         onEditar = { nav.navigate(Rutas.formMascota(it)) },
                         onAtras = { nav.popBackStack() }
                     )
                 }
 
+                composable(
+                    Rutas.PEDIR_CITA,
+                    arguments = listOf(navArgument("mascotaId") { type = NavType.IntType; defaultValue = -1 })
+                ) { back ->
+                    val mascotaId = back.arguments?.getInt("mascotaId")?.takeIf { it > 0 }
+                    val vm: PedirCitaViewModel = viewModel(factory = factory)
+                    LaunchedEffect(usuario?.id) { usuario?.let { vm.cargar(it.id, mascotaId) } }
+
+                    PedirCitaScreen(
+                        vm = vm,
+                        onConfirmada = {
+                            nav.popBackStack()
+                            irAPestana(Rutas.MIS_CITAS)      // vuelve a Mis citas
+                        },
+                        onAtras = { nav.popBackStack() }
+                    )
+                }
                 // TODO Paso 10: reemplazar por MisCitasScreen
                 composable(Rutas.MIS_CITAS) {
                     PantallaTemporal("Mis citas", usuario?.nombre, cerrarSesion)
