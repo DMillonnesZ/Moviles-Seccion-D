@@ -10,6 +10,7 @@ import com.tecsup.huellitasvet.data.local.relation.CitaConDetalle
 import com.tecsup.huellitasvet.data.local.relation.MascotaConDueno
 import com.tecsup.huellitasvet.model.ConteoServicio
 import com.tecsup.huellitasvet.model.EstadoCita
+import com.tecsup.huellitasvet.model.UltimaVisita
 import kotlinx.coroutines.flow.Flow
 
 class VetRepositoryRoom(private val db: VetDatabase) : VetRepository {
@@ -40,6 +41,7 @@ class VetRepositoryRoom(private val db: VetDatabase) : VetRepository {
     override fun observarMascotasDeDueno(duenoId: Int): Flow<List<Mascota>> = mascotaDao.observarPorDueno(duenoId)
     override fun observarMascota(id: Int): Flow<Mascota?> = mascotaDao.observarUna(id)
     override fun observarTodasLasMascotas(): Flow<List<MascotaConDueno>> = mascotaDao.observarTodas()
+    override fun observarUltimasVisitas(): Flow<List<UltimaVisita>> = citaDao.observarUltimasVisitas()
 
     override suspend fun guardarMascota(m: Mascota) {
         if (m.id == 0) mascotaDao.insertar(m) else mascotaDao.actualizar(m)

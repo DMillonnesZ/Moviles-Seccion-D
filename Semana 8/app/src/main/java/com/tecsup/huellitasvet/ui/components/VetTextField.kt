@@ -22,7 +22,8 @@ fun VetTextField(
     error: String? = null,
     esClave: Boolean = false,
     teclado: KeyboardType = KeyboardType.Text,
-    icono: ImageVector? = null
+    icono: ImageVector? = null,
+    lineas: Int = 1                    // > 1 = campo multilínea
 ) {
     val cs = MaterialTheme.colorScheme
     OutlinedTextField(
@@ -32,7 +33,8 @@ fun VetTextField(
         leadingIcon = icono?.let { { Icon(it, contentDescription = null, tint = cs.primary) } },
         isError = error != null,
         supportingText = if (error != null) { { Text(error) } } else null,
-        singleLine = true,
+        singleLine = lineas == 1,
+        minLines = lineas,
         shape = RoundedCornerShape(14.dp),
         visualTransformation = if (esClave) PasswordVisualTransformation() else VisualTransformation.None,
         keyboardOptions = KeyboardOptions(keyboardType = if (esClave) KeyboardType.Password else teclado),

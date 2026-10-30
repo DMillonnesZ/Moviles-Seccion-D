@@ -16,10 +16,11 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.tecsup.huellitasvet.VetApp
 import com.tecsup.huellitasvet.model.Rol
-import com.tecsup.huellitasvet.ui.components.VetButton
 import com.tecsup.huellitasvet.ui.dueno.*
 import com.tecsup.huellitasvet.ui.theme.VetTheme
 import com.tecsup.huellitasvet.ui.veterinario.AgendaScreen
+import com.tecsup.huellitasvet.ui.veterinario.AtenderCitaScreen
+import com.tecsup.huellitasvet.ui.veterinario.PacientesScreen
 import com.tecsup.huellitasvet.ui.veterinario.PanelScreen
 import com.tecsup.huellitasvet.ui.veterinario.ServiciosScreen
 import com.tecsup.huellitasvet.viewmodel.*
@@ -144,8 +145,8 @@ fun NavVet() {
                     FichaMascotaScreen(
                         vm = vm,
                         mascotaId = id,
-                        onPedirCita = { nav.navigate(Rutas.pedirCita(it)) },
-                        onEditar = { nav.navigate(Rutas.formMascota(it)) },
+                        onPedirCita = if (esVet) null else { mid -> nav.navigate(Rutas.pedirCita(mid)) },
+                        onEditar = if (esVet) null else { mid -> nav.navigate(Rutas.formMascota(mid)) },
                         onAtras = { nav.popBackStack() }
                     )
                 }
@@ -192,14 +193,32 @@ fun NavVet() {
                     val vm: AgendaViewModel = viewModel(factory = factory)
                     AgendaScreen(
                         vm = vm,
-                        onAtender = { /* TODO Paso 12: nav.navigate(Rutas.atenderCita(it)) */ },
+                        onAtender = { nav.navigate(Rutas.atenderCita(it)) },
                         onAtras = { nav.popBackStack() }
                     )
                 }
 
-                // TODO Paso 12: reemplazar por PacientesScreen
+                composable(
+                    Rutas.ATENDER_CITA,
+                    arguments = listOf(navArgument("id") { type = NavType.IntType })
+                ) { back ->
+                    val id = back.arguments?.getInt("id") ?: return@composable
+                    val vm: AtenderCitaViewModel = viewModel(factory = factory)
+                    LaunchedEffect(id) { vm.cargar(id) }
+                    AtenderCitaScreen(
+                        vm = vm,
+                        onListo = { nav.popBackStack() },
+                        onAtras = { nav.popBackStack() }
+                    )
+                }
+
                 composable(Rutas.PACIENTES) {
-                    PantallaTemporal("Pacientes", usuario?.nombre, cerrarSesion)
+                    val vm: PacientesViewModel = viewModel(factory = factory)
+                    PacientesScreen(
+                        vm = vm,
+                        onVerPaciente = { nav.navigate(Rutas.fichaMascota(it)) },
+                        onAtras = { nav.popBackStack() }
+                    )
                 }
 
                 composable(Rutas.SERVICIOS) {
@@ -220,7 +239,7 @@ fun NavVet() {
     }
 }
 
-/** Pantalla provisional (se reemplaza en los siguientes pasos) */
+/** Pantalla provisional (se reemplaza en el Paso 13) */
 @Composable
 private fun PantallaTemporal(
     titulo: String,

@@ -17,6 +17,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tecsup.huellitasvet.data.local.entity.Mascota
@@ -38,8 +39,8 @@ import java.util.Locale
 fun FichaMascotaScreen(
     vm: MascotaViewModel,
     mascotaId: Int,
-    onPedirCita: (Int) -> Unit,
-    onEditar: (Int) -> Unit,
+    onPedirCita: ((Int) -> Unit)? = null,    // null = sin botón (vista del veterinario)
+    onEditar: ((Int) -> Unit)? = null,
     onAtras: () -> Unit
 ) {
     val cs = MaterialTheme.colorScheme
@@ -61,29 +62,33 @@ fun FichaMascotaScreen(
             // ===== Cabecera =====
             item { Cabecera(m, vacunasAlDia = vm.vacunasAlDia(historial)) }
 
-            // ===== Botones =====
-            item {
-                Row(Modifier.padding(vertical = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Button(
-                        onClick = { onPedirCita(m.id) },
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.weight(1f).height(48.dp)
-                    ) {
-                        Icon(Icons.Outlined.CalendarMonth, null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Pedir cita", fontWeight = FontWeight.SemiBold)
-                    }
-                    OutlinedButton(
-                        onClick = { onEditar(m.id) },
-                        shape = RoundedCornerShape(14.dp),
-                        border = BorderStroke(2.dp, cs.primary),
-                        modifier = Modifier.weight(1f).height(48.dp)
-                    ) {
-                        Icon(Icons.Outlined.Edit, null, tint = cs.primary, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Editar", color = cs.primary, fontWeight = FontWeight.SemiBold)
+            // ===== Botones (solo dueño) =====
+            if (onPedirCita != null && onEditar != null) {
+                item {
+                    Row(Modifier.padding(vertical = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Button(
+                            onClick = { onPedirCita(m.id) },
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.weight(1f).height(48.dp)
+                        ) {
+                            Icon(Icons.Outlined.CalendarMonth, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Pedir cita", fontWeight = FontWeight.SemiBold)
+                        }
+                        OutlinedButton(
+                            onClick = { onEditar(m.id) },
+                            shape = RoundedCornerShape(14.dp),
+                            border = BorderStroke(2.dp, cs.primary),
+                            modifier = Modifier.weight(1f).height(48.dp)
+                        ) {
+                            Icon(Icons.Outlined.Edit, null, tint = cs.primary, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Editar", color = cs.primary, fontWeight = FontWeight.SemiBold)
+                        }
                     }
                 }
+            } else {
+                item { Spacer(Modifier.height(16.dp)) }
             }
 
             // ===== Pestañas =====
@@ -99,8 +104,8 @@ fun FichaMascotaScreen(
                     Text(
                         "Aún no tiene atenciones",
                         color = cs.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth().padding(24.dp),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(24.dp)
                     )
                 }
             } else {
@@ -223,7 +228,7 @@ private fun Datos(m: Mascota) {
     }
 }
 
-/** "Gata", "Perro", "Otro" según especie y sexo */
+/** "Gata", "Perro", "Mascota" según especie y sexo */
 private fun especieTexto(e: Especie, s: Sexo): String = when (e) {
     Especie.PERRO -> if (s == Sexo.HEMBRA) "Perra" else "Perro"
     Especie.GATO -> if (s == Sexo.HEMBRA) "Gata" else "Gato"

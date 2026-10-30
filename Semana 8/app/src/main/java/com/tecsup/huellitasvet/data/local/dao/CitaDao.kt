@@ -87,6 +87,14 @@ interface CitaDao {
     """)
     fun ingresosDesde(fechaInicio: String): Flow<Double>
 
+    // ===== Pacientes: última visita ATENDIDA de cada mascota =====
+    @Query("""
+    SELECT mascotaId, MAX(fecha) AS fecha FROM citas
+    WHERE estado = 'ATENDIDA'
+    GROUP BY mascotaId
+""")
+    fun observarUltimasVisitas(): Flow<List<com.tecsup.huellitasvet.model.UltimaVisita>>
+
     // ===== Apoyo para reglas (servicioTieneCitas) =====
     @Query("SELECT COUNT(*) FROM citas WHERE servicioId = :servicioId")
     suspend fun contarPorServicioId(servicioId: Int): Int
