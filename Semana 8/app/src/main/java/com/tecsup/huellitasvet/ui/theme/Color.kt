@@ -43,3 +43,7 @@ val GrisSelector = Color(0xFFF1F3F5)
 val AvisoFondo = Color(0xFFFEF3C7)
 val AvisoIcono = Color(0xFFD97706)
 val AvisoTexto = Color(0xFF92400E)// fondo del selector de rol
+
+// ===== Panel del veterinario =====
+val AzulClaro = Color(0xFF93C5FD)      // barras secundarias
+val GrisAtendida = Color(0xFFE2E8F0)   // fondo contador "Atendidas"

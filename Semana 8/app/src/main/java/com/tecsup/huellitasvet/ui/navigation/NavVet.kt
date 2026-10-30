@@ -19,6 +19,8 @@ import com.tecsup.huellitasvet.model.Rol
 import com.tecsup.huellitasvet.ui.components.VetButton
 import com.tecsup.huellitasvet.ui.dueno.*
 import com.tecsup.huellitasvet.ui.theme.VetTheme
+import com.tecsup.huellitasvet.ui.veterinario.AgendaScreen
+import com.tecsup.huellitasvet.ui.veterinario.PanelScreen
 import com.tecsup.huellitasvet.ui.veterinario.ServiciosScreen
 import com.tecsup.huellitasvet.viewmodel.*
 
@@ -34,12 +36,17 @@ fun NavVet() {
     val oscuro by sesionVm.modoOscuro.collectAsState()
     val usuario by sesionVm.usuarioActual.collectAsState()
 
+    val esVet = rolActivo == Rol.ADMIN
     val entrada by nav.currentBackStackEntryAsState()
     val rutaActual = entrada?.destination?.route
 
-    // La ficha pertenece a la pestaña Mascotas
-    val rutaBarra = if (rutaActual == Rutas.FICHA_MASCOTA) Rutas.MASCOTAS else rutaActual
-    val mostrarBarra = itemsDueno.any { it.ruta == rutaBarra }
+    // Barra inferior según el rol (4 ítems dueño · 5 ítems veterinario)
+    val itemsBarra = if (esVet) itemsVet else itemsDueno
+    val rutaBarra = when (rutaActual) {
+        Rutas.FICHA_MASCOTA -> if (esVet) Rutas.PACIENTES else Rutas.MASCOTAS
+        else -> rutaActual
+    }
+    val mostrarBarra = itemsBarra.any { it.ruta == rutaBarra }
 
     val irAPrincipal: (Rol) -> Unit = { rol ->
         nav.navigate(if (rol == Rol.CLIENTE) Rutas.INICIO else Rutas.PANEL) {
@@ -53,7 +60,7 @@ fun NavVet() {
     }
     val irAPestana: (String) -> Unit = { ruta ->
         nav.navigate(ruta) {
-            popUpTo(Rutas.INICIO) { saveState = true }
+            popUpTo(if (esVet) Rutas.PANEL else Rutas.INICIO) { saveState = true }
             launchSingleTop = true
             restoreState = true
         }
@@ -63,7 +70,7 @@ fun NavVet() {
         Scaffold(
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
-                if (mostrarBarra) BarraInferior(itemsDueno, rutaBarra, irAPestana)
+                if (mostrarBarra) BarraInferior(itemsBarra, rutaBarra, irAPestana)
             }
         ) { inner ->
             NavHost(
@@ -86,7 +93,7 @@ fun NavVet() {
                     LoginScreen(vm = sesionVm, onIngresar = irAPrincipal)
                 }
 
-                // ===== Dueño =====
+                // ================= DUEÑO =================
                 composable(Rutas.INICIO) {
                     val vm: InicioViewModel = viewModel(factory = factory)
                     LaunchedEffect(usuario?.id) { usuario?.let { vm.cargar(it.id) } }
@@ -150,17 +157,16 @@ fun NavVet() {
                     val mascotaId = back.arguments?.getInt("mascotaId")?.takeIf { it > 0 }
                     val vm: PedirCitaViewModel = viewModel(factory = factory)
                     LaunchedEffect(usuario?.id) { usuario?.let { vm.cargar(it.id, mascotaId) } }
-
                     PedirCitaScreen(
                         vm = vm,
                         onConfirmada = {
                             nav.popBackStack()
-                            irAPestana(Rutas.MIS_CITAS)      // vuelve a Mis citas
+                            irAPestana(Rutas.MIS_CITAS)
                         },
                         onAtras = { nav.popBackStack() }
                     )
                 }
-                
+
                 composable(Rutas.MIS_CITAS) {
                     val vm: MisCitasViewModel = viewModel(factory = factory)
                     LaunchedEffect(usuario?.id) { usuario?.let { vm.cargar(it.id) } }
@@ -176,12 +182,24 @@ fun NavVet() {
                     PantallaTemporal("Perfil", usuario?.nombre, cerrarSesion)
                 }
 
-                // ===== Veterinario =====
-                // TODO Paso 11: reemplazar por PanelScreen
+                // ================= VETERINARIO =================
                 composable(Rutas.PANEL) {
-                    PantallaTemporal("Panel del veterinario", usuario?.nombre, cerrarSesion) {
-                        nav.navigate(Rutas.SERVICIOS)
-                    }
+                    val vm: PanelViewModel = viewModel(factory = factory)
+                    PanelScreen(vm = vm, onVerPendientes = { irAPestana(Rutas.AGENDA) })
+                }
+
+                composable(Rutas.AGENDA) {
+                    val vm: AgendaViewModel = viewModel(factory = factory)
+                    AgendaScreen(
+                        vm = vm,
+                        onAtender = { /* TODO Paso 12: nav.navigate(Rutas.atenderCita(it)) */ },
+                        onAtras = { nav.popBackStack() }
+                    )
+                }
+
+                // TODO Paso 12: reemplazar por PacientesScreen
+                composable(Rutas.PACIENTES) {
+                    PantallaTemporal("Pacientes", usuario?.nombre, cerrarSesion)
                 }
 
                 composable(Rutas.SERVICIOS) {
@@ -191,6 +209,11 @@ fun NavVet() {
                         onEditar = { /* TODO Paso 13 */ },
                         onAtras = { nav.popBackStack() }
                     )
+                }
+
+                // TODO Paso 13: reemplazar por AjustesScreen
+                composable(Rutas.AJUSTES) {
+                    PantallaTemporal("Ajustes", usuario?.nombre, cerrarSesion)
                 }
             }
         }
@@ -202,8 +225,7 @@ fun NavVet() {
 private fun PantallaTemporal(
     titulo: String,
     nombre: String?,
-    onCerrarSesion: () -> Unit,
-    onServicios: (() -> Unit)? = null
+    onCerrarSesion: () -> Unit
 ) {
     Column(
         Modifier.fillMaxSize().statusBarsPadding().padding(24.dp),
@@ -213,10 +235,6 @@ private fun PantallaTemporal(
         Text(titulo, style = MaterialTheme.typography.headlineSmall)
         Text("Hola, ${nombre ?: ""}", style = MaterialTheme.typography.bodyLarge)
         Spacer(Modifier.height(24.dp))
-        if (onServicios != null) {
-            VetButton("Ver servicios", onServicios)
-            Spacer(Modifier.height(12.dp))
-        }
         OutlinedButton(onClick = onCerrarSesion, modifier = Modifier.fillMaxWidth()) {
             Text("Cerrar sesión")
         }
