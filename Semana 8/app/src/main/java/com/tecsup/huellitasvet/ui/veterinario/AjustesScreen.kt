@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.tecsup.huellitasvet.model.Rol
 import com.tecsup.huellitasvet.ui.components.*
 import com.tecsup.huellitasvet.ui.theme.BordeSuave
 import com.tecsup.huellitasvet.viewmodel.SesionViewModel
@@ -23,6 +24,8 @@ fun AjustesScreen(
 ) {
     val cs = MaterialTheme.colorScheme
     val usuario by sesionVm.usuarioActual.collectAsState()
+    val admin by sesionVm.adminActual.collectAsState()
+    val rolActivo by sesionVm.rolActivo.collectAsState()
     val oscuro by sesionVm.modoOscuro.collectAsState()
     val notificaciones by sesionVm.notificaciones.collectAsState()
     val aceptarCitas by sesionVm.aceptarCitas.collectAsState()
@@ -39,14 +42,23 @@ fun AjustesScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 8.dp)
         ) {
-            TarjetaUsuario(
-                nombre = usuario?.nombre ?: "",
-                correo = usuario?.correo ?: "",
-                chip = "Perfil activo"
-            )
-
-            Spacer(Modifier.height(14.dp))
-            TarjetaCambiarPerfil("Modo práctica: ir a vista Dueño", onCambiarPerfil)
+            if (rolActivo == Rol.ADMINISTRADOR) {
+                val a = admin
+                TarjetaUsuario(
+                    nombre = if (a != null) "${a.nombre} ${a.apellido}" else "",
+                    correo = a?.correo ?: "",
+                    chip = "Administrador",
+                    detalle = if (a != null) "Código: ${a.codigo}" else null
+                )
+            } else {
+                TarjetaUsuario(
+                    nombre = usuario?.nombre ?: "",
+                    correo = usuario?.correo ?: "",
+                    chip = "Perfil activo"
+                )
+                Spacer(Modifier.height(14.dp))
+                TarjetaCambiarPerfil("Modo práctica: ir a vista Dueño", onCambiarPerfil)
+            }
 
             Text(
                 "Preferencias",

@@ -203,7 +203,7 @@ fun NavVet() {
                     )
                 }
 
-                // ================= VETERINARIO =================
+                // ================= VETERINARIO / ADMINISTRADOR =================
                 composable(Rutas.PANEL) {
                     val vm: PanelViewModel = viewModel(factory = factory)
                     PanelScreen(vm = vm, onVerPendientes = { irAPestana(Rutas.AGENDA) })

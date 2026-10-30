@@ -1,5 +1,6 @@
 package com.tecsup.huellitasvet.data.repository
 
+import com.tecsup.huellitasvet.data.local.entity.Administrador
 import com.tecsup.huellitasvet.data.local.entity.Mascota
 import com.tecsup.huellitasvet.data.local.entity.Servicio
 import com.tecsup.huellitasvet.data.local.entity.Usuario
@@ -18,6 +19,9 @@ interface VetRepository {
     suspend fun obtenerUsuario(id: Int): Usuario?
     suspend fun obtenerUsuarioPorRol(rol: Rol): Usuario?
     fun observarDuenos(): Flow<List<Usuario>>
+    suspend fun loginAdministrador(correo: String, clave: String): Administrador?
+    suspend fun obtenerAdministrador(id: Int): Administrador?
+    fun observarAdministradores(): Flow<List<Administrador>>
 
     // Servicios (ejemplo resuelto)
     fun observarServicios(): Flow<List<Servicio>>

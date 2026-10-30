@@ -24,9 +24,14 @@ import androidx.compose.ui.unit.sp
 import com.tecsup.huellitasvet.ui.theme.BordeSuave
 import com.tecsup.huellitasvet.ui.theme.GrisApagado
 
-/** Avatar + nombre + correo + chip */
+/** Avatar + nombre + correo + chip + detalle opcional */
 @Composable
-fun TarjetaUsuario(nombre: String, correo: String, chip: String) {
+fun TarjetaUsuario(
+    nombre: String,
+    correo: String,
+    chip: String,
+    detalle: String? = null
+) {
     val cs = MaterialTheme.colorScheme
     Card(
         shape = RoundedCornerShape(18.dp),
@@ -45,6 +50,9 @@ fun TarjetaUsuario(nombre: String, correo: String, chip: String) {
             Column {
                 Text(nombre, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 Text(correo, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                if (detalle != null) {
+                    Text(detalle, style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
+                }
                 Spacer(Modifier.height(4.dp))
                 Text(
                     chip,

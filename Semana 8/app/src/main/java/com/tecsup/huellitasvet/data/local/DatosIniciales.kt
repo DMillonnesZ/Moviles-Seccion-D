@@ -1,5 +1,6 @@
 package com.tecsup.huellitasvet.data.local
 
+import com.tecsup.huellitasvet.data.local.entity.Administrador
 import com.tecsup.huellitasvet.data.local.entity.Cita
 import com.tecsup.huellitasvet.data.local.entity.Mascota
 import com.tecsup.huellitasvet.data.local.entity.Servicio
@@ -78,6 +79,13 @@ object DatosIniciales {
                 Cita(mascotaId = 1, servicioId = 2, fecha = d(1), hora = "10:30", estado = C, precio = 45.0),
                 Cita(mascotaId = 4, servicioId = 1, fecha = d(2), hora = "11:30", estado = C, precio = 60.0),
                 Cita(mascotaId = 2, servicioId = 2, fecha = d(5), hora = "09:00", estado = P, precio = 45.0, nota = "Refuerzo de vacuna")
+            )
+        )
+
+        db.administradorDao().insertarTodos(
+            listOf(
+                Administrador(codigo = "ADM001", nombre = "Carlos", apellido = "Mendoza", correo = "admin@huellitas.test", clave = "admin123"),
+                Administrador(codigo = "ADM002", nombre = "Rosa", apellido = "Quispe", correo = "rosa.admin@huellitas.test", clave = "admin123")
             )
         )
     }

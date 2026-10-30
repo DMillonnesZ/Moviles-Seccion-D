@@ -56,7 +56,7 @@ fun LoginScreen(
 
             Spacer(Modifier.height(28.dp))
 
-            // Selector Dueño / Veterinario
+            // Selector Dueño / Veterinario / Administrador
             SelectorRol(
                 seleccionado = rolSeleccionado,
                 onCambio = { rolSeleccionado = it; vm.limpiarError() }
@@ -105,29 +105,49 @@ fun LoginScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            if (rolSeleccionado == Rol.CLIENTE) {
-                // Dueño → registrarse
-                Text(
-                    "¿No tienes cuenta?  Regístrate",
-                    color = cs.primary,
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-            } else {
-                // Veterinario → tarjeta Modo práctica
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .background(cs.primaryContainer.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
-                        .padding(16.dp)
-                ) {
-                    Text("Modo práctica", color = cs.primary, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(4.dp))
+            when (rolSeleccionado) {
+                Rol.CLIENTE -> {
+                    // Dueño → registrarse
                     Text(
-                        "Puedes cambiar de perfil desde Ajustes para probar ambos roles.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = cs.onSurfaceVariant
+                        "¿No tienes cuenta?  Regístrate",
+                        color = cs.primary,
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
+                }
+                Rol.ADMIN -> {
+                    // Veterinario → tarjeta Modo práctica
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .background(cs.primaryContainer.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+                            .padding(16.dp)
+                    ) {
+                        Text("Modo práctica", color = cs.primary, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Puedes cambiar de perfil desde Ajustes para probar ambos roles.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = cs.onSurfaceVariant
+                        )
+                    }
+                }
+                Rol.ADMINISTRADOR -> {
+                    // Administrador → tarjeta informativa
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .background(cs.primaryContainer.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+                            .padding(16.dp)
+                    ) {
+                        Text("Acceso de administración", color = cs.primary, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Acceso de administración: gestiona pacientes y mascotas de la clínica.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = cs.onSurfaceVariant
+                        )
+                    }
                 }
             }
             Spacer(Modifier.height(24.dp))
@@ -158,7 +178,8 @@ private fun SelectorRol(seleccionado: Rol, onCambio: (Rol) -> Unit) {
                     rol.etiqueta,
                     color = if (activo) cs.onPrimary else cs.onSurfaceVariant,
                     fontWeight = FontWeight.SemiBold,
-                    style = MaterialTheme.typography.labelLarge
+                    style = MaterialTheme.typography.labelMedium,
+                    maxLines = 1
                 )
             }
         }

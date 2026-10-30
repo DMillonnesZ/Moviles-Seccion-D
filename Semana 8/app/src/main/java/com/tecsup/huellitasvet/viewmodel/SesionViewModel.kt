@@ -2,6 +2,7 @@ package com.tecsup.huellitasvet.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tecsup.huellitasvet.data.local.entity.Administrador
 import com.tecsup.huellitasvet.data.local.entity.Usuario
 import com.tecsup.huellitasvet.data.prefs.PreferenciasStore
 import com.tecsup.huellitasvet.data.repository.VetRepository
@@ -16,6 +17,9 @@ class SesionViewModel(
 
     private val _usuarioActual = MutableStateFlow<Usuario?>(null)
     val usuarioActual: StateFlow<Usuario?> = _usuarioActual.asStateFlow()
+
+    private val _adminActual = MutableStateFlow<Administrador?>(null)
+    val adminActual: StateFlow<Administrador?> = _adminActual.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
@@ -37,9 +41,18 @@ class SesionViewModel(
     suspend fun restaurarSesion(): Rol? {
         val perfil = prefs.perfilActivo.first()
         if (perfil.isBlank()) return null
-        val usuario = repo.obtenerUsuario(prefs.usuarioId.first()) ?: return null
-        _usuarioActual.value = usuario
-        return Rol.valueOf(perfil)
+        val id = prefs.usuarioId.first()
+        return if (perfil == Rol.ADMINISTRADOR.name) {
+            val admin = repo.obtenerAdministrador(id) ?: return null
+            _adminActual.value = admin
+            _usuarioActual.value = null
+            Rol.ADMINISTRADOR
+        } else {
+            val usuario = repo.obtenerUsuario(id) ?: return null
+            _usuarioActual.value = usuario
+            _adminActual.value = null
+            Rol.valueOf(perfil)
+        }
     }
 
     fun login(correo: String, clave: String, rolSeleccionado: Rol, onExito: (Rol) -> Unit) {
@@ -48,16 +61,30 @@ class SesionViewModel(
             return
         }
         viewModelScope.launch {
-            val usuario = repo.login(correo, clave)
-            when {
-                usuario == null -> _error.value = "Correo o contraseña incorrectos"
-                usuario.rol != rolSeleccionado.name ->
-                    _error.value = "Esta cuenta no pertenece al perfil ${rolSeleccionado.etiqueta}"
-                else -> {
+            if (rolSeleccionado == Rol.ADMINISTRADOR) {
+                val admin = repo.loginAdministrador(correo, clave)
+                if (admin == null) {
+                    _error.value = "Correo o contraseña incorrectos"
+                } else {
                     _error.value = null
-                    _usuarioActual.value = usuario
-                    prefs.guardarSesion(rolSeleccionado, usuario.id)
-                    onExito(rolSeleccionado)
+                    _adminActual.value = admin
+                    _usuarioActual.value = null
+                    prefs.guardarSesion(Rol.ADMINISTRADOR, admin.id)
+                    onExito(Rol.ADMINISTRADOR)
+                }
+            } else {
+                val usuario = repo.login(correo, clave)
+                when {
+                    usuario == null -> _error.value = "Correo o contraseña incorrectos"
+                    usuario.rol != rolSeleccionado.name ->
+                        _error.value = "Esta cuenta no pertenece al perfil ${rolSeleccionado.etiqueta}"
+                    else -> {
+                        _error.value = null
+                        _usuarioActual.value = usuario
+                        _adminActual.value = null
+                        prefs.guardarSesion(rolSeleccionado, usuario.id)
+                        onExito(rolSeleccionado)
+                    }
                 }
             }
         }
@@ -73,10 +100,12 @@ class SesionViewModel(
     fun cambiarPerfil(onListo: (Rol) -> Unit) {
         viewModelScope.launch {
             val actual = rolActivo.value ?: return@launch
+            if (actual == Rol.ADMINISTRADOR) return@launch
             val otro = if (actual == Rol.CLIENTE) Rol.ADMIN else Rol.CLIENTE
             val usuario = repo.obtenerUsuarioPorRol(otro) ?: return@launch
             prefs.guardarSesion(otro, usuario.id)
             _usuarioActual.value = usuario
+            _adminActual.value = null
             onListo(otro)
         }
     }
@@ -85,6 +114,7 @@ class SesionViewModel(
         viewModelScope.launch {
             prefs.cerrarSesion()
             _usuarioActual.value = null
+            _adminActual.value = null
             onListo()
         }
     }
