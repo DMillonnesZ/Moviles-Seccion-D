@@ -6,6 +6,7 @@ import com.tecsup.huellitasvet.data.local.entity.Mascota
 import com.tecsup.huellitasvet.data.local.relation.CitaConDetalle
 import com.tecsup.huellitasvet.data.repository.VetRepository
 import com.tecsup.huellitasvet.model.Especie
+import com.tecsup.huellitasvet.model.PuntoPeso
 import com.tecsup.huellitasvet.model.Sexo
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -46,6 +47,7 @@ class MascotaViewModel(private val repo: VetRepository) : ViewModel() {
     // Cache para no recrear el StateFlow en cada recomposición
     private val mascotas = mutableMapOf<Int, StateFlow<Mascota?>>()
     private val historiales = mutableMapOf<Int, StateFlow<List<CitaConDetalle>>>()
+    private val registroPesos = mutableMapOf<Int, StateFlow<List<PuntoPeso>>>()
 
     fun mascota(id: Int): StateFlow<Mascota?> = mascotas.getOrPut(id) {
         repo.observarMascota(id)
@@ -55,6 +57,12 @@ class MascotaViewModel(private val repo: VetRepository) : ViewModel() {
     /** Historial clínico: citas ATENDIDAS, la más reciente primero */
     fun historial(mascotaId: Int): StateFlow<List<CitaConDetalle>> = historiales.getOrPut(mascotaId) {
         repo.observarHistorial(mascotaId)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }
+
+    /** Pesos registrados en citas ATENDIDAS, ordenados por fecha ASC */
+    fun pesos(mascotaId: Int): StateFlow<List<PuntoPeso>> = registroPesos.getOrPut(mascotaId) {
+        repo.observarPesos(mascotaId)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     }
 

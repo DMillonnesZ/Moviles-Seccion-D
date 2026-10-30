@@ -4,6 +4,7 @@ import androidx.room.*
 import com.tecsup.huellitasvet.data.local.entity.Cita
 import com.tecsup.huellitasvet.data.local.relation.CitaConDetalle
 import com.tecsup.huellitasvet.model.ConteoServicio
+import com.tecsup.huellitasvet.model.PuntoPeso
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -18,6 +19,9 @@ interface CitaDao {
 
     @Query("UPDATE citas SET estado = :estado WHERE id = :id")
     suspend fun actualizarEstado(id: Int, estado: String)
+
+    @Query("UPDATE citas SET fecha = :fecha, hora = :hora, estado = 'PENDIENTE' WHERE id = :id")
+    suspend fun reprogramar(id: Int, fecha: String, hora: String)
 
     @Query("""
         UPDATE citas
@@ -38,6 +42,12 @@ interface CitaDao {
 
     @Query("SELECT hora FROM citas WHERE fecha = :fecha AND estado != 'CANCELADA'")
     fun observarHorasOcupadas(fecha: String): Flow<List<String>>
+
+    @Query("""
+        SELECT DISTINCT fecha FROM citas
+        WHERE estado != 'CANCELADA' AND fecha >= :fechaInicio AND fecha <= :fechaFin
+    """)
+    fun observarFechasConCitas(fechaInicio: String, fechaFin: String): Flow<List<String>>
 
     // ===== Lectura (con detalle) =====
     @Transaction
@@ -64,6 +74,13 @@ interface CitaDao {
         ORDER BY fecha DESC, hora DESC
     """)
     fun observarHistorial(mascotaId: Int): Flow<List<CitaConDetalle>>
+
+    @Query("""
+        SELECT fecha, pesoRegistrado AS peso FROM citas
+        WHERE mascotaId = :mascotaId AND estado = 'ATENDIDA' AND pesoRegistrado IS NOT NULL
+        ORDER BY fecha ASC
+    """)
+    fun observarPesos(mascotaId: Int): Flow<List<PuntoPeso>>
 
     // ===== Panel =====
     @Query("SELECT COUNT(*) FROM citas WHERE fecha = :fecha AND estado != 'CANCELADA'")

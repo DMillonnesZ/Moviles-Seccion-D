@@ -10,6 +10,7 @@ import com.tecsup.huellitasvet.data.local.relation.CitaConDetalle
 import com.tecsup.huellitasvet.data.local.relation.MascotaConDueno
 import com.tecsup.huellitasvet.model.ConteoServicio
 import com.tecsup.huellitasvet.model.EstadoCita
+import com.tecsup.huellitasvet.model.PuntoPeso
 import com.tecsup.huellitasvet.model.Rol
 import com.tecsup.huellitasvet.model.UltimaVisita
 import kotlinx.coroutines.flow.Flow
@@ -55,6 +56,8 @@ class VetRepositoryRoom(private val db: VetDatabase) : VetRepository {
 
     // ===== Citas =====
     override fun observarHorasOcupadas(fecha: String): Flow<List<String>> = citaDao.observarHorasOcupadas(fecha)
+    override fun observarFechasConCitas(fechaInicio: String, fechaFin: String): Flow<List<String>> =
+        citaDao.observarFechasConCitas(fechaInicio, fechaFin)
 
     override suspend fun crearCita(
         mascotaId: Int, servicioId: Int, fecha: String, hora: String, nota: String
@@ -78,9 +81,13 @@ class VetRepositoryRoom(private val db: VetDatabase) : VetRepository {
     override fun observarCitasPorFecha(fecha: String): Flow<List<CitaConDetalle>> = citaDao.observarPorFecha(fecha)
     override fun observarCita(id: Int): Flow<CitaConDetalle?> = citaDao.observarUna(id)
     override fun observarHistorial(mascotaId: Int): Flow<List<CitaConDetalle>> = citaDao.observarHistorial(mascotaId)
+    override fun observarPesos(mascotaId: Int): Flow<List<PuntoPeso>> = citaDao.observarPesos(mascotaId)
 
     override suspend fun cambiarEstadoCita(id: Int, estado: EstadoCita) =
         citaDao.actualizarEstado(id, estado.name)
+
+    override suspend fun reprogramarCita(id: Int, fecha: String, hora: String) =
+        citaDao.reprogramar(id, fecha, hora)
 
     override suspend fun registrarAtencion(
         citaId: Int, diagnostico: String, tratamiento: String, peso: Double

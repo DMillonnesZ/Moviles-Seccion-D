@@ -26,6 +26,7 @@ import com.tecsup.huellitasvet.model.Sexo
 import com.tecsup.huellitasvet.ui.components.AppTopBar
 import com.tecsup.huellitasvet.ui.components.HistorialItem
 import com.tecsup.huellitasvet.ui.components.MascotaAvatar
+import com.tecsup.huellitasvet.ui.components.graficos.GraficoLineas
 import com.tecsup.huellitasvet.ui.theme.BordeSuave
 import com.tecsup.huellitasvet.ui.theme.EstadoConfirmada
 import com.tecsup.huellitasvet.ui.theme.GrisSelector
@@ -46,6 +47,7 @@ fun FichaMascotaScreen(
     val cs = MaterialTheme.colorScheme
     val mascota by vm.mascota(mascotaId).collectAsState()
     val historial by vm.historial(mascotaId).collectAsState()
+    val pesos by vm.pesos(mascotaId).collectAsState()
     var pestana by rememberSaveable { mutableIntStateOf(1) }   // 0 = Datos · 1 = Historial
 
     Scaffold(
@@ -99,24 +101,46 @@ fun FichaMascotaScreen(
 
             if (pestana == 0) {
                 item { Datos(m) }
-            } else if (historial.isEmpty()) {
-                item {
-                    Text(
-                        "Aún no tiene atenciones",
-                        color = cs.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(24.dp)
-                    )
-                }
             } else {
-                itemsIndexed(historial, key = { _, c -> c.cita.id }) { i, c ->
-                    HistorialItem(
-                        fecha = fechaDiaMes(c.cita.fecha),
-                        servicio = c.servicio.nombre,
-                        diagnostico = c.cita.diagnostico ?: "",
-                        peso = c.cita.pesoRegistrado,
-                        esUltimo = i == historial.lastIndex
-                    )
+                item {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = cs.surface),
+                        border = BorderStroke(1.dp, BordeSuave),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(Modifier.padding(16.dp)) {
+                            Text(
+                                "Evolución del peso",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            GraficoLineas(puntos = pesos)
+                        }
+                    }
+                    Spacer(Modifier.height(16.dp))
+                }
+
+                if (historial.isEmpty()) {
+                    item {
+                        Text(
+                            "Aún no tiene atenciones",
+                            color = cs.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().padding(24.dp)
+                        )
+                    }
+                } else {
+                    itemsIndexed(historial, key = { _, c -> c.cita.id }) { i, c ->
+                        HistorialItem(
+                            fecha = fechaDiaMes(c.cita.fecha),
+                            servicio = c.servicio.nombre,
+                            diagnostico = c.cita.diagnostico ?: "",
+                            peso = c.cita.pesoRegistrado,
+                            esUltimo = i == historial.lastIndex
+                        )
+                    }
                 }
             }
         }
