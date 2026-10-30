@@ -24,6 +24,7 @@ import com.tecsup.huellitasvet.model.Especie
 import com.tecsup.huellitasvet.model.Razas
 import com.tecsup.huellitasvet.model.Sexo
 import com.tecsup.huellitasvet.ui.components.AppTopBar
+import com.tecsup.huellitasvet.ui.components.CampoFechaNacimiento
 import com.tecsup.huellitasvet.ui.components.MascotaAvatar
 import com.tecsup.huellitasvet.ui.components.VetButton
 import com.tecsup.huellitasvet.ui.components.VetTextField
@@ -210,11 +211,9 @@ fun AgregarMascotaScreen(
             Spacer(Modifier.height(12.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                VetTextField(
-                    valor = anio,
-                    onCambio = { anio = it.filter(Char::isDigit).take(4); vm.limpiarError("anio") },
-                    etiqueta = "Año de nacimiento",
-                    teclado = KeyboardType.Number,
+                CampoFechaNacimiento(
+                    anio = anio,
+                    onAnioElegido = { anio = it; vm.limpiarError("anio") },
                     error = errores.anio,
                     modifier = Modifier.weight(1f)
                 )
