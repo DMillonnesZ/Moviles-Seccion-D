@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -37,7 +38,8 @@ import java.util.Locale
 fun PacientesScreen(
     vm: PacientesViewModel,
     onVerPaciente: (Int) -> Unit,
-    onAtras: (() -> Unit)? = null
+    onAtras: (() -> Unit)? = null,
+    onAgregar: (() -> Unit)? = null
 ) {
     val cs = MaterialTheme.colorScheme
     val texto by vm.texto.collectAsState()
@@ -47,7 +49,19 @@ fun PacientesScreen(
     Scaffold(
         containerColor = cs.background,
         contentWindowInsets = WindowInsets(0),
-        topBar = { AppTopBar("Pacientes", onAtras = onAtras) }
+        topBar = { AppTopBar("Pacientes", onAtras = onAtras) },
+        floatingActionButton = {
+            if (onAgregar != null) {
+                FloatingActionButton(
+                    onClick = onAgregar,
+                    containerColor = cs.primary,
+                    contentColor = cs.onPrimary,
+                    shape = CircleShape
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Agregar mascota")
+                }
+            }
+        }
     ) { padding ->
         LazyColumn(
             Modifier.padding(padding).fillMaxSize(),

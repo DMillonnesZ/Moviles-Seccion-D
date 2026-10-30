@@ -22,6 +22,7 @@ object Rutas {
     const val AJUSTES = "ajustes"
     const val ATENDER_CITA = "atender_cita/{id}"
     const val FORM_SERVICIO = "form_servicio?id={id}"
+    const val AGREGAR_MASCOTA = "agregar_mascota"
 
     // Funciones para armar rutas con argumentos
     fun formMascota(id: Int? = null) = if (id == null) "form_mascota" else "form_mascota?id=$id"

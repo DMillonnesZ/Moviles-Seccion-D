@@ -3,10 +3,12 @@ package com.tecsup.huellitasvet.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tecsup.huellitasvet.data.local.entity.Mascota
+import com.tecsup.huellitasvet.data.local.entity.Usuario
 import com.tecsup.huellitasvet.data.local.relation.CitaConDetalle
 import com.tecsup.huellitasvet.data.repository.VetRepository
 import com.tecsup.huellitasvet.model.Especie
 import com.tecsup.huellitasvet.model.PuntoPeso
+import com.tecsup.huellitasvet.model.Razas
 import com.tecsup.huellitasvet.model.Sexo
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -31,12 +33,17 @@ data class ErroresMascota(
     val especie: String? = null,
     val anio: String? = null,
     val peso: String? = null,
-    val sexo: String? = null
+    val sexo: String? = null,
+    val dueno: String? = null,
+    val raza: String? = null
 ) {
-    val hayErrores get() = listOf(nombre, especie, anio, peso, sexo).any { it != null }
+    val hayErrores get() = listOf(nombre, especie, anio, peso, sexo, dueno, raza).any { it != null }
 }
 
 class MascotaViewModel(private val repo: VetRepository) : ViewModel() {
+
+    val duenos: StateFlow<List<Usuario>> = repo.observarDuenos()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _errores = MutableStateFlow(ErroresMascota())
     val errores: StateFlow<ErroresMascota> = _errores.asStateFlow()
@@ -107,6 +114,41 @@ class MascotaViewModel(private val repo: VetRepository) : ViewModel() {
         }
     }
 
+    fun guardarComoAdministrador(f: FormMascota, onExito: () -> Unit) {
+        val anioActual = Year.now().value
+        val anio = f.anio.toIntOrNull()
+        val peso = f.peso.replace(",", ".").toDoubleOrNull()
+        val razasValidas = Razas.de(f.especie)
+
+        val e = ErroresMascota(
+            dueno = if (f.duenoId <= 0) "Elige un dueño" else null,
+            nombre = if (f.nombre.trim().length < 2) "Mínimo 2 caracteres" else null,
+            especie = if (f.especie == null) "Elige una especie" else null,
+            raza = if (f.raza.trim().isEmpty() || f.raza.trim() !in razasValidas) "Elige una raza" else null,
+            anio = if (anio == null || anio !in 1990..anioActual) "Entre 1990 y $anioActual" else null,
+            peso = if (peso == null || peso <= 0) "Debe ser mayor que 0" else null,
+            sexo = if (f.sexo == null) "Elige el sexo" else null
+        )
+        _errores.value = e
+        if (e.hayErrores) return
+
+        viewModelScope.launch {
+            repo.guardarMascota(
+                Mascota(
+                    id = f.id,
+                    duenoId = f.duenoId,
+                    nombre = f.nombre.trim(),
+                    especie = f.especie!!.name,
+                    raza = f.raza.trim(),
+                    anioNacimiento = anio!!,
+                    peso = peso!!,
+                    sexo = f.sexo!!.name
+                )
+            )
+            onExito()
+        }
+    }
+
     /** Regla: solo se elimina si NO tiene citas */
     fun eliminar(m: Mascota, onEliminada: () -> Unit) {
         viewModelScope.launch {
@@ -122,8 +164,10 @@ class MascotaViewModel(private val repo: VetRepository) : ViewModel() {
     fun limpiarError(campo: String) {
         _errores.update {
             when (campo) {
+                "dueno" -> it.copy(dueno = null)
                 "nombre" -> it.copy(nombre = null)
                 "especie" -> it.copy(especie = null)
+                "raza" -> it.copy(raza = null)
                 "anio" -> it.copy(anio = null)
                 "peso" -> it.copy(peso = null)
                 "sexo" -> it.copy(sexo = null)

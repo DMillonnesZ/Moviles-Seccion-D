@@ -17,6 +17,7 @@ interface VetRepository {
     suspend fun login(correo: String, clave: String): Usuario?
     suspend fun obtenerUsuario(id: Int): Usuario?
     suspend fun obtenerUsuarioPorRol(rol: Rol): Usuario?
+    fun observarDuenos(): Flow<List<Usuario>>
 
     // Servicios (ejemplo resuelto)
     fun observarServicios(): Flow<List<Servicio>>
@@ -34,7 +35,6 @@ interface VetRepository {
     suspend fun guardarMascota(m: Mascota)
     suspend fun eliminarMascota(m: Mascota)
     suspend fun mascotaTieneCitas(id: Int): Boolean
-
 
     // Citas
     fun observarHorasOcupadas(fecha: String): Flow<List<String>>

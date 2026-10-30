@@ -52,7 +52,7 @@ fun VetTheme(
 ) {
     val esquema = when (rol) {
         Rol.CLIENTE -> if (oscuro) DuenoOscuro else DuenoClaro
-        Rol.ADMIN -> if (oscuro) VetOscuro else VetClaro
+        Rol.ADMIN, Rol.ADMINISTRADOR -> if (oscuro) VetOscuro else VetClaro
     }
     MaterialTheme(colorScheme = esquema, typography = Typography, content = content)
 }

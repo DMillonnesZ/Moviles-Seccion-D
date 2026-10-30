@@ -31,7 +31,7 @@ fun NavVet() {
     val oscuro by sesionVm.modoOscuro.collectAsState()
     val usuario by sesionVm.usuarioActual.collectAsState()
 
-    val esVet = rolActivo == Rol.ADMIN
+    val esVet = rolActivo == Rol.ADMIN || rolActivo == Rol.ADMINISTRADOR
     val entrada by nav.currentBackStackEntryAsState()
     val rutaActual = entrada?.destination?.route
 
@@ -237,6 +237,17 @@ fun NavVet() {
                     PacientesScreen(
                         vm = vm,
                         onVerPaciente = { nav.navigate(Rutas.fichaMascota(it)) },
+                        onAtras = { nav.popBackStack() },
+                        onAgregar = if (rolActivo == Rol.ADMINISTRADOR) {
+                            { nav.navigate(Rutas.AGREGAR_MASCOTA) }
+                        } else null
+                    )
+                }
+
+                composable(Rutas.AGREGAR_MASCOTA) {
+                    val vm: MascotaViewModel = viewModel(factory = factory)
+                    AgregarMascotaScreen(
+                        vm = vm,
                         onAtras = { nav.popBackStack() }
                     )
                 }
