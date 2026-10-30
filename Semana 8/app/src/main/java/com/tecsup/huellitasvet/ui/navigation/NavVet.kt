@@ -160,9 +160,15 @@ fun NavVet() {
                         onAtras = { nav.popBackStack() }
                     )
                 }
-                // TODO Paso 10: reemplazar por MisCitasScreen
+                
                 composable(Rutas.MIS_CITAS) {
-                    PantallaTemporal("Mis citas", usuario?.nombre, cerrarSesion)
+                    val vm: MisCitasViewModel = viewModel(factory = factory)
+                    LaunchedEffect(usuario?.id) { usuario?.let { vm.cargar(it.id) } }
+                    MisCitasScreen(
+                        vm = vm,
+                        onNuevaCita = { nav.navigate(Rutas.pedirCita()) },
+                        onAtras = { nav.popBackStack() }
+                    )
                 }
 
                 // TODO Paso 13: reemplazar por PerfilScreen
