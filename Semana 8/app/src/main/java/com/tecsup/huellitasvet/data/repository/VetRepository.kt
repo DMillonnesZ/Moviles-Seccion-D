@@ -1,19 +1,24 @@
 package com.tecsup.huellitasvet.data.repository
 
+import com.tecsup.huellitasvet.data.local.entity.Mascota
 import com.tecsup.huellitasvet.data.local.entity.Servicio
+import com.tecsup.huellitasvet.data.local.entity.Usuario
+import com.tecsup.huellitasvet.data.local.relation.CitaConDetalle
+import com.tecsup.huellitasvet.data.local.relation.MascotaConDueno
+import com.tecsup.huellitasvet.model.ConteoServicio
+import com.tecsup.huellitasvet.model.EstadoCita
 import kotlinx.coroutines.flow.Flow
 
 interface VetRepository {
+    // Usuarios
+    suspend fun login(correo: String, clave: String): Usuario?
+
     // Servicios (ejemplo resuelto)
     fun observarServicios(): Flow<List<Servicio>>
     fun observarServiciosActivos(): Flow<List<Servicio>>
     suspend fun guardarServicio(s: Servicio)
     suspend fun eliminarServicio(s: Servicio)
     suspend fun cambiarActivo(id: Int, activo: Boolean)
-
-    /* TODO Paso 4: descomentar cuando existan las entidades y relaciones
-    // Usuarios
-    suspend fun login(correo: String, clave: String): Usuario?
     suspend fun servicioTieneCitas(id: Int): Boolean
 
     // Mascotas
@@ -41,5 +46,4 @@ interface VetRepository {
     fun observarCantidadPorEstado(estado: EstadoCita): Flow<Int>
     fun observarCitasPorServicio(): Flow<List<ConteoServicio>>
     fun observarIngresosDesde(fechaInicio: String): Flow<Double>
-    */
 }
