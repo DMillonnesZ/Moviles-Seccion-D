@@ -10,6 +10,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -23,6 +25,7 @@ import com.tecsup.huellitasvet.data.local.relation.CitaConDetalle
 import com.tecsup.huellitasvet.model.Especie
 import com.tecsup.huellitasvet.model.EstadoCita
 import com.tecsup.huellitasvet.ui.components.AppTopBar
+import com.tecsup.huellitasvet.ui.components.CalendarioMensual
 import com.tecsup.huellitasvet.ui.components.EstadoCitaChip
 import com.tecsup.huellitasvet.ui.components.MascotaAvatar
 import com.tecsup.huellitasvet.ui.theme.BordeSuave
@@ -40,20 +43,49 @@ fun AgendaScreen(
     val cs = MaterialTheme.colorScheme
     val fecha by vm.fechaSeleccionada.collectAsState()
     val citas by vm.citas.collectAsState()
+    val mostrarCalendario by vm.mostrarCalendario.collectAsState()
+    val mes by vm.mes.collectAsState()
+    val diasConCitas by vm.diasConCitas.collectAsState()
 
     Scaffold(
         containerColor = cs.background,
         contentWindowInsets = WindowInsets(0),
-        topBar = { AppTopBar("Agenda", onAtras = onAtras) }
+        topBar = {
+            AppTopBar(
+                titulo = "Agenda",
+                onAtras = onAtras,
+                acciones = {
+                    IconButton(onClick = { vm.alternarCalendario() }) {
+                        Icon(
+                            imageVector = Icons.Outlined.CalendarMonth,
+                            contentDescription = "Calendario",
+                            tint = cs.primary
+                        )
+                    }
+                }
+            )
+        }
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
-            // Chips de días
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(vm.fechas) { f ->
-                    ChipDia(f, seleccionado = f == fecha) { vm.elegirFecha(f) }
+            if (mostrarCalendario) {
+                CalendarioMensual(
+                    mes = mes,
+                    fechaSeleccionada = fecha,
+                    diasConCitas = diasConCitas,
+                    onElegir = { vm.elegirFecha(it) },
+                    onAnterior = { vm.mesAnterior() },
+                    onSiguiente = { vm.mesSiguiente() },
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                )
+            } else {
+                // Chips de días
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(vm.fechas) { f ->
+                        ChipDia(f, seleccionado = f == fecha) { vm.elegirFecha(f) }
+                    }
                 }
             }
 
