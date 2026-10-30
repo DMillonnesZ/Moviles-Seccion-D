@@ -168,6 +168,21 @@ fun NavVet() {
                     MisCitasScreen(
                         vm = vm,
                         onNuevaCita = { nav.navigate(Rutas.pedirCita()) },
+                        onReprogramar = { nav.navigate(Rutas.reprogramarCita(it)) },
+                        onAtras = { nav.popBackStack() }
+                    )
+                }
+
+                composable(
+                    Rutas.REPROGRAMAR_CITA,
+                    arguments = listOf(navArgument("id") { type = NavType.IntType })
+                ) { back ->
+                    val id = back.arguments?.getInt("id") ?: return@composable
+                    val vm: ReprogramarCitaViewModel = viewModel(factory = factory)
+                    ReprogramarCitaScreen(
+                        vm = vm,
+                        citaId = id,
+                        onConfirmado = { nav.popBackStack() },
                         onAtras = { nav.popBackStack() }
                     )
                 }

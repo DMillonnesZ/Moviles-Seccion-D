@@ -34,6 +34,7 @@ import java.util.Locale
 fun MisCitasScreen(
     vm: MisCitasViewModel,
     onNuevaCita: () -> Unit,
+    onReprogramar: (Int) -> Unit,
     onAtras: (() -> Unit)? = null
 ) {
     val cs = MaterialTheme.colorScheme
@@ -96,16 +97,27 @@ fun MisCitasScreen(
                         estado = EstadoCita.valueOf(c.cita.estado),
                         accion = if (pestana == 0) {
                             {
-                                Text(
-                                    "Cancelar",
-                                    color = cs.error,
-                                    fontWeight = FontWeight.SemiBold,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    modifier = Modifier.clickable {
-                                        if (vm.puedeCancelar(c)) aCancelar = c
-                                        else vm.cancelar(c)   // muestra "Ya no puedes cancelar esta cita"
-                                    }
-                                )
+                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Text(
+                                        "Reprogramar",
+                                        color = cs.primary,
+                                        fontWeight = FontWeight.SemiBold,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        modifier = Modifier.clickable {
+                                            onReprogramar(c.cita.id)
+                                        }
+                                    )
+                                    Text(
+                                        "Cancelar",
+                                        color = cs.error,
+                                        fontWeight = FontWeight.SemiBold,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        modifier = Modifier.clickable {
+                                            if (vm.puedeCancelar(c)) aCancelar = c
+                                            else vm.cancelar(c)   // muestra "Ya no puedes cancelar esta cita"
+                                        }
+                                    )
+                                }
                             }
                         } else null
                     )
