@@ -4,10 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.ui.Modifier
+import com.tecsup.pokemon.ui.lista.DatosPrueba
+import com.tecsup.pokemon.ui.lista.ListaScreen
 import com.tecsup.pokemon.ui.theme.PokeDexTheme
 
 class MainActivity : ComponentActivity() {
@@ -16,12 +14,13 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PokeDexTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    // Aquí irá AppNav()
-                }
+                // Temporal: datos de prueba. Luego irá AppNav()
+                ListaScreen(
+                    titulo = "Pokémon de prueba",
+                    items = DatosPrueba.items,
+                    onItemClick = {},
+                    onFavoritoClick = {}
+                )
             }
         }
     }
