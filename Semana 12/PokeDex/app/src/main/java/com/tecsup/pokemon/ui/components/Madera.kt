@@ -1,6 +1,7 @@
 package com.tecsup.pokemon.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -8,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,6 +43,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tecsup.pokemon.R
@@ -205,11 +208,14 @@ fun CampoMadera(
                 decorationBox = { campo ->
                     Box {
                         if (valor.isEmpty()) {
+                            // Siempre en una línea: si no entra, termina en "..."
                             Text(
                                 text = placeholder,
                                 color = CafeMadera.copy(alpha = 0.6f),
                                 fontFamily = FuenteMadera,
-                                fontSize = 17.sp
+                                fontSize = 17.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                         campo()
@@ -217,6 +223,7 @@ fun CampoMadera(
                 }
             )
             if (esClave) {
+                Spacer(Modifier.width(8.dp))
                 Icon(
                     imageVector = if (verClave) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
                     contentDescription = "Ver contraseña",
@@ -226,6 +233,54 @@ fun CampoMadera(
                         .clickable { verClave = !verClave }
                 )
             }
+        }
+    }
+}
+
+// Barra de complejidad de la contraseña: nivel 0 (oculta), 1 débil, 2 media, 3 fuerte
+@Composable
+fun BarraFuerzaClave(nivel: Int) {
+    val (etiqueta, colorObjetivo) = when (nivel) {
+        1 -> "Débil" to Color(0xFFC0392B)
+        2 -> "Media" to Color(0xFFE08E0B)
+        3 -> "Fuerte" to Color(0xFF2E8B3E)
+        else -> "" to CafeMadera
+    }
+    // El color cambia suavemente al pasar de un nivel a otro
+    val color by animateColorAsState(colorObjetivo, tween(300), label = "colorFuerza")
+
+    AnimatedVisibility(
+        visible = nivel > 0,
+        enter = fadeIn(tween(250)) + expandVertically(tween(250)),
+        exit = fadeOut(tween(250)) + shrinkVertically(tween(250))
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 8.dp, end = 4.dp, top = 8.dp)
+        ) {
+            // 3 segmentos: se pintan tantos como el nivel
+            repeat(3) { i ->
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(7.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(if (i < nivel) color else Color.White.copy(alpha = 0.7f))
+                )
+                if (i < 2) Spacer(Modifier.width(4.dp))
+            }
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = etiqueta,
+                color = color,
+                fontFamily = FuenteMadera,
+                fontSize = 14.sp,
+                modifier = Modifier
+                    .background(Color.White.copy(alpha = 0.8f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 8.dp, vertical = 1.dp)
+            )
         }
     }
 }
