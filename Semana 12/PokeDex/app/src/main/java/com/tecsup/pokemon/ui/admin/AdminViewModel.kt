@@ -3,6 +3,7 @@ package com.tecsup.pokemon.ui.admin
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tecsup.pokemon.data.repository.ItemRepository
+import com.tecsup.pokemon.notification.Notificador
 import com.tecsup.pokemon.ui.UiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +19,8 @@ data class ResumenAdmin(
 )
 
 class AdminViewModel(
-    private val repo: ItemRepository
+    private val repo: ItemRepository,
+    private val notificador: Notificador
 ) : ViewModel() {
 
     private val _estado = MutableStateFlow<UiState<ResumenAdmin>>(UiState.Cargando)
@@ -46,7 +48,10 @@ class AdminViewModel(
             _ocupado.value = true
             _mensaje.value = null
             repo.refrescar()
-                .onSuccess { n -> _mensaje.value = "Se guardaron $n elementos" }
+                .onSuccess { n ->
+                    _mensaje.value = "Se guardaron $n elementos"
+                    notificador.mostrar("Datos actualizados", "Se guardaron $n elementos")
+                }
                 .onFailure { e -> _mensaje.value = mensajeDe(e) }
             leerTotales()
             _ocupado.value = false

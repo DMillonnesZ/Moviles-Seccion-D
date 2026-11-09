@@ -23,7 +23,10 @@ object AppViewModelProvider {
             LoginViewModel(pokeDexApp().container.authRepository)
         }
         initializer {
-            TiposViewModel(pokeDexApp().container.itemRepository)
+            TiposViewModel(
+                repo = pokeDexApp().container.itemRepository,
+                notificador = pokeDexApp().container.notificador
+            )
         }
         initializer {
             ListaViewModel(
@@ -41,7 +44,10 @@ object AppViewModelProvider {
             FavoritosViewModel(pokeDexApp().container.itemRepository)
         }
         initializer {
-            AdminViewModel(pokeDexApp().container.itemRepository)
+            AdminViewModel(
+                repo = pokeDexApp().container.itemRepository,
+                notificador = pokeDexApp().container.notificador
+            )
         }
     }
 }

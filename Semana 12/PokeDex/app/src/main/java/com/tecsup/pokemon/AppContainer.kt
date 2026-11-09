@@ -8,6 +8,8 @@ import com.tecsup.pokemon.data.local.AppDatabase
 import com.tecsup.pokemon.data.remote.RetrofitClient
 import com.tecsup.pokemon.data.repository.ItemRepository
 import com.tecsup.pokemon.data.repository.ItemRepositoryImpl
+import com.tecsup.pokemon.notification.Notificador
+import com.tecsup.pokemon.notification.NotificadorAndroid
 
 // Crea las dependencias una sola vez y las comparte con los ViewModel
 class AppContainer(context: Context) {
@@ -24,4 +26,6 @@ class AppContainer(context: Context) {
     )
 
     val authRepository: AuthRepository = FirebaseAuthRepository()
+
+    val notificador: Notificador = NotificadorAndroid(context)
 }
