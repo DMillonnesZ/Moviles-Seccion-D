@@ -2,6 +2,7 @@ package com.tecsup.pokemon.data.repository
 
 import com.tecsup.pokemon.domain.model.Item
 import com.tecsup.pokemon.domain.model.ItemDetalle
+import com.tecsup.pokemon.domain.model.Tipo
 import kotlinx.coroutines.flow.Flow
 
 interface ItemRepository {
@@ -14,6 +15,6 @@ interface ItemRepository {
     suspend fun cantidadFavoritos(): Int
     suspend fun limpiarCache()
 
-    val tipos: Flow<List<String>>
+    val tipos: Flow<List<Tipo>>
     fun itemsPorTipo(tipo: String): Flow<List<Item>>
 }
