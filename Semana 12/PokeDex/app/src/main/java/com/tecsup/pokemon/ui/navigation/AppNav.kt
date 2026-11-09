@@ -1,14 +1,21 @@
 package com.tecsup.pokemon.ui.navigation
 
-import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -20,6 +27,7 @@ import com.tecsup.pokemon.domain.model.Rol
 import com.tecsup.pokemon.ui.AppViewModelProvider
 import com.tecsup.pokemon.ui.admin.AdminScreen
 import com.tecsup.pokemon.ui.components.Cargando
+import com.tecsup.pokemon.ui.components.CortinaCuadros
 import com.tecsup.pokemon.ui.detalle.DetalleScreen
 import com.tecsup.pokemon.ui.favoritos.FavoritosScreen
 import com.tecsup.pokemon.ui.lista.ListaScreen
@@ -48,6 +56,14 @@ fun AppNav() {
     // El rol viene de Firestore a través de la sesión
     val esAdmin = (estadoSesion as? EstadoSesion.Activa)?.sesion?.rol == Rol.ADMIN
 
+    // Acción que se ejecuta cuando la cortina de cuadros cubre la pantalla
+    var accionCortina by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    // Inicia la cortina solo si no hay otra corriendo
+    fun conCortina(accion: () -> Unit) {
+        if (accionCortina == null) accionCortina = accion
+    }
+
     when (val sesion = estadoSesion) {
         // Mientras se revisa si había sesión guardada
         EstadoSesion.Verificando -> Cargando("Verificando sesión...")
@@ -57,111 +73,130 @@ fun AppNav() {
             // Pantalla inicial: Tipos si ya había sesión, Login si no
             val inicio = remember { if (sesion is EstadoSesion.Activa) Rutas.TIPOS else Rutas.LOGIN }
 
-            NavHost(navController = navController, startDestination = inicio) {
+            Box(modifier = Modifier.fillMaxSize()) {
 
-                // El login entra con fundido y un acercamiento suave
-                composable(
-                    route = Rutas.LOGIN,
-                    enterTransition = {
-                        fadeIn(tween(700)) + scaleIn(initialScale = 1.1f, animationSpec = tween(700))
-                    }
-                ) {
-                    LoginScreen(
-                        viewModel = viewModel(factory = AppViewModelProvider.Factory),
-                        onLoginExitoso = { nuevaSesion ->
-                            sesionViewModel.sesionIniciada(nuevaSesion)
-                            navController.navigate(Rutas.TIPOS) {
-                                popUpTo(Rutas.LOGIN) { inclusive = true }
-                            }
+                NavHost(navController = navController, startDestination = inicio) {
+
+                    composable(
+                        route = Rutas.LOGIN,
+                        // Entra con fundido y acercamiento (después de crear la cuenta)
+                        enterTransition = {
+                            fadeIn(tween(700)) + scaleIn(initialScale = 1.1f, animationSpec = tween(700))
                         },
-                        onIrARegistro = { navController.navigate(Rutas.REGISTRO) }
-                    )
-                }
-
-                // El registro sube desde abajo y al volver baja
-                composable(
-                    route = Rutas.REGISTRO,
-                    enterTransition = {
-                        fadeIn(tween(500)) + slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Up,
-                            tween(500)
-                        )
-                    },
-                    popExitTransition = {
-                        fadeOut(tween(400)) + slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Down,
-                            tween(400)
+                        // Hacia Registro el cambio lo tapa la cortina; hacia otras pantallas, fundido
+                        exitTransition = {
+                            if (targetState.destination.route == Rutas.REGISTRO) ExitTransition.None
+                            else fadeOut(tween(300))
+                        },
+                        // Al volver desde Registro también lo tapa la cortina
+                        popEnterTransition = { EnterTransition.None }
+                    ) {
+                        LoginScreen(
+                            viewModel = viewModel(factory = AppViewModelProvider.Factory),
+                            onLoginExitoso = { nuevaSesion ->
+                                sesionViewModel.sesionIniciada(nuevaSesion)
+                                navController.navigate(Rutas.TIPOS) {
+                                    popUpTo(Rutas.LOGIN) { inclusive = true }
+                                }
+                            },
+                            // Login -> Registro con cortina
+                            onIrARegistro = {
+                                conCortina { navController.navigate(Rutas.REGISTRO) }
+                            }
                         )
                     }
-                ) {
-                    RegistroScreen(
-                        viewModel = viewModel(factory = AppViewModelProvider.Factory),
-                        onCuentaCreada = {
-                            // Login nuevo con su animación; se borran Login y Registro del historial
-                            navController.navigate(Rutas.LOGIN) {
-                                popUpTo(Rutas.LOGIN) { inclusive = true }
-                            }
-                        },
-                        onIrALogin = { navController.popBackStack() }
-                    )
-                }
 
-                composable(Rutas.TIPOS) {
-                    TiposScreen(
-                        viewModel = viewModel(factory = AppViewModelProvider.Factory),
-                        esAdmin = esAdmin,
-                        onTipoClick = { tipo -> navController.navigate(Rutas.lista(tipo)) },
-                        onFavoritosClick = { navController.navigate(Rutas.FAVORITOS) },
-                        onAdminClick = { navController.navigate(Rutas.ADMIN) },
-                        onCerrarSesion = {
-                            sesionViewModel.cerrarSesion()
-                            navController.navigate(Rutas.LOGIN) {
-                                popUpTo(navController.graph.id) { inclusive = true }
-                            }
+                    composable(
+                        route = Rutas.REGISTRO,
+                        // Aparece y desaparece debajo de la cortina
+                        enterTransition = { EnterTransition.None },
+                        popExitTransition = { ExitTransition.None },
+                        // Al ir al Login después de crear la cuenta
+                        exitTransition = { fadeOut(tween(400)) }
+                    ) {
+                        // Botón atrás del celular: también vuelve con cortina
+                        BackHandler {
+                            conCortina { navController.popBackStack() }
                         }
-                    )
-                }
 
-                composable(
-                    route = Rutas.LISTA,
-                    arguments = listOf(navArgument("tipo") { type = NavType.StringType })
-                ) {
-                    ListaScreen(
-                        viewModel = viewModel(factory = AppViewModelProvider.Factory),
-                        onItemClick = { id -> navController.navigate(Rutas.detalle(id)) },
-                        onVolver = { navController.popBackStack() }
-                    )
-                }
+                        RegistroScreen(
+                            viewModel = viewModel(factory = AppViewModelProvider.Factory),
+                            onCuentaCreada = {
+                                // Login nuevo con su animación; se borran Login y Registro del historial
+                                navController.navigate(Rutas.LOGIN) {
+                                    popUpTo(Rutas.LOGIN) { inclusive = true }
+                                }
+                            },
+                            // Registro -> Login con cortina
+                            onIrALogin = {
+                                conCortina { navController.popBackStack() }
+                            }
+                        )
+                    }
 
-                composable(
-                    route = Rutas.DETALLE,
-                    arguments = listOf(navArgument("id") { type = NavType.IntType })
-                ) {
-                    DetalleScreen(
-                        viewModel = viewModel(factory = AppViewModelProvider.Factory),
-                        onVolver = { navController.popBackStack() }
-                    )
-                }
+                    composable(Rutas.TIPOS) {
+                        TiposScreen(
+                            viewModel = viewModel(factory = AppViewModelProvider.Factory),
+                            esAdmin = esAdmin,
+                            onTipoClick = { tipo -> navController.navigate(Rutas.lista(tipo)) },
+                            onFavoritosClick = { navController.navigate(Rutas.FAVORITOS) },
+                            onAdminClick = { navController.navigate(Rutas.ADMIN) },
+                            onCerrarSesion = {
+                                sesionViewModel.cerrarSesion()
+                                navController.navigate(Rutas.LOGIN) {
+                                    popUpTo(navController.graph.id) { inclusive = true }
+                                }
+                            }
+                        )
+                    }
 
-                composable(Rutas.FAVORITOS) {
-                    FavoritosScreen(
-                        viewModel = viewModel(factory = AppViewModelProvider.Factory),
-                        onItemClick = { id -> navController.navigate(Rutas.detalle(id)) },
-                        onVolver = { navController.popBackStack() }
-                    )
-                }
+                    composable(
+                        route = Rutas.LISTA,
+                        arguments = listOf(navArgument("tipo") { type = NavType.StringType })
+                    ) {
+                        ListaScreen(
+                            viewModel = viewModel(factory = AppViewModelProvider.Factory),
+                            onItemClick = { id -> navController.navigate(Rutas.detalle(id)) },
+                            onVolver = { navController.popBackStack() }
+                        )
+                    }
 
-                composable(Rutas.ADMIN) {
-                    if (esAdmin) {
-                        AdminScreen(
+                    composable(
+                        route = Rutas.DETALLE,
+                        arguments = listOf(navArgument("id") { type = NavType.IntType })
+                    ) {
+                        DetalleScreen(
                             viewModel = viewModel(factory = AppViewModelProvider.Factory),
                             onVolver = { navController.popBackStack() }
                         )
-                    } else {
-                        // Protección: si no es admin, regresa
-                        LaunchedEffect(Unit) { navController.popBackStack() }
+                    }
+
+                    composable(Rutas.FAVORITOS) {
+                        FavoritosScreen(
+                            viewModel = viewModel(factory = AppViewModelProvider.Factory),
+                            onItemClick = { id -> navController.navigate(Rutas.detalle(id)) },
+                            onVolver = { navController.popBackStack() }
+                        )
+                    }
+
+                    composable(Rutas.ADMIN) {
+                        if (esAdmin) {
+                            AdminScreen(
+                                viewModel = viewModel(factory = AppViewModelProvider.Factory),
+                                onVolver = { navController.popBackStack() }
+                            )
+                        } else {
+                            // Protección: si no es admin, regresa
+                            LaunchedEffect(Unit) { navController.popBackStack() }
+                        }
                     }
                 }
+
+                // Cortina de cuadros encima de todas las pantallas
+                CortinaCuadros(
+                    accion = accionCortina,
+                    onTerminar = { accionCortina = null }
+                )
             }
         }
     }
