@@ -4,6 +4,8 @@ import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.firestore.FirebaseFirestore
 import com.tecsup.pokemon.domain.model.Rol
 import com.tecsup.pokemon.domain.model.Sesion
@@ -27,6 +29,28 @@ class FirebaseAuthRepository(
         Result.failure(Exception("No hay conexión a internet"))
     } catch (e: Exception) {
         Result.failure(Exception("No se pudo iniciar sesión"))
+    }
+
+    // Crea la cuenta y su documento en Firestore con rol "usuario"
+    override suspend fun registrar(nombre: String, correo: String, clave: String): Result<Sesion> = try {
+        val usuario = auth.createUserWithEmailAndPassword(correo, clave).await().user
+            ?: throw IllegalStateException("No se pudo crear la cuenta")
+
+        db.collection("usuarios").document(usuario.uid)
+            .set(mapOf("rol" to "usuario", "nombre" to nombre))
+            .await()
+
+        Result.success(Sesion(usuario.uid, correo, Rol.USUARIO))
+    } catch (e: FirebaseAuthWeakPasswordException) {
+        Result.failure(Exception("La contraseña es muy débil"))
+    } catch (e: FirebaseAuthUserCollisionException) {
+        Result.failure(Exception("Ese correo ya está registrado"))
+    } catch (e: FirebaseAuthInvalidCredentialsException) {
+        Result.failure(Exception("El correo no es válido"))
+    } catch (e: FirebaseNetworkException) {
+        Result.failure(Exception("No hay conexión a internet"))
+    } catch (e: Exception) {
+        Result.failure(Exception("No se pudo crear la cuenta"))
     }
 
     override suspend fun sesionActual(): Sesion? {
