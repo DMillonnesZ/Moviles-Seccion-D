@@ -62,11 +62,15 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
-    // Imágenes por URL
+    // Imágenes por URL y animaciones (GIF / WebP animado)
     implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("io.coil-kt:coil-gif:2.7.0")
 
     // Íconos extendidos
     implementation("androidx.compose.material:material-icons-extended")
+
+    // Splash del sistema (Android 12+)
+    implementation("androidx.core:core-splashscreen:1.0.1")
 
     // Compose y AndroidX
     implementation(platform(libs.androidx.compose.bom))

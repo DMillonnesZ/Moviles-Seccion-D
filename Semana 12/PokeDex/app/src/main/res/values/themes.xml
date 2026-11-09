@@ -2,4 +2,12 @@
 <resources>
 
     <style name="Theme.PokeDex" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Splash del sistema "invisible": sin ícono y del mismo azul noche con el que empieza el splash animado -->
+    <style name="Theme.PokeDex.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#1B1830</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_vacio</item>
+        <item name="postSplashScreenTheme">@style/Theme.PokeDex</item>
+    </style>
+
 </resources>
