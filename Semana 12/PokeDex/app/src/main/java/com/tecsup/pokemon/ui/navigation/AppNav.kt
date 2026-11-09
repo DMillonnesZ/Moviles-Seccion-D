@@ -9,6 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.tecsup.pokemon.ui.AppViewModelProvider
 import com.tecsup.pokemon.ui.detalle.DetalleScreen
+import com.tecsup.pokemon.ui.favoritos.FavoritosScreen
 import com.tecsup.pokemon.ui.lista.ListaScreen
 import com.tecsup.pokemon.ui.tipos.TiposScreen
 
@@ -16,6 +17,7 @@ object Rutas {
     const val TIPOS = "tipos"
     const val LISTA = "lista/{tipo}"
     const val DETALLE = "detalle/{id}"
+    const val FAVORITOS = "favoritos"
     fun lista(tipo: String) = "lista/$tipo"
     fun detalle(id: Int) = "detalle/$id"
 }
@@ -29,7 +31,8 @@ fun AppNav() {
         composable(Rutas.TIPOS) {
             TiposScreen(
                 viewModel = viewModel(factory = AppViewModelProvider.Factory),
-                onTipoClick = { tipo -> navController.navigate(Rutas.lista(tipo)) }
+                onTipoClick = { tipo -> navController.navigate(Rutas.lista(tipo)) },
+                onFavoritosClick = { navController.navigate(Rutas.FAVORITOS) }
             )
         }
 
@@ -50,6 +53,14 @@ fun AppNav() {
         ) {
             DetalleScreen(
                 viewModel = viewModel(factory = AppViewModelProvider.Factory),
+                onVolver = { navController.popBackStack() }
+            )
+        }
+
+        composable(Rutas.FAVORITOS) {
+            FavoritosScreen(
+                viewModel = viewModel(factory = AppViewModelProvider.Factory),
+                onItemClick = { id -> navController.navigate(Rutas.detalle(id)) },
                 onVolver = { navController.popBackStack() }
             )
         }

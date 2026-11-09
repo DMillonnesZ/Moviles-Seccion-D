@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,13 +27,27 @@ import com.tecsup.pokemon.ui.components.VacioView
 @Composable
 fun TiposScreen(
     viewModel: TiposViewModel,
-    onTipoClick: (String) -> Unit
+    onTipoClick: (String) -> Unit,
+    onFavoritosClick: () -> Unit
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     val aviso by viewModel.aviso.collectAsStateWithLifecycle()
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("PokeDex") }) }
+        topBar = {
+            TopAppBar(
+                title = { Text("PokeDex") },
+                actions = {
+                    IconButton(onClick = onFavoritosClick) {
+                        Icon(
+                            Icons.Filled.Favorite,
+                            contentDescription = "Favoritos",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            )
+        }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
 
