@@ -34,12 +34,17 @@ class LoginViewModel(
         _estado.update { it.copy(clave = valor, error = null) }
     }
 
+    // Oculta el error (la pantalla lo llama después de unos segundos)
+    fun limpiarError() {
+        _estado.update { it.copy(error = null) }
+    }
+
     fun iniciarSesion() {
         val actual = _estado.value
 
         // Validación local: no se llama a Firebase si hay campos vacíos (PA-04)
         if (actual.correo.isBlank() || actual.clave.isBlank()) {
-            _estado.update { it.copy(error = "Ingresa tu correo y contraseña") }
+            _estado.update { it.copy(error = "Completa correo y contraseña") }
             return
         }
 
