@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.tecsup.pokemon.PokeDexApp
+import com.tecsup.pokemon.ui.admin.AdminViewModel
 import com.tecsup.pokemon.ui.detalle.DetalleViewModel
 import com.tecsup.pokemon.ui.favoritos.FavoritosViewModel
 import com.tecsup.pokemon.ui.lista.ListaViewModel
@@ -38,6 +39,9 @@ object AppViewModelProvider {
         }
         initializer {
             FavoritosViewModel(pokeDexApp().container.itemRepository)
+        }
+        initializer {
+            AdminViewModel(pokeDexApp().container.itemRepository)
         }
     }
 }

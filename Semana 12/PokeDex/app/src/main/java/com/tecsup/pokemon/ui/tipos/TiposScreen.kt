@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
@@ -29,8 +30,10 @@ import com.tecsup.pokemon.ui.components.VacioView
 @Composable
 fun TiposScreen(
     viewModel: TiposViewModel,
+    esAdmin: Boolean,
     onTipoClick: (String) -> Unit,
     onFavoritosClick: () -> Unit,
+    onAdminClick: () -> Unit,
     onCerrarSesion: () -> Unit
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
@@ -54,6 +57,12 @@ fun TiposScreen(
                             contentDescription = "Favoritos",
                             tint = MaterialTheme.colorScheme.error
                         )
+                    }
+                    // Solo el admin ve el acceso al panel
+                    if (esAdmin) {
+                        IconButton(onClick = onAdminClick) {
+                            Icon(Icons.Filled.AdminPanelSettings, contentDescription = "Panel Admin")
+                        }
                     }
                     IconButton(onClick = onCerrarSesion) {
                         Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Cerrar sesión")
