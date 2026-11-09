@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import com.tecsup.pokemon.ui.components.PantallaCompleta
 import com.tecsup.pokemon.ui.navigation.AppNav
 import com.tecsup.pokemon.ui.theme.PokeDexTheme
 
@@ -22,6 +23,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PokeDexTheme {
+                // Oculta barra de estado y de navegación en toda la app
+                PantallaCompleta()
                 PedirPermisoNotificaciones()
                 AppNav()
             }
