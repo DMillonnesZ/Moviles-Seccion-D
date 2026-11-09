@@ -1,5 +1,7 @@
 package com.tecsup.pokemon.data.mapper
 
+import com.tecsup.pokemon.data.local.ItemEntity
+import com.tecsup.pokemon.data.local.TipoEntity
 import com.tecsup.pokemon.data.remote.dto.PokemonDto
 import com.tecsup.pokemon.data.remote.dto.RecursoDto
 import com.tecsup.pokemon.data.remote.dto.TipoDetalleDto
@@ -16,21 +18,37 @@ fun imagenPokemon(id: Int): String =
 fun iconoTipo(id: Int): String =
     "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/small/$id.png"
 
-// Pokémon dentro de un tipo -> Item de la UI
-fun RecursoDto.aItem(): Item {
+// ----- DTO -> Entity (para guardar en Room) -----
+
+fun RecursoDto.aEntity(esFavorito: Boolean = false): ItemEntity {
     val id = idDesdeUrl(url)
-    return Item(id = id, nombre = name, imagenUrl = imagenPokemon(id))
+    return ItemEntity(id = id, nombre = name, imagenUrl = imagenPokemon(id), esFavorito = esFavorito)
 }
 
-// Tipo de la API -> Tipo del dominio (nombre en español si existe)
-fun TipoDetalleDto.aTipo(): Tipo = Tipo(
+fun TipoDetalleDto.aEntity(): TipoEntity = TipoEntity(
     nombre = name,
     nombreEs = names.firstOrNull { it.language.name == "es" }?.name
         ?: name.replaceFirstChar { it.uppercase() },
     iconoUrl = iconoTipo(id)
 )
 
-// Detalle de la API -> ItemDetalle (altura en m y peso en kg)
+// ----- Entity -> Modelo (para mostrar en la UI) -----
+
+fun ItemEntity.aModelo(): Item = Item(
+    id = id,
+    nombre = nombre,
+    imagenUrl = imagenUrl,
+    esFavorito = esFavorito
+)
+
+fun TipoEntity.aModelo(): Tipo = Tipo(
+    nombre = nombre,
+    nombreEs = nombreEs,
+    iconoUrl = iconoUrl
+)
+
+// ----- DTO -> Modelo (el detalle no se guarda, se pide al tocar) -----
+
 fun PokemonDto.aDetalle(): ItemDetalle = ItemDetalle(
     id = id,
     nombre = name,
