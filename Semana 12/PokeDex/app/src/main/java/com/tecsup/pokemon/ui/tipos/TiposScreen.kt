@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
@@ -29,7 +30,8 @@ import com.tecsup.pokemon.ui.components.VacioView
 fun TiposScreen(
     viewModel: TiposViewModel,
     onTipoClick: (String) -> Unit,
-    onFavoritosClick: () -> Unit
+    onFavoritosClick: () -> Unit,
+    onCerrarSesion: () -> Unit
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     val aviso by viewModel.aviso.collectAsStateWithLifecycle()
@@ -52,6 +54,9 @@ fun TiposScreen(
                             contentDescription = "Favoritos",
                             tint = MaterialTheme.colorScheme.error
                         )
+                    }
+                    IconButton(onClick = onCerrarSesion) {
+                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Cerrar sesión")
                     }
                 }
             )

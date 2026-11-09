@@ -1,6 +1,9 @@
 package com.tecsup.pokemon.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -8,12 +11,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.tecsup.pokemon.ui.AppViewModelProvider
+import com.tecsup.pokemon.ui.components.Cargando
 import com.tecsup.pokemon.ui.detalle.DetalleScreen
 import com.tecsup.pokemon.ui.favoritos.FavoritosScreen
 import com.tecsup.pokemon.ui.lista.ListaScreen
+import com.tecsup.pokemon.ui.login.LoginScreen
 import com.tecsup.pokemon.ui.tipos.TiposScreen
 
 object Rutas {
+    const val LOGIN = "login"
     const val TIPOS = "tipos"
     const val LISTA = "lista/{tipo}"
     const val DETALLE = "detalle/{id}"
@@ -24,45 +30,76 @@ object Rutas {
 
 @Composable
 fun AppNav() {
-    val navController = rememberNavController()
+    // Vive mientras la app esté abierta: sabe quién está logueado
+    val sesionViewModel: SesionViewModel = viewModel(factory = AppViewModelProvider.Factory)
+    val estadoSesion by sesionViewModel.estado.collectAsStateWithLifecycle()
 
-    NavHost(navController = navController, startDestination = Rutas.TIPOS) {
+    when (val sesion = estadoSesion) {
+        // Mientras se revisa si había sesión guardada
+        EstadoSesion.Verificando -> Cargando("Verificando sesión...")
 
-        composable(Rutas.TIPOS) {
-            TiposScreen(
-                viewModel = viewModel(factory = AppViewModelProvider.Factory),
-                onTipoClick = { tipo -> navController.navigate(Rutas.lista(tipo)) },
-                onFavoritosClick = { navController.navigate(Rutas.FAVORITOS) }
-            )
-        }
+        else -> {
+            val navController = rememberNavController()
+            // Pantalla inicial: Tipos si ya había sesión, Login si no
+            val inicio = remember { if (sesion is EstadoSesion.Activa) Rutas.TIPOS else Rutas.LOGIN }
 
-        composable(
-            route = Rutas.LISTA,
-            arguments = listOf(navArgument("tipo") { type = NavType.StringType })
-        ) {
-            ListaScreen(
-                viewModel = viewModel(factory = AppViewModelProvider.Factory),
-                onItemClick = { id -> navController.navigate(Rutas.detalle(id)) },
-                onVolver = { navController.popBackStack() }
-            )
-        }
+            NavHost(navController = navController, startDestination = inicio) {
 
-        composable(
-            route = Rutas.DETALLE,
-            arguments = listOf(navArgument("id") { type = NavType.IntType })
-        ) {
-            DetalleScreen(
-                viewModel = viewModel(factory = AppViewModelProvider.Factory),
-                onVolver = { navController.popBackStack() }
-            )
-        }
+                composable(Rutas.LOGIN) {
+                    LoginScreen(
+                        viewModel = viewModel(factory = AppViewModelProvider.Factory),
+                        onLoginExitoso = { nuevaSesion ->
+                            sesionViewModel.sesionIniciada(nuevaSesion)
+                            navController.navigate(Rutas.TIPOS) {
+                                popUpTo(Rutas.LOGIN) { inclusive = true }
+                            }
+                        }
+                    )
+                }
 
-        composable(Rutas.FAVORITOS) {
-            FavoritosScreen(
-                viewModel = viewModel(factory = AppViewModelProvider.Factory),
-                onItemClick = { id -> navController.navigate(Rutas.detalle(id)) },
-                onVolver = { navController.popBackStack() }
-            )
+                composable(Rutas.TIPOS) {
+                    TiposScreen(
+                        viewModel = viewModel(factory = AppViewModelProvider.Factory),
+                        onTipoClick = { tipo -> navController.navigate(Rutas.lista(tipo)) },
+                        onFavoritosClick = { navController.navigate(Rutas.FAVORITOS) },
+                        onCerrarSesion = {
+                            sesionViewModel.cerrarSesion()
+                            navController.navigate(Rutas.LOGIN) {
+                                popUpTo(navController.graph.id) { inclusive = true }
+                            }
+                        }
+                    )
+                }
+
+                composable(
+                    route = Rutas.LISTA,
+                    arguments = listOf(navArgument("tipo") { type = NavType.StringType })
+                ) {
+                    ListaScreen(
+                        viewModel = viewModel(factory = AppViewModelProvider.Factory),
+                        onItemClick = { id -> navController.navigate(Rutas.detalle(id)) },
+                        onVolver = { navController.popBackStack() }
+                    )
+                }
+
+                composable(
+                    route = Rutas.DETALLE,
+                    arguments = listOf(navArgument("id") { type = NavType.IntType })
+                ) {
+                    DetalleScreen(
+                        viewModel = viewModel(factory = AppViewModelProvider.Factory),
+                        onVolver = { navController.popBackStack() }
+                    )
+                }
+
+                composable(Rutas.FAVORITOS) {
+                    FavoritosScreen(
+                        viewModel = viewModel(factory = AppViewModelProvider.Factory),
+                        onItemClick = { id -> navController.navigate(Rutas.detalle(id)) },
+                        onVolver = { navController.popBackStack() }
+                    )
+                }
+            }
         }
     }
 }

@@ -1,6 +1,9 @@
 package com.tecsup.pokemon.data.auth
 
+import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.firestore.FirebaseFirestore
 import com.tecsup.pokemon.domain.model.Rol
 import com.tecsup.pokemon.domain.model.Sesion
@@ -16,8 +19,14 @@ class FirebaseAuthRepository(
         val usuario = auth.signInWithEmailAndPassword(correo, clave).await().user
             ?: throw IllegalStateException("No se pudo iniciar sesión")
         Result.success(leerSesion(usuario.uid, correo))
+    } catch (e: FirebaseAuthInvalidCredentialsException) {
+        Result.failure(Exception("Correo o contraseña incorrectos"))
+    } catch (e: FirebaseAuthInvalidUserException) {
+        Result.failure(Exception("Correo o contraseña incorrectos"))
+    } catch (e: FirebaseNetworkException) {
+        Result.failure(Exception("No hay conexión a internet"))
     } catch (e: Exception) {
-        Result.failure(e)
+        Result.failure(Exception("No se pudo iniciar sesión"))
     }
 
     override suspend fun sesionActual(): Sesion? {

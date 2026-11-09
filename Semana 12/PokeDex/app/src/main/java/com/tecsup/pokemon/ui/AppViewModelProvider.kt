@@ -9,10 +9,18 @@ import com.tecsup.pokemon.PokeDexApp
 import com.tecsup.pokemon.ui.detalle.DetalleViewModel
 import com.tecsup.pokemon.ui.favoritos.FavoritosViewModel
 import com.tecsup.pokemon.ui.lista.ListaViewModel
+import com.tecsup.pokemon.ui.login.LoginViewModel
+import com.tecsup.pokemon.ui.navigation.SesionViewModel
 import com.tecsup.pokemon.ui.tipos.TiposViewModel
 
 object AppViewModelProvider {
     val Factory = viewModelFactory {
+        initializer {
+            SesionViewModel(pokeDexApp().container.authRepository)
+        }
+        initializer {
+            LoginViewModel(pokeDexApp().container.authRepository)
+        }
         initializer {
             TiposViewModel(pokeDexApp().container.itemRepository)
         }
