@@ -19,10 +19,12 @@ import com.tecsup.pokemon.ui.detalle.DetalleScreen
 import com.tecsup.pokemon.ui.favoritos.FavoritosScreen
 import com.tecsup.pokemon.ui.lista.ListaScreen
 import com.tecsup.pokemon.ui.login.LoginScreen
+import com.tecsup.pokemon.ui.registro.RegistroScreen
 import com.tecsup.pokemon.ui.tipos.TiposScreen
 
 object Rutas {
     const val LOGIN = "login"
+    const val REGISTRO = "registro"
     const val TIPOS = "tipos"
     const val LISTA = "lista/{tipo}"
     const val DETALLE = "detalle/{id}"
@@ -60,7 +62,22 @@ fun AppNav() {
                             navController.navigate(Rutas.TIPOS) {
                                 popUpTo(Rutas.LOGIN) { inclusive = true }
                             }
-                        }
+                        },
+                        onIrARegistro = { navController.navigate(Rutas.REGISTRO) }
+                    )
+                }
+
+                composable(Rutas.REGISTRO) {
+                    RegistroScreen(
+                        viewModel = viewModel(factory = AppViewModelProvider.Factory),
+                        onRegistroExitoso = { nuevaSesion ->
+                            sesionViewModel.sesionIniciada(nuevaSesion)
+                            // Borra Login y Registro del historial
+                            navController.navigate(Rutas.TIPOS) {
+                                popUpTo(Rutas.LOGIN) { inclusive = true }
+                            }
+                        },
+                        onIrALogin = { navController.popBackStack() }
                     )
                 }
 

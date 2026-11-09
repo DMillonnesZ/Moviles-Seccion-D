@@ -12,6 +12,7 @@ import com.tecsup.pokemon.ui.favoritos.FavoritosViewModel
 import com.tecsup.pokemon.ui.lista.ListaViewModel
 import com.tecsup.pokemon.ui.login.LoginViewModel
 import com.tecsup.pokemon.ui.navigation.SesionViewModel
+import com.tecsup.pokemon.ui.registro.RegistroViewModel
 import com.tecsup.pokemon.ui.tipos.TiposViewModel
 
 object AppViewModelProvider {
@@ -21,6 +22,9 @@ object AppViewModelProvider {
         }
         initializer {
             LoginViewModel(pokeDexApp().container.authRepository)
+        }
+        initializer {
+            RegistroViewModel(pokeDexApp().container.authRepository)
         }
         initializer {
             TiposViewModel(
