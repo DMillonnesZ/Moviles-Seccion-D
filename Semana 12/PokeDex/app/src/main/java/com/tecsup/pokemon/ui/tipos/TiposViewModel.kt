@@ -19,13 +19,18 @@ class TiposViewModel(
     private val _estado = MutableStateFlow<UiState<List<Tipo>>>(UiState.Cargando)
     val estado: StateFlow<UiState<List<Tipo>>> = _estado.asStateFlow()
 
+    // Mensaje de "sin conexión" cuando hay datos guardados
     private val _aviso = MutableStateFlow<String?>(null)
     val aviso: StateFlow<String?> = _aviso.asStateFlow()
+
+    // true mientras se descarga de la API
+    private val _sincronizando = MutableStateFlow(false)
+    val sincronizando: StateFlow<Boolean> = _sincronizando.asStateFlow()
 
     private var refrescoTerminado = false
 
     init {
-        // La pantalla siempre muestra lo que tiene el Repository
+        // La pantalla siempre muestra lo que hay en Room
         viewModelScope.launch {
             repo.tipos.collect { lista ->
                 if (lista.isNotEmpty() || refrescoTerminado) {
@@ -37,7 +42,11 @@ class TiposViewModel(
     }
 
     fun refrescar() {
+        // Evita dos sincronizaciones a la vez
+        if (_sincronizando.value) return
+
         viewModelScope.launch {
+            _sincronizando.value = true
             if (_estado.value is UiState.Error) _estado.value = UiState.Cargando
 
             val resultado = repo.refrescar()
@@ -52,6 +61,8 @@ class TiposViewModel(
                     if (repo.cantidadGuardada() == 0) _estado.value = UiState.Error(mensajeDe(e))
                     else _aviso.value = "Sin conexión: mostrando datos guardados"
                 }
+
+            _sincronizando.value = false
         }
     }
 

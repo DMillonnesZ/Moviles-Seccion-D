@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,12 +33,19 @@ fun TiposScreen(
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     val aviso by viewModel.aviso.collectAsStateWithLifecycle()
+    val sincronizando by viewModel.sincronizando.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("PokeDex") },
                 actions = {
+                    IconButton(
+                        onClick = viewModel::refrescar,
+                        enabled = !sincronizando
+                    ) {
+                        Icon(Icons.Filled.Refresh, contentDescription = "Sincronizar")
+                    }
                     IconButton(onClick = onFavoritosClick) {
                         Icon(
                             Icons.Filled.Favorite,
@@ -51,23 +59,39 @@ fun TiposScreen(
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
 
-            // Aviso de modo sin conexión
+            // Progreso mientras sincroniza sin ocultar los datos
+            if (sincronizando && estado is UiState.Exito) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+
+            // Aviso de modo sin conexión con opción de reintentar
             aviso?.let {
-                Text(
-                    text = it,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.errorContainer)
-                        .padding(12.dp)
-                )
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = it,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(
+                        onClick = viewModel::refrescar,
+                        enabled = !sincronizando
+                    ) {
+                        Text("Reintentar")
+                    }
+                }
             }
 
             when (val e = estado) {
                 is UiState.Cargando -> Cargando("Descargando tipos...")
                 is UiState.Error -> ErrorView(e.mensaje, onReintentar = viewModel::refrescar)
                 is UiState.Exito ->
-                    if (e.datos.isEmpty()) VacioView("No hay tipos guardados")
+                    if (e.datos.isEmpty()) VacioView("No hay tipos guardados.\nToca sincronizar para descargarlos.")
                     else TiposGrid(e.datos, onTipoClick)
             }
         }
