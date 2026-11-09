@@ -3,7 +3,6 @@ package com.tecsup.pokemon.ui.registro
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tecsup.pokemon.data.auth.AuthRepository
-import com.tecsup.pokemon.domain.model.Sesion
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,10 +15,10 @@ data class RegistroUiState(
     val correo: String = "",
     val clave: String = "",
     val confirmar: String = "",
-    val fuerzaClave: Int = 0,       // 0 vacía, 1 débil, 2 media, 3 fuerte
+    val fuerzaClave: Int = 0,          // 0 vacía, 1 débil, 2 media, 3 fuerte
     val cargando: Boolean = false,
     val error: String? = null,
-    val sesion: Sesion? = null      // distinto de null = registro exitoso
+    val cuentaCreada: Boolean = false  // true = mostrar la celebración
 )
 
 class RegistroViewModel(
@@ -71,8 +70,11 @@ class RegistroViewModel(
         viewModelScope.launch {
             _estado.update { it.copy(cargando = true, error = null) }
             authRepo.registrar(actual.nombre.trim(), actual.correo.trim(), actual.clave)
-                .onSuccess { sesion ->
-                    _estado.update { it.copy(cargando = false, sesion = sesion) }
+                .onSuccess {
+                    // Firebase deja la sesión abierta al crear la cuenta:
+                    // se cierra para que el usuario entre por el login
+                    authRepo.cerrarSesion()
+                    _estado.update { it.copy(cargando = false, cuentaCreada = true) }
                 }
                 .onFailure { e ->
                     _estado.update {

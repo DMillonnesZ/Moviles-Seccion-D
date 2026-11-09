@@ -8,19 +8,18 @@ import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.tecsup.pokemon.domain.model.Sesion
 import com.tecsup.pokemon.ui.components.AparecerSuave
 import com.tecsup.pokemon.ui.components.BarraFuerzaClave
 import com.tecsup.pokemon.ui.components.BotonMadera
 import com.tecsup.pokemon.ui.components.CampoMadera
 import com.tecsup.pokemon.ui.components.CartelTitulo
+import com.tecsup.pokemon.ui.components.DialogoCuentaCreada
 import com.tecsup.pokemon.ui.components.EnlaceMadera
 import com.tecsup.pokemon.ui.components.ErrorTemporal
 import com.tecsup.pokemon.ui.components.FondoPokedex
@@ -29,15 +28,10 @@ import com.tecsup.pokemon.ui.components.TablaSubtitulo
 @Composable
 fun RegistroScreen(
     viewModel: RegistroViewModel,
-    onRegistroExitoso: (Sesion) -> Unit,
+    onCuentaCreada: () -> Unit,
     onIrALogin: () -> Unit
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
-
-    // Cuando la cuenta se crea, se avisa a la navegación
-    LaunchedEffect(estado.sesion) {
-        estado.sesion?.let(onRegistroExitoso)
-    }
 
     FondoPokedex {
         BoxWithConstraints(
@@ -165,6 +159,11 @@ fun RegistroScreen(
                     }
                 }
             }
+        }
+
+        // Celebración encima de todo cuando la cuenta se crea
+        if (estado.cuentaCreada) {
+            DialogoCuentaCreada(onPerfecto = onCuentaCreada)
         }
     }
 }

@@ -1,5 +1,10 @@
 package com.tecsup.pokemon.ui.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,7 +59,13 @@ fun AppNav() {
 
             NavHost(navController = navController, startDestination = inicio) {
 
-                composable(Rutas.LOGIN) {
+                // El login entra con fundido y un acercamiento suave
+                composable(
+                    route = Rutas.LOGIN,
+                    enterTransition = {
+                        fadeIn(tween(700)) + scaleIn(initialScale = 1.1f, animationSpec = tween(700))
+                    }
+                ) {
                     LoginScreen(
                         viewModel = viewModel(factory = AppViewModelProvider.Factory),
                         onLoginExitoso = { nuevaSesion ->
@@ -67,13 +78,27 @@ fun AppNav() {
                     )
                 }
 
-                composable(Rutas.REGISTRO) {
+                // El registro sube desde abajo y al volver baja
+                composable(
+                    route = Rutas.REGISTRO,
+                    enterTransition = {
+                        fadeIn(tween(500)) + slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Up,
+                            tween(500)
+                        )
+                    },
+                    popExitTransition = {
+                        fadeOut(tween(400)) + slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Down,
+                            tween(400)
+                        )
+                    }
+                ) {
                     RegistroScreen(
                         viewModel = viewModel(factory = AppViewModelProvider.Factory),
-                        onRegistroExitoso = { nuevaSesion ->
-                            sesionViewModel.sesionIniciada(nuevaSesion)
-                            // Borra Login y Registro del historial
-                            navController.navigate(Rutas.TIPOS) {
+                        onCuentaCreada = {
+                            // Login nuevo con su animación; se borran Login y Registro del historial
+                            navController.navigate(Rutas.LOGIN) {
                                 popUpTo(Rutas.LOGIN) { inclusive = true }
                             }
                         },
