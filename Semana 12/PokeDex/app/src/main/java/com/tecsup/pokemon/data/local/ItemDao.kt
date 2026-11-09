@@ -44,6 +44,18 @@ interface ItemDao {
     @Query("SELECT * FROM tipos ORDER BY nombreEs")
     fun tipos(): Flow<List<TipoEntity>>
 
+    // Tipos con la cantidad de Pokémon de cada uno
+    @Query(
+        """
+        SELECT tipos.*, COUNT(item_tipo.itemId) AS cantidad
+        FROM tipos
+        LEFT JOIN item_tipo ON tipos.nombre = item_tipo.tipo
+        GROUP BY tipos.nombre
+        ORDER BY tipos.nombreEs
+        """
+    )
+    fun tiposConCantidad(): Flow<List<TipoConCantidad>>
+
     // ----- Guardar -----
 
     @Upsert

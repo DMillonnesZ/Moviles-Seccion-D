@@ -33,8 +33,9 @@ class ItemRepositoryImpl(
     override val favoritos: Flow<List<Item>> =
         dao.favoritos().map { lista -> lista.map { it.aModelo() } }
 
+    // Tipos con la cantidad de Pokémon de cada uno
     override val tipos: Flow<List<Tipo>> =
-        dao.tipos().map { lista -> lista.map { it.aModelo() } }
+        dao.tiposConCantidad().map { lista -> lista.map { it.aModelo() } }
 
     override fun itemsPorTipo(tipo: String): Flow<List<Item>> =
         dao.porTipo(tipo).map { lista -> lista.map { it.aModelo() } }
