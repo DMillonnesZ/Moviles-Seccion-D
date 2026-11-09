@@ -12,9 +12,15 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.OutputTransformation
+import androidx.compose.foundation.text.input.TextFieldBuffer
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Visibility
@@ -27,11 +33,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -40,14 +50,13 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tecsup.pokemon.R
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.drop
 
 // Colores del estilo madera
 val CafeMadera = Color(0xFF5A3A1E)
@@ -150,6 +159,36 @@ private fun Rayitas(izquierda: Boolean) {
     }
 }
 
+// Desvanece el contenido solo en el lado donde hay texto escondido
+private fun Modifier.bordesDifuminados(
+    izquierda: Boolean,
+    derecha: Boolean,
+    ancho: Float = 0.10f
+): Modifier {
+    if (!izquierda && !derecha) return this
+    return this
+        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+        .drawWithContent {
+            drawContent()
+            drawRect(
+                brush = Brush.horizontalGradient(
+                    0f to if (izquierda) Color.Transparent else Color.Black,
+                    ancho to Color.Black,
+                    1f - ancho to Color.Black,
+                    1f to if (derecha) Color.Transparent else Color.Black
+                ),
+                blendMode = BlendMode.DstIn
+            )
+        }
+}
+
+// Muestra la contraseña como puntos (sin cambiar el texto real)
+private object OcultarClave : OutputTransformation {
+    override fun TextFieldBuffer.transformOutput() {
+        replace(0, length, "•".repeat(length))
+    }
+}
+
 // Campo de texto sobre una tabla de madera
 @Composable
 fun CampoMadera(
@@ -162,6 +201,25 @@ fun CampoMadera(
     habilitado: Boolean = true
 ) {
     var verClave by rememberSaveable { mutableStateOf(false) }
+
+    // Estado propio del campo (permite saber cuánto se desplazó el texto)
+    val estadoTexto = rememberTextFieldState(initialText = valor)
+    val desplazamiento = rememberScrollState()
+    val onValorChangeActual by rememberUpdatedState(onValorChange)
+
+    // Campo -> ViewModel: cada cambio del usuario se envía como String
+    LaunchedEffect(estadoTexto) {
+        snapshotFlow { estadoTexto.text.toString() }
+            .drop(1)   // ignora el valor inicial
+            .collect { onValorChangeActual(it) }
+    }
+
+    // ViewModel -> campo: si el ViewModel cambia el valor (por ejemplo lo limpia)
+    LaunchedEffect(valor) {
+        if (estadoTexto.text.toString() != valor) {
+            estadoTexto.setTextAndPlaceCursorAtEnd(valor)
+        }
+    }
 
     Box(
         contentAlignment = Alignment.CenterStart,
@@ -189,25 +247,30 @@ fun CampoMadera(
             )
             Spacer(Modifier.width(12.dp))
             BasicTextField(
-                value = valor,
-                onValueChange = onValorChange,
+                state = estadoTexto,
                 enabled = habilitado,
-                singleLine = true,
+                lineLimits = TextFieldLineLimits.SingleLine,   // una línea que se desliza a lo ancho
+                scrollState = desplazamiento,
                 textStyle = TextStyle(
                     color = CafeMadera,
                     fontFamily = FuenteMadera,
                     fontSize = 17.sp
                 ),
                 cursorBrush = SolidColor(CafeMadera),
-                visualTransformation = if (esClave && !verClave) PasswordVisualTransformation()
-                else VisualTransformation.None,
+                outputTransformation = if (esClave && !verClave) OcultarClave else null,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = if (esClave) KeyboardType.Password else tipoTeclado
                 ),
-                modifier = Modifier.weight(1f),
-                decorationBox = { campo ->
-                    Box {
-                        if (valor.isEmpty()) {
+                modifier = Modifier
+                    .weight(1f)
+                    // Difumina solo el lado donde queda texto escondido
+                    .bordesDifuminados(
+                        izquierda = desplazamiento.value > 0,
+                        derecha = desplazamiento.value < desplazamiento.maxValue
+                    ),
+                decorator = { campo ->
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        if (estadoTexto.text.isEmpty()) {
                             // Siempre en una línea: si no entra, termina en "..."
                             Text(
                                 text = placeholder,
