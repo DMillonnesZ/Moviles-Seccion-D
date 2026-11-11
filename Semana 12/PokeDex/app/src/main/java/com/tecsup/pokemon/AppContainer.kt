@@ -6,6 +6,8 @@ import com.tecsup.pokemon.data.auth.AuthRepository
 import com.tecsup.pokemon.data.auth.FirebaseAuthRepository
 import com.tecsup.pokemon.data.local.AppDatabase
 import com.tecsup.pokemon.data.remote.RetrofitClient
+import com.tecsup.pokemon.data.repository.CartasRepository
+import com.tecsup.pokemon.data.repository.CartasRepositoryImpl
 import com.tecsup.pokemon.data.repository.ItemRepository
 import com.tecsup.pokemon.data.repository.ItemRepositoryImpl
 import com.tecsup.pokemon.notification.Notificador
@@ -20,9 +22,15 @@ class AppContainer(context: Context) {
         "pokedex.db"
     ).build()
 
+    // PokeAPI + Room
     val itemRepository: ItemRepository = ItemRepositoryImpl(
         api = RetrofitClient.api,
         dao = database.itemDao()
+    )
+
+    // TCGdex (segunda API)
+    val cartasRepository: CartasRepository = CartasRepositoryImpl(
+        api = RetrofitClient.tcg
     )
 
     val authRepository: AuthRepository = FirebaseAuthRepository()
