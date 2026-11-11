@@ -10,11 +10,17 @@ import com.tecsup.pokemon.data.mapper.aDetalle
 import com.tecsup.pokemon.data.mapper.aEntity
 import com.tecsup.pokemon.data.mapper.aModelo
 import com.tecsup.pokemon.data.mapper.idDesdeUrl
+import com.tecsup.pokemon.data.mapper.imagenPokemon
 import com.tecsup.pokemon.data.remote.ApiService
+import com.tecsup.pokemon.data.remote.dto.EslabonDto
+import com.tecsup.pokemon.data.remote.dto.RelacionesDanoDto
+import com.tecsup.pokemon.domain.model.Debilidad
+import com.tecsup.pokemon.domain.model.EtapaEvolucion
 import com.tecsup.pokemon.domain.model.Item
 import com.tecsup.pokemon.domain.model.ItemDetalle
 import com.tecsup.pokemon.domain.model.OrdenPokemon
 import com.tecsup.pokemon.domain.model.Tipo
+import com.tecsup.pokemon.util.Traductor
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -31,6 +37,12 @@ class ItemRepositoryImpl(
 
     // Ids >= 10000 son formas especiales (megas, gigamax...)
     private val idMaximo = 10000
+
+    // Los 18 tipos que pueden atacar, para calcular debilidades
+    private val tiposAtacantes = listOf(
+        "normal", "fire", "water", "electric", "grass", "ice", "fighting", "poison", "ground",
+        "flying", "psychic", "bug", "rock", "ghost", "dragon", "dark", "steel", "fairy"
+    )
 
     override val items: Flow<List<Item>> =
         dao.todos().map { lista -> lista.map { it.aModelo() } }
@@ -103,8 +115,50 @@ class ItemRepositoryImpl(
         Result.failure(e)
     }
 
+    // Detalle completo: datos base + especie + evolución + debilidades + habilidades en español.
+    // Solo los datos base son obligatorios; si falla algún dato extra, se muestra lo que se pudo obtener.
     override suspend fun obtenerDetalle(id: Int): Result<ItemDetalle> = try {
-        Result.success(api.obtenerPokemon(id).aDetalle())
+        coroutineScope {
+            val base = api.obtenerPokemon(id).aDetalle()
+
+            // Datos extra en paralelo
+            val especieD = async { runCatching { api.obtenerEspecie(id) }.getOrNull() }
+            val habilidadesD = base.habilidades.map { habilidad ->
+                async {
+                    runCatching {
+                        api.obtenerHabilidad(habilidad).names
+                            .firstOrNull { it.language.name == "es" }?.name
+                    }.getOrNull() ?: Traductor.formatear(habilidad)
+                }
+            }
+            val relacionesD = base.tipos.map { tipo ->
+                async { runCatching { api.obtenerRelacionesTipo(tipo).relaciones }.getOrNull() }
+            }
+
+            val especie = especieD.await()
+            val cadena = especie?.cadenaEvolutiva?.url?.let { url ->
+                runCatching { api.obtenerCadenaEvolutiva(url) }.getOrNull()
+            }
+
+            Result.success(
+                base.copy(
+                    // La descripción más reciente en español
+                    descripcion = especie?.textos
+                        ?.lastOrNull { it.language.name == "es" }
+                        ?.texto
+                        ?.let { Traductor.limpiarDescripcion(it) }
+                        ?: "",
+                    categoria = especie?.genera
+                        ?.firstOrNull { it.language.name == "es" }
+                        ?.genus
+                        ?: "",
+                    genero = especie?.let { Traductor.genero(it.tasaGenero) },
+                    habilidades = habilidadesD.awaitAll(),
+                    debilidades = calcularDebilidades(relacionesD.awaitAll().filterNotNull()),
+                    evolucion = cadena?.let { aplanarCadena(it.chain) } ?: emptyList()
+                )
+            )
+        }
     } catch (e: IOException) {
         Result.failure(e)
     } catch (e: HttpException) {
@@ -118,4 +172,55 @@ class ItemRepositoryImpl(
     override suspend fun cantidadFavoritos(): Int = dao.contarFavoritos()
 
     override suspend fun limpiarCache() = dao.borrarTodo()
+
+    // Multiplica el daño de cada tipo atacante contra todos los tipos del Pokémon.
+    // Debilidad = recibe más de x1 (x2 o x4)
+    private fun calcularDebilidades(relaciones: List<RelacionesDanoDto>): List<Debilidad> {
+        if (relaciones.isEmpty()) return emptyList()
+
+        return tiposAtacantes
+            .map { atacante ->
+                val multiplicador = relaciones.fold(1.0) { acumulado, r ->
+                    acumulado * when {
+                        r.nadaDe.any { it.name == atacante } -> 0.0
+                        r.dobleDe.any { it.name == atacante } -> 2.0
+                        r.mitadDe.any { it.name == atacante } -> 0.5
+                        else -> 1.0
+                    }
+                }
+                Debilidad(atacante, multiplicador)
+            }
+            .filter { it.multiplicador > 1.0 }
+            .sortedByDescending { it.multiplicador }
+    }
+
+    // Convierte el árbol de evolución en una lista de etapas con su fase y condición.
+    // Funciona también con ramas (ej: Eevee tiene varias evoluciones en la fase 1)
+    private fun aplanarCadena(
+        eslabon: EslabonDto,
+        fase: Int = 0,
+        condicion: String = ""
+    ): List<EtapaEvolucion> {
+        val idEtapa = idDesdeUrl(eslabon.species.url)
+        val etapa = EtapaEvolucion(
+            id = idEtapa,
+            nombre = eslabon.species.name,
+            imagenUrl = imagenPokemon(idEtapa),
+            condicion = condicion,
+            fase = fase
+        )
+        val siguientes = eslabon.evolucionaA.flatMap { siguiente ->
+            val detalle = siguiente.detalles.firstOrNull()
+            val condicionSiguiente = Traductor.condicionEs(
+                disparador = detalle?.trigger?.name,
+                nivelMinimo = detalle?.nivelMinimo,
+                objeto = detalle?.item?.name,
+                objetoEquipado = detalle?.objetoEquipado?.name,
+                amistadMinima = detalle?.amistadMinima,
+                momentoDelDia = detalle?.momento?.ifBlank { null }
+            )
+            aplanarCadena(siguiente, fase + 1, condicionSiguiente)
+        }
+        return listOf(etapa) + siguientes
+    }
 }
