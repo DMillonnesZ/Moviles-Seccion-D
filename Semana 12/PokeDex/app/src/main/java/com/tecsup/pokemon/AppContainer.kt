@@ -8,6 +8,8 @@ import com.tecsup.pokemon.data.local.AppDatabase
 import com.tecsup.pokemon.data.remote.RetrofitClient
 import com.tecsup.pokemon.data.repository.CartasRepository
 import com.tecsup.pokemon.data.repository.CartasRepositoryImpl
+import com.tecsup.pokemon.data.repository.EvolucionRepository
+import com.tecsup.pokemon.data.repository.EvolucionRepositoryImpl
 import com.tecsup.pokemon.data.repository.ItemRepository
 import com.tecsup.pokemon.data.repository.ItemRepositoryImpl
 import com.tecsup.pokemon.notification.Notificador
@@ -20,7 +22,10 @@ class AppContainer(context: Context) {
         context,
         AppDatabase::class.java,
         "pokedex.db"
-    ).build()
+    )
+        // Versión 1 -> 2: agrega las cadenas evolutivas sin perder favoritos ni Pokémon
+        .addMigrations(AppDatabase.MIGRACION_1_2)
+        .build()
 
     // PokeAPI + Room
     val itemRepository: ItemRepository = ItemRepositoryImpl(
@@ -31,6 +36,12 @@ class AppContainer(context: Context) {
     // TCGdex (segunda API)
     val cartasRepository: CartasRepository = CartasRepositoryImpl(
         api = RetrofitClient.tcg
+    )
+
+    // Cadenas evolutivas (PokeAPI + Room)
+    val evolucionRepository: EvolucionRepository = EvolucionRepositoryImpl(
+        api = RetrofitClient.api,
+        dao = database.evolucionDao()
     )
 
     val authRepository: AuthRepository = FirebaseAuthRepository()

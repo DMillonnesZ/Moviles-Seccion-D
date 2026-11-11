@@ -3,6 +3,7 @@ package com.tecsup.pokemon.data.remote
 import com.tecsup.pokemon.data.remote.dto.CadenaEvolutivaDto
 import com.tecsup.pokemon.data.remote.dto.EspecieDto
 import com.tecsup.pokemon.data.remote.dto.HabilidadDto
+import com.tecsup.pokemon.data.remote.dto.ListaUrlsDto
 import com.tecsup.pokemon.data.remote.dto.PokemonDto
 import com.tecsup.pokemon.data.remote.dto.TipoDetalleDto
 import com.tecsup.pokemon.data.remote.dto.TipoListaDto
@@ -32,7 +33,7 @@ interface ApiService {
     @GET("pokemon-species/{id}")
     suspend fun obtenerEspecie(@Path("id") id: Int): EspecieDto
 
-    // Cadena evolutiva (la URL completa viene en la especie)
+    // Cadena evolutiva (la URL completa viene en la especie o en la lista de cadenas)
     @GET
     suspend fun obtenerCadenaEvolutiva(@Url url: String): CadenaEvolutivaDto
 
@@ -43,4 +44,10 @@ interface ApiService {
     // Nombre de una habilidad en cada idioma
     @GET("ability/{nombre}")
     suspend fun obtenerHabilidad(@Path("nombre") nombre: String): HabilidadDto
+
+    // ----- Evolución -----
+
+    // URLs de todas las cadenas evolutivas (son ~550, se piden en una sola página)
+    @GET("evolution-chain/")
+    suspend fun listarCadenas(@Query("limit") limit: Int = 1000): ListaUrlsDto
 }
