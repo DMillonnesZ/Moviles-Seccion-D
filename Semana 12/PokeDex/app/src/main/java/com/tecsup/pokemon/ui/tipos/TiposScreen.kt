@@ -39,6 +39,7 @@ import com.tecsup.pokemon.ui.components.LocalRellenoBarra
 import com.tecsup.pokemon.ui.components.TarjetaTipo
 import com.tecsup.pokemon.ui.components.TituloTabla
 import com.tecsup.pokemon.ui.components.VacioView
+import com.tecsup.pokemon.ui.components.desvanecerBordes
 
 @Composable
 fun TiposScreen(
@@ -135,10 +136,12 @@ fun TiposScreen(
             }
 
             // ----- Contenido: termina justo encima de la barra de navegación -----
+            // Se desvanece suave arriba (bajo el buscador) y abajo (sobre la barra)
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .padding(bottom = LocalRellenoBarra.current)
+                    .desvanecerBordes(arriba = 24.dp, abajo = 20.dp)
             ) {
                 when (val e = estado) {
                     is UiState.Cargando -> Cargando("Descargando tipos...")
@@ -150,11 +153,12 @@ fun TiposScreen(
                         } else {
                             LazyVerticalGrid(
                                 columns = GridCells.Adaptive(minSize = 104.dp),
+                                // Márgenes arriba y abajo: sin scroll, nada queda desvanecido
                                 contentPadding = PaddingValues(
                                     start = 16.dp,
                                     end = 16.dp,
-                                    top = 8.dp,
-                                    bottom = 16.dp
+                                    top = 20.dp,
+                                    bottom = 24.dp
                                 ),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)

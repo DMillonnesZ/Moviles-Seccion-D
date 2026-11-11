@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Favorite
@@ -14,13 +15,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
+import coil.compose.AsyncImage
 import com.tecsup.pokemon.R
 import com.tecsup.pokemon.domain.model.Item
 import com.tecsup.pokemon.domain.model.OrdenPokemon
@@ -32,14 +36,15 @@ import com.tecsup.pokemon.ui.components.BuscadorMadera
 import com.tecsup.pokemon.ui.components.Cargando
 import com.tecsup.pokemon.ui.components.FondoInicio
 import com.tecsup.pokemon.ui.components.FuenteMadera
+import com.tecsup.pokemon.ui.components.LetreroSeccion
 import com.tecsup.pokemon.ui.components.LluviaCorazones
 import com.tecsup.pokemon.ui.components.LocalRellenoBarra
 import com.tecsup.pokemon.ui.components.Paginador
 import com.tecsup.pokemon.ui.components.TarjetaPokemon
 import com.tecsup.pokemon.ui.components.TipoChip
-import com.tecsup.pokemon.ui.components.TituloTipo
 import com.tecsup.pokemon.ui.components.VacioView
 import com.tecsup.pokemon.ui.components.colorDeTipo
+import com.tecsup.pokemon.ui.components.desvanecerBordes
 
 private val RojoCorazon = Color(0xFFE53935)
 
@@ -79,32 +84,37 @@ fun ListaScreen(
     LaunchedEffect(paginaSegura) { estadoGrilla.scrollToItem(0) }
 
     FondoInicio {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-        ) {
-            // ----- Volver + letrero del tipo (en fila, sin chocar) -----
+        Column(modifier = Modifier.fillMaxSize()) {
+            // ----- Cabecera igual al Detalle: volver + letrero con el ícono y nombre del tipo -----
+            // (en pantalla completa la barra de estado no ocupa espacio, por eso el margen fijo)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 12.dp, end = 12.dp, top = 8.dp)
+                    .padding(start = 12.dp, end = 12.dp, top = 36.dp, bottom = 4.dp)
             ) {
                 BotonVolver(onClick = onVolver)
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 8.dp)
-                ) {
-                    TituloTipo(
-                        nombre = infoTipo?.nombreEs ?: viewModel.tipo,
-                        iconoUrl = infoTipo?.iconoUrl
-                    )
-                }
+                Spacer(Modifier.width(8.dp))
+                LetreroSeccion(
+                    texto = infoTipo?.nombreEs ?: viewModel.tipo.replaceFirstChar { it.uppercase() },
+                    alto = 62.dp,
+                    tamanoTexto = 17.sp,
+                    icono = infoTipo?.iconoUrl?.let { url ->
+                        {
+                            AsyncImage(
+                                model = url,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(22.dp)
+                                    .clip(CircleShape)
+                            )
+                        }
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(Modifier.width(8.dp))
                 // Mismo ancho que el botón, para que el letrero quede centrado en la pantalla
-                Spacer(Modifier.width(48.dp))
+                Spacer(Modifier.width(40.dp))
             }
 
             // ----- Buscador + Filtrar -----
@@ -171,7 +181,12 @@ fun ListaScreen(
                     .weight(1f)
                     .padding(bottom = LocalRellenoBarra.current)
             ) {
-                Box(modifier = Modifier.weight(1f)) {
+                // Se desvanece suave arriba (bajo el buscador) y abajo (sobre el paginador)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .desvanecerBordes(arriba = 24.dp, abajo = 16.dp)
+                ) {
                     val cargandoInicio = pokemon.loadState.refresh is LoadState.Loading && total == 0
                     val sinResultados = pokemon.loadState.refresh is LoadState.NotLoading && total == 0
 
@@ -189,8 +204,8 @@ fun ListaScreen(
                         else -> LazyVerticalGrid(
                             columns = GridCells.Fixed(2),
                             state = estadoGrilla,
-                            // Arriba deja espacio para el Pokémon que sobresale de la tarjeta
-                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 12.dp),
+                            // Arriba: espacio para el Pokémon que sobresale + el desvanecido
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 34.dp, bottom = 20.dp),
                             horizontalArrangement = Arrangement.spacedBy(14.dp),
                             verticalArrangement = Arrangement.spacedBy(22.dp)
                         ) {
