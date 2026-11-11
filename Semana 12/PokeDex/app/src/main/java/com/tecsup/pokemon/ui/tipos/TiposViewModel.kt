@@ -6,13 +6,28 @@ import com.tecsup.pokemon.data.repository.ItemRepository
 import com.tecsup.pokemon.domain.model.Tipo
 import com.tecsup.pokemon.notification.Notificador
 import com.tecsup.pokemon.ui.UiState
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
+import java.text.Normalizer
 
+// Opciones del menú Filtrar
+enum class OrdenTipos(val etiqueta: String) {
+    AZ("A → Z"),
+    ZA("Z → A"),
+    MAS("Más Pokémon"),
+    MENOS("Menos Pokémon")
+}
+
+@OptIn(FlowPreview::class)
 class TiposViewModel(
     private val repo: ItemRepository,
     private val notificador: Notificador
@@ -29,18 +44,38 @@ class TiposViewModel(
     private val _sincronizando = MutableStateFlow(false)
     val sincronizando: StateFlow<Boolean> = _sincronizando.asStateFlow()
 
+    // Texto del buscador: se muestra al instante, pero se filtra con debounce
+    private val _busqueda = MutableStateFlow("")
+    val busqueda: StateFlow<String> = _busqueda.asStateFlow()
+
+    private val _orden = MutableStateFlow(OrdenTipos.AZ)
+    val orden: StateFlow<OrdenTipos> = _orden.asStateFlow()
+
     private var refrescoTerminado = false
 
     init {
-        // La pantalla siempre muestra lo que hay en Room
+        // Tipos de Room + búsqueda (esperando 300 ms sin escribir) + orden elegido
         viewModelScope.launch {
-            repo.tipos.collect { lista ->
-                if (lista.isNotEmpty() || refrescoTerminado) {
-                    _estado.value = UiState.Exito(lista)
+            combine(
+                repo.tipos,
+                _busqueda.debounce(300).map { normalizar(it) }.distinctUntilChanged(),
+                _orden
+            ) { lista, texto, orden -> Triple(lista, texto, orden) }
+                .collect { (lista, texto, orden) ->
+                    if (lista.isNotEmpty() || refrescoTerminado) {
+                        _estado.value = UiState.Exito(filtrarYOrdenar(lista, texto, orden))
+                    }
                 }
-            }
         }
         refrescar()
+    }
+
+    fun onBusquedaChange(texto: String) {
+        _busqueda.value = texto
+    }
+
+    fun cambiarOrden(nuevo: OrdenTipos) {
+        _orden.value = nuevo
     }
 
     fun refrescar() {
@@ -68,6 +103,24 @@ class TiposViewModel(
             _sincronizando.value = false
         }
     }
+
+    // Filtra por nombre (en español o en inglés) y ordena según la opción elegida
+    private fun filtrarYOrdenar(lista: List<Tipo>, texto: String, orden: OrdenTipos): List<Tipo> {
+        val filtrados = if (texto.isEmpty()) lista else lista.filter {
+            normalizar(it.nombreEs).contains(texto) || it.nombre.contains(texto)
+        }
+        return when (orden) {
+            OrdenTipos.AZ -> filtrados.sortedBy { normalizar(it.nombreEs) }
+            OrdenTipos.ZA -> filtrados.sortedByDescending { normalizar(it.nombreEs) }
+            OrdenTipos.MAS -> filtrados.sortedByDescending { it.cantidad }
+            OrdenTipos.MENOS -> filtrados.sortedBy { it.cantidad }
+        }
+    }
+
+    // Minúsculas y sin tildes: "Eléctrico" -> "electrico"
+    private fun normalizar(texto: String): String =
+        Normalizer.normalize(texto.trim().lowercase(), Normalizer.Form.NFD)
+            .replace(Regex("\\p{Mn}+"), "")
 
     private fun mensajeDe(e: Throwable): String = when (e) {
         is IOException -> "No hay conexión a internet"

@@ -1,81 +1,116 @@
 package com.tecsup.pokemon.ui.tipos
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
-import com.tecsup.pokemon.domain.model.Tipo
+import com.tecsup.pokemon.R
 import com.tecsup.pokemon.ui.UiState
+import com.tecsup.pokemon.ui.components.BotonFiltroMadera
+import com.tecsup.pokemon.ui.components.BuscadorMadera
+import com.tecsup.pokemon.ui.components.CafeMadera
 import com.tecsup.pokemon.ui.components.Cargando
 import com.tecsup.pokemon.ui.components.ErrorView
+import com.tecsup.pokemon.ui.components.FondoInicio
+import com.tecsup.pokemon.ui.components.FuenteMadera
+import com.tecsup.pokemon.ui.components.LocalRellenoBarra
+import com.tecsup.pokemon.ui.components.TarjetaTipo
+import com.tecsup.pokemon.ui.components.TituloTabla
 import com.tecsup.pokemon.ui.components.VacioView
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TiposScreen(
     viewModel: TiposViewModel,
-    esAdmin: Boolean,
-    onTipoClick: (String) -> Unit,
-    onFavoritosClick: () -> Unit,
-    onAdminClick: () -> Unit,
-    onCerrarSesion: () -> Unit
+    onTipoClick: (String) -> Unit
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     val aviso by viewModel.aviso.collectAsStateWithLifecycle()
     val sincronizando by viewModel.sincronizando.collectAsStateWithLifecycle()
+    val busqueda by viewModel.busqueda.collectAsStateWithLifecycle()
+    val orden by viewModel.orden.collectAsStateWithLifecycle()
+    var menuAbierto by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("PokeDex") },
-                actions = {
-                    IconButton(
-                        onClick = viewModel::refrescar,
-                        enabled = !sincronizando
+    FondoInicio {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+        ) {
+            // ----- Título + botón Sincronizar -----
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp)
+            ) {
+                TituloTabla("PokeDex")
+                BotonSincronizar(
+                    sincronizando = sincronizando,
+                    onClick = viewModel::refrescar,
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 12.dp)
+                )
+            }
+
+            // ----- Buscador + Filtrar -----
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+            ) {
+                BuscadorMadera(
+                    valor = busqueda,
+                    onValorChange = viewModel::onBusquedaChange,
+                    placeholder = "Buscar tipo...",
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(Modifier.width(8.dp))
+                Box {
+                    BotonFiltroMadera(
+                        texto = "Filtrar",
+                        onClick = { menuAbierto = true },
+                        modifier = Modifier.width(120.dp)
+                    )
+                    DropdownMenu(
+                        expanded = menuAbierto,
+                        onDismissRequest = { menuAbierto = false }
                     ) {
-                        Icon(Icons.Filled.Refresh, contentDescription = "Sincronizar")
-                    }
-                    IconButton(onClick = onFavoritosClick) {
-                        Icon(
-                            Icons.Filled.Favorite,
-                            contentDescription = "Favoritos",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
-                    // Solo el admin ve el acceso al panel
-                    if (esAdmin) {
-                        IconButton(onClick = onAdminClick) {
-                            Icon(Icons.Filled.AdminPanelSettings, contentDescription = "Panel Admin")
+                        OrdenTipos.entries.forEach { opcion ->
+                            DropdownMenuItem(
+                                text = { Text(opcion.etiqueta, fontFamily = FuenteMadera) },
+                                leadingIcon = {
+                                    if (opcion == orden) Icon(Icons.Rounded.Check, contentDescription = null)
+                                },
+                                onClick = {
+                                    viewModel.cambiarOrden(opcion)
+                                    menuAbierto = false
+                                }
+                            )
                         }
                     }
-                    IconButton(onClick = onCerrarSesion) {
-                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Cerrar sesión")
-                    }
                 }
-            )
-        }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
-
-            // Progreso mientras sincroniza sin ocultar los datos
-            if (sincronizando && estado is UiState.Exito) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
 
             // Aviso de modo sin conexión con opción de reintentar
@@ -84,6 +119,7 @@ fun TiposScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
                         .background(MaterialTheme.colorScheme.errorContainer)
                         .padding(horizontal = 12.dp, vertical = 4.dp)
                 ) {
@@ -92,62 +128,88 @@ fun TiposScreen(
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         modifier = Modifier.weight(1f)
                     )
-                    TextButton(
-                        onClick = viewModel::refrescar,
-                        enabled = !sincronizando
-                    ) {
+                    TextButton(onClick = viewModel::refrescar, enabled = !sincronizando) {
                         Text("Reintentar")
                     }
                 }
             }
 
-            when (val e = estado) {
-                is UiState.Cargando -> Cargando("Descargando tipos...")
-                is UiState.Error -> ErrorView(e.mensaje, onReintentar = viewModel::refrescar)
-                is UiState.Exito ->
-                    if (e.datos.isEmpty()) VacioView("No hay tipos guardados.\nToca sincronizar para descargarlos.")
-                    else TiposGrid(e.datos, onTipoClick)
+            // ----- Contenido: termina justo encima de la barra de navegación -----
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(bottom = LocalRellenoBarra.current)
+            ) {
+                when (val e = estado) {
+                    is UiState.Cargando -> Cargando("Descargando tipos...")
+                    is UiState.Error -> ErrorView(e.mensaje, onReintentar = viewModel::refrescar)
+                    is UiState.Exito ->
+                        if (e.datos.isEmpty()) {
+                            if (busqueda.isNotBlank()) VacioView("No hay tipos que coincidan con \"$busqueda\"")
+                            else VacioView("No hay tipos guardados.\nToca sincronizar para descargarlos.")
+                        } else {
+                            LazyVerticalGrid(
+                                columns = GridCells.Adaptive(minSize = 104.dp),
+                                contentPadding = PaddingValues(
+                                    start = 16.dp,
+                                    end = 16.dp,
+                                    top = 8.dp,
+                                    bottom = 16.dp
+                                ),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(e.datos, key = { it.nombre }) { tipo ->
+                                    TarjetaTipo(
+                                        tipo = tipo,
+                                        onClick = { onTipoClick(tipo.nombre) },
+                                        // Se reacomoda animada al filtrar u ordenar
+                                        modifier = Modifier.animateItem()
+                                    )
+                                }
+                            }
+                        }
+                }
             }
         }
     }
 }
 
+// Botón redondo de madera que gira mientras sincroniza
 @Composable
-private fun TiposGrid(
-    tipos: List<Tipo>,
-    onTipoClick: (String) -> Unit
+private fun BotonSincronizar(
+    sincronizando: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        contentPadding = PaddingValues(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    val transicion = rememberInfiniteTransition(label = "sincronizar")
+    val giro by transicion.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(900, easing = LinearEasing)),
+        label = "giroSincronizar"
+    )
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .size(46.dp)
+            .clip(CircleShape)
+            .clickable(enabled = !sincronizando, onClick = onClick)
     ) {
-        items(tipos, key = { it.nombre }) { tipo ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onTipoClick(tipo.nombre) }
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    AsyncImage(
-                        model = tipo.iconoUrl,
-                        contentDescription = tipo.nombreEs,
-                        modifier = Modifier.size(56.dp)
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = tipo.nombreEs,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
+        Image(
+            painter = painterResource(R.drawable.tabla_nombre_tipo),
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.matchParentSize()
+        )
+        Icon(
+            imageVector = Icons.Rounded.Refresh,
+            contentDescription = "Sincronizar",
+            tint = CafeMadera,
+            modifier = Modifier
+                .size(26.dp)
+                .graphicsLayer { rotationZ = if (sincronizando) giro else 0f }
+        )
     }
 }
