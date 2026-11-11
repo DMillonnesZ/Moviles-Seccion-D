@@ -1,5 +1,9 @@
 package com.tecsup.pokemon.data.repository
 
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import com.tecsup.pokemon.data.local.ItemDao
 import com.tecsup.pokemon.data.local.ItemTipoEntity
 import com.tecsup.pokemon.data.mapper.aDetalle
@@ -9,6 +13,7 @@ import com.tecsup.pokemon.data.mapper.idDesdeUrl
 import com.tecsup.pokemon.data.remote.ApiService
 import com.tecsup.pokemon.domain.model.Item
 import com.tecsup.pokemon.domain.model.ItemDetalle
+import com.tecsup.pokemon.domain.model.OrdenPokemon
 import com.tecsup.pokemon.domain.model.Tipo
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -39,6 +44,25 @@ class ItemRepositoryImpl(
 
     override fun itemsPorTipo(tipo: String): Flow<List<Item>> =
         dao.porTipo(tipo).map { lista -> lista.map { it.aModelo() } }
+
+    // Paginación con placeholders: se conoce el total y solo se carga de Room
+    // la página que se está viendo; permite saltar directo a cualquier página
+    override fun paginarPorTipo(
+        tipo: String,
+        texto: String,
+        soloFavoritos: Boolean,
+        orden: OrdenPokemon
+    ): Flow<PagingData<Item>> =
+        Pager(
+            config = PagingConfig(
+                pageSize = 6,
+                initialLoadSize = 12,
+                enablePlaceholders = true,
+                jumpThreshold = 18
+            )
+        ) {
+            dao.paginarPorTipo(tipo, texto, soloFavoritos, orden.name)
+        }.flow.map { pagina -> pagina.map { it.aModelo() } }
 
     override suspend fun refrescar(): Result<Int> = try {
         // 1. Se guardan los favoritos actuales para no perderlos al sincronizar

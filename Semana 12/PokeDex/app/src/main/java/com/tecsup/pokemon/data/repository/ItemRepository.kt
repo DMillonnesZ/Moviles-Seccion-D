@@ -1,7 +1,9 @@
 package com.tecsup.pokemon.data.repository
 
+import androidx.paging.PagingData
 import com.tecsup.pokemon.domain.model.Item
 import com.tecsup.pokemon.domain.model.ItemDetalle
+import com.tecsup.pokemon.domain.model.OrdenPokemon
 import com.tecsup.pokemon.domain.model.Tipo
 import kotlinx.coroutines.flow.Flow
 
@@ -17,4 +19,12 @@ interface ItemRepository {
 
     val tipos: Flow<List<Tipo>>
     fun itemsPorTipo(tipo: String): Flow<List<Item>>
+
+    // Pokémon de un tipo por páginas, con búsqueda, filtro de favoritos y orden
+    fun paginarPorTipo(
+        tipo: String,
+        texto: String,
+        soloFavoritos: Boolean,
+        orden: OrdenPokemon
+    ): Flow<PagingData<Item>>
 }

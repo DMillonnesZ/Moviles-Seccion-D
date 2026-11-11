@@ -1,5 +1,6 @@
 package com.tecsup.pokemon.data.mapper
 
+import com.tecsup.pokemon.data.local.ItemConTipos
 import com.tecsup.pokemon.data.local.ItemEntity
 import com.tecsup.pokemon.data.local.TipoConCantidad
 import com.tecsup.pokemon.data.local.TipoEntity
@@ -40,6 +41,11 @@ fun ItemEntity.aModelo(): Item = Item(
     nombre = nombre,
     imagenUrl = imagenUrl,
     esFavorito = esFavorito
+)
+
+// Pokémon con sus tipos: "fire,flying" -> ["fire", "flying"]
+fun ItemConTipos.aModelo(): Item = item.aModelo().copy(
+    tipos = tipos?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
 )
 
 fun TipoEntity.aModelo(): Tipo = Tipo(
