@@ -63,7 +63,7 @@ object Rutas {
     const val REGISTRO = "registro"
     const val TIPOS = "tipos"
     const val LISTA = "lista/{tipo}"
-    const val DETALLE = "detalle/{id}"
+    const val DETALLE = "detalle/{id}?tipo={tipo}"
     const val EVOLUCION = "evolucion"
     const val FAVORITOS = "favoritos"
     const val PERFIL = "perfil"
@@ -76,7 +76,10 @@ object Rutas {
     const val PESTANA_PERFIL = "pestana_perfil"
 
     fun lista(tipo: String) = "lista/$tipo"
-    fun detalle(id: Int) = "detalle/$id"
+
+    // El tipo es opcional: indica desde qué lista se entró (para el color del Detalle)
+    fun detalle(id: Int, tipo: String? = null) =
+        if (tipo != null) "detalle/$id?tipo=$tipo" else "detalle/$id"
 }
 
 // Pestaña de la barra: su grafo, su pantalla de inicio y cómo se ve
@@ -228,21 +231,33 @@ fun AppNav() {
                                     composable(
                                         route = Rutas.LISTA,
                                         arguments = listOf(navArgument("tipo") { type = NavType.StringType })
-                                    ) {
+                                    ) { entrada ->
+                                        val tipoLista = entrada.arguments?.getString("tipo")
                                         ListaScreen(
                                             viewModel = viewModel(factory = AppViewModelProvider.Factory),
-                                            onItemClick = { id -> navController.navigate(Rutas.detalle(id)) },
+                                            // Se pasa el tipo de la lista para el color del Detalle
+                                            onItemClick = { id -> navController.navigate(Rutas.detalle(id, tipoLista)) },
                                             onVolver = { navController.popBackStack() }
                                         )
                                     }
 
                                     composable(
                                         route = Rutas.DETALLE,
-                                        arguments = listOf(navArgument("id") { type = NavType.IntType })
-                                    ) {
+                                        arguments = listOf(
+                                            navArgument("id") { type = NavType.IntType },
+                                            navArgument("tipo") {
+                                                type = NavType.StringType
+                                                nullable = true
+                                                defaultValue = null
+                                            }
+                                        )
+                                    ) { entrada ->
+                                        val tipoOrigen = entrada.arguments?.getString("tipo")
                                         DetalleScreen(
                                             viewModel = viewModel(factory = AppViewModelProvider.Factory),
-                                            onVolver = { navController.popBackStack() }
+                                            onVolver = { navController.popBackStack() },
+                                            // Tocar una etapa de la evolución abre su detalle, con el mismo tipo de origen
+                                            onEtapaClick = { id -> navController.navigate(Rutas.detalle(id, tipoOrigen)) }
                                         )
                                     }
                                 }

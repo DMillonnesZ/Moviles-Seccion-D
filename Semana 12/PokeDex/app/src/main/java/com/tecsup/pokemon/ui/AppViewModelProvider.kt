@@ -41,6 +41,7 @@ object AppViewModelProvider {
         initializer {
             DetalleViewModel(
                 repo = pokeDexApp().container.itemRepository,
+                cartasRepo = pokeDexApp().container.cartasRepository,
                 savedStateHandle = createSavedStateHandle()
             )
         }
