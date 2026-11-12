@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.tecsup.pokemon.PokeDexApp
 import com.tecsup.pokemon.ui.admin.AdminViewModel
 import com.tecsup.pokemon.ui.detalle.DetalleViewModel
+import com.tecsup.pokemon.ui.evolucion.EvolucionViewModel
 import com.tecsup.pokemon.ui.favoritos.FavoritosViewModel
 import com.tecsup.pokemon.ui.lista.ListaViewModel
 import com.tecsup.pokemon.ui.login.LoginViewModel
@@ -44,6 +45,9 @@ object AppViewModelProvider {
                 cartasRepo = pokeDexApp().container.cartasRepository,
                 savedStateHandle = createSavedStateHandle()
             )
+        }
+        initializer {
+            EvolucionViewModel(pokeDexApp().container.evolucionRepository)
         }
         initializer {
             FavoritosViewModel(pokeDexApp().container.itemRepository)
