@@ -61,10 +61,29 @@ class FavoritosViewModel(
             lista.map { it.copy(tipos = tipos[it.id].orEmpty()) }
         }
 
+    // Todos los favoritos ordenados por número (para compartir)
+    val todos: StateFlow<List<Item>> = favoritosConTipos
+        .map { lista -> lista.sortedBy { it.id } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     // Cantidad total de favoritos (sin filtros)
     val total: StateFlow<Int> = repo.favoritos
         .map { it.size }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    // Cuántos favoritos hay de cada tipo, de más a menos (para el resumen)
+    val conteoTipos: StateFlow<List<Pair<String, Int>>> = favoritosConTipos
+        .map { lista ->
+            lista.flatMap { it.tipos }
+                .groupingBy { it }
+                .eachCount()
+                .toList()
+                .sortedWith(
+                    compareByDescending<Pair<String, Int>> { it.second }
+                        .thenBy { Traductor.tipoEs(it.first) }
+                )
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     // Solo los tipos que aparecen en los favoritos (para los chips)
     val tiposDisponibles: StateFlow<List<String>> = favoritosConTipos

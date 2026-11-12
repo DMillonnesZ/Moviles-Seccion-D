@@ -79,7 +79,7 @@ object Rutas {
 
     fun lista(tipo: String) = "lista/$tipo"
 
-    // El tipo es opcional: indica desde qué lista se entró (para el color del Detalle)
+    // El tipo es opcional: indica con qué tipo se abre el Detalle (para su color)
     fun detalle(id: Int, tipo: String? = null) =
         if (tipo != null) "detalle/$id?tipo=$tipo" else "detalle/$id"
 
@@ -300,7 +300,8 @@ fun AppNav() {
                                     composable(Rutas.FAVORITOS) {
                                         FavoritosScreen(
                                             viewModel = viewModel(factory = AppViewModelProvider.Factory),
-                                            onItemClick = { id -> navController.navigate(Rutas.detalle(id)) },
+                                            // El Detalle se abre con el tipo de la tarjeta (el filtrado, si hay)
+                                            onItemClick = { id, tipo -> navController.navigate(Rutas.detalle(id, tipo)) },
                                             onVolver = { irAPestana(0) }
                                         )
                                     }
