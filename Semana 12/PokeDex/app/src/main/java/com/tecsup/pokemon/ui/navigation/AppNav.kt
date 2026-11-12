@@ -100,6 +100,9 @@ private val PESTANAS = listOf(
     Pestana(Rutas.PESTANA_PERFIL, Rutas.PERFIL, ItemBarra("Perfil", Icons.Rounded.Person))
 )
 
+// Posición de la pestaña Favoritos (para su contador)
+private const val INDICE_FAVORITOS = 2
+
 // Pantallas donde se ve la barra (se oculta en Detalle y Admin)
 private val RUTAS_CON_BARRA = setOf(
     Rutas.TIPOS, Rutas.LISTA, Rutas.EVOLUCION, Rutas.EVOLUCION_DETALLE, Rutas.FAVORITOS, Rutas.PERFIL
@@ -110,6 +113,10 @@ fun AppNav() {
     // Vive mientras la app esté abierta: sabe quién está logueado y su rol
     val sesionViewModel: SesionViewModel = viewModel(factory = AppViewModelProvider.Factory)
     val estadoSesion by sesionViewModel.estado.collectAsStateWithLifecycle()
+
+    // Cantidad de favoritos para el contador de la barra
+    val barraViewModel: BarraViewModel = viewModel(factory = AppViewModelProvider.Factory)
+    val cantidadFavoritos by barraViewModel.cantidadFavoritos.collectAsStateWithLifecycle()
 
     val sesionActiva = (estadoSesion as? EstadoSesion.Activa)?.sesion
     val esAdmin = sesionActiva?.rol == Rol.ADMIN
@@ -336,7 +343,11 @@ fun AppNav() {
                                 modifier = Modifier.align(Alignment.BottomCenter)
                             ) {
                                 BarraNavegacion(
-                                    items = PESTANAS.map { it.item },
+                                    // Favoritos lleva el contador
+                                    items = PESTANAS.mapIndexed { indice, pestana ->
+                                        if (indice == INDICE_FAVORITOS) pestana.item.copy(insignia = cantidadFavoritos)
+                                        else pestana.item
+                                    },
                                     seleccionada = pestanaActual,
                                     onSeleccionar = { irAPestana(it) },
                                     modifier = Modifier
