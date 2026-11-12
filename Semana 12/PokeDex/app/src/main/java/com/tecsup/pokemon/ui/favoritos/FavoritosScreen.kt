@@ -78,7 +78,7 @@ private val GrisResumen = Color(0xFF7A6A5A)
 private val FondoBarraResumen = Color(0xFFECE4D8)
 
 // Pestaña Favoritos: resumen de la colección y tarjetas de los Pokémon marcados,
-// con buscador, filtro por tipo, orden y opción para compartir.
+// con buscador, filtro por tipo, orden y opción para compartir (póster o texto).
 // onItemClick recibe el id y el tipo con el que se abre el Detalle (el filtrado, si hay).
 // onVolver lleva a Inicio (botón "Explorar Pokémon" cuando no hay favoritos).
 @Composable
@@ -98,6 +98,8 @@ fun FavoritosScreen(
     val conteoTipos by viewModel.conteoTipos.collectAsStateWithLifecycle()
     val quitado by viewModel.quitado.collectAsStateWithLifecycle()
     var menuAbierto by remember { mutableStateOf(false) }
+    // Ventana con la vista previa del póster
+    var mostrarPoster by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     // El aviso de "Deshacer" se oculta solo
@@ -114,7 +116,7 @@ fun FavoritosScreen(
     }
 
     // Comparte la lista de favoritos como texto
-    fun compartir() {
+    fun compartirTexto() {
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, textoCompartir(todos, tiposInfo))
@@ -145,8 +147,9 @@ fun FavoritosScreen(
                     )
                     Spacer(Modifier.width(8.dp))
                     if (total > 0) {
+                        // Abre la vista previa del póster (desde ahí se elige imagen o texto)
                         BotonVolver(
-                            onClick = ::compartir,
+                            onClick = { mostrarPoster = true },
                             icono = Icons.Rounded.Share,
                             descripcion = "Compartir favoritos"
                         )
@@ -306,6 +309,20 @@ fun FavoritosScreen(
             )
         }
     }
+
+    // ----- Vista previa del póster: compartir como imagen o como texto -----
+    if (mostrarPoster) {
+        DialogoCompartirFavoritos(
+            favoritos = todos,
+            conteoTipos = conteoTipos,
+            tiposInfo = tiposInfo,
+            onCompartirTexto = {
+                mostrarPoster = false
+                compartirTexto()
+            },
+            onCerrar = { mostrarPoster = false }
+        )
+    }
 }
 
 // Resumen de la colección: tipo favorito y barritas de los tipos con más favoritos.
@@ -362,7 +379,7 @@ private fun ResumenColeccion(
                         fontSize = 22.sp
                     )
                     Text(
-                        text = "$cantidadFavorito de $total ${if (total == 1) "Pokémon" else "Pokémon"}",
+                        text = "$cantidadFavorito de $total Pokémon",
                         color = CafeMadera,
                         fontFamily = FuenteMadera,
                         fontSize = 13.sp
