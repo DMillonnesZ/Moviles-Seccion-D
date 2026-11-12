@@ -34,6 +34,7 @@ import com.tecsup.pokemon.ui.components.BotonFiltroMadera
 import com.tecsup.pokemon.ui.components.BotonVolver
 import com.tecsup.pokemon.ui.components.BuscadorMadera
 import com.tecsup.pokemon.ui.components.Cargando
+import com.tecsup.pokemon.ui.components.DialogoQuitarFavorito
 import com.tecsup.pokemon.ui.components.FondoInicio
 import com.tecsup.pokemon.ui.components.FuenteMadera
 import com.tecsup.pokemon.ui.components.LetreroSeccion
@@ -64,6 +65,8 @@ fun ListaScreen(
 
     // Cada vez que aumenta, se lanza la lluvia de corazones
     var disparoCorazones by remember { mutableIntStateOf(0) }
+    // Pokémon que se quiere quitar de favoritos (null = sin diálogo)
+    var porQuitar by remember { mutableStateOf<Item?>(null) }
 
     val infoTipo = tiposInfo[viewModel.tipo]
     val colorPrincipal = colorDeTipo(viewModel.tipo)
@@ -221,9 +224,14 @@ fun ListaScreen(
                                             chips = chipsDe(item, tiposInfo, viewModel.tipo),
                                             onClick = { onItemClick(item.id) },
                                             onFavoritoClick = {
-                                                // Solo al marcar favorito cae la lluvia de corazones
-                                                if (!item.esFavorito) disparoCorazones++
-                                                viewModel.alternarFavorito(item.id)
+                                                if (item.esFavorito) {
+                                                    // Quitar: primero se pregunta
+                                                    porQuitar = item
+                                                } else {
+                                                    // Marcar: cae la lluvia de corazones
+                                                    disparoCorazones++
+                                                    viewModel.alternarFavorito(item.id)
+                                                }
                                             }
                                         )
                                     }
@@ -251,6 +259,20 @@ fun ListaScreen(
 
         // Lluvia de corazones encima de toda la pantalla (no bloquea los toques)
         LluviaCorazones(disparo = disparoCorazones)
+
+        // Confirmación para quitar de favoritos
+        porQuitar?.let { item ->
+            DialogoQuitarFavorito(
+                nombre = item.nombre,
+                imagenUrl = item.imagenUrl,
+                color = colorPrincipal,
+                onConfirmar = {
+                    viewModel.alternarFavorito(item.id)
+                    porQuitar = null
+                },
+                onCancelar = { porQuitar = null }
+            )
+        }
     }
 }
 
