@@ -67,6 +67,7 @@ import com.tecsup.pokemon.ui.components.CadenaEvolucion
 import com.tecsup.pokemon.ui.components.CafeMadera
 import com.tecsup.pokemon.ui.components.Cargando
 import com.tecsup.pokemon.ui.components.CarruselCartas
+import com.tecsup.pokemon.ui.components.DialogoQuitarFavorito
 import com.tecsup.pokemon.ui.components.ErrorView
 import com.tecsup.pokemon.ui.components.EstadoCartas
 import com.tecsup.pokemon.ui.components.FondoInicio
@@ -107,6 +108,11 @@ private fun iconoEstadistica(clave: String): ImageVector = when (clave) {
     else -> Icons.Rounded.BarChart
 }
 
+// Tipo principal: el de la lista desde la que se entró, si el Pokémon lo tiene;
+// si no (por ejemplo, desde Favoritos), su primer tipo
+private fun tipoPrincipalDe(detalle: ItemDetalle, tipoOrigen: String?): String =
+    tipoOrigen?.takeIf { it in detalle.tipos } ?: detalle.tipos.firstOrNull() ?: "normal"
+
 @Composable
 fun DetalleScreen(
     viewModel: DetalleViewModel,
@@ -120,6 +126,7 @@ fun DetalleScreen(
 
     var disparoCorazones by remember { mutableIntStateOf(0) }
     var cartaSeleccionada by remember { mutableStateOf<Carta?>(null) }
+    var confirmarQuitar by remember { mutableStateOf(false) }
 
     FondoInicio {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -147,9 +154,14 @@ fun DetalleScreen(
                     tinte = if (esFavorito) RojoCorazon else CafeMadera,
                     latido = esFavorito,
                     onClick = {
-                        // Solo al marcar favorito cae la lluvia de corazones
-                        if (!esFavorito) disparoCorazones++
-                        viewModel.alternarFavorito()
+                        if (esFavorito) {
+                            // Quitar: primero se pregunta
+                            confirmarQuitar = true
+                        } else {
+                            // Marcar: cae la lluvia de corazones
+                            disparoCorazones++
+                            viewModel.alternarFavorito()
+                        }
                     }
                 )
             }
@@ -181,6 +193,21 @@ fun DetalleScreen(
 
         // Carta en grande
         VisorCarta(carta = cartaSeleccionada, onCerrar = { cartaSeleccionada = null })
+
+        // Confirmación para quitar de favoritos
+        val detalleActual = (estado as? UiState.Exito)?.datos
+        if (confirmarQuitar && detalleActual != null) {
+            DialogoQuitarFavorito(
+                nombre = detalleActual.nombre,
+                imagenUrl = detalleActual.imagenUrl,
+                color = colorDeTipo(tipoPrincipalDe(detalleActual, viewModel.tipoOrigen)),
+                onConfirmar = {
+                    confirmarQuitar = false
+                    viewModel.alternarFavorito()
+                },
+                onCancelar = { confirmarQuitar = false }
+            )
+        }
     }
 }
 
@@ -195,9 +222,7 @@ private fun ContenidoDetalle(
     onCartaClick: (Carta) -> Unit,
     onReintentarCartas: () -> Unit
 ) {
-    // Tipo principal: el de la lista desde la que se entró, si el Pokémon lo tiene;
-    // si no (por ejemplo, desde Favoritos), su primer tipo
-    val tipoPrincipal = tipoOrigen?.takeIf { it in detalle.tipos } ?: detalle.tipos.firstOrNull() ?: "normal"
+    val tipoPrincipal = tipoPrincipalDe(detalle, tipoOrigen)
     val tiposOrdenados = detalle.tipos.sortedBy { if (it == tipoPrincipal) 0 else 1 }
     val color = colorDeTipo(tipoPrincipal)
     val colorLinea = lerp(color, Color.Black, 0.15f).copy(alpha = 0.55f)
