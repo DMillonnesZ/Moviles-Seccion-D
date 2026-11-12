@@ -58,7 +58,10 @@ object AppViewModelProvider {
             )
         }
         initializer {
-            FavoritosViewModel(pokeDexApp().container.itemRepository)
+            FavoritosViewModel(
+                repo = pokeDexApp().container.itemRepository,
+                evolucionRepo = pokeDexApp().container.evolucionRepository
+            )
         }
         initializer {
             AdminViewModel(
