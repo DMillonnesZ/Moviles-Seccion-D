@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.tecsup.pokemon.PokeDexApp
 import com.tecsup.pokemon.ui.admin.AdminViewModel
 import com.tecsup.pokemon.ui.detalle.DetalleViewModel
+import com.tecsup.pokemon.ui.evolucion.EvolucionDetalleViewModel
 import com.tecsup.pokemon.ui.evolucion.EvolucionViewModel
 import com.tecsup.pokemon.ui.favoritos.FavoritosViewModel
 import com.tecsup.pokemon.ui.lista.ListaViewModel
@@ -48,6 +49,13 @@ object AppViewModelProvider {
         }
         initializer {
             EvolucionViewModel(pokeDexApp().container.evolucionRepository)
+        }
+        initializer {
+            EvolucionDetalleViewModel(
+                repo = pokeDexApp().container.evolucionRepository,
+                itemRepo = pokeDexApp().container.itemRepository,
+                savedStateHandle = createSavedStateHandle()
+            )
         }
         initializer {
             FavoritosViewModel(pokeDexApp().container.itemRepository)

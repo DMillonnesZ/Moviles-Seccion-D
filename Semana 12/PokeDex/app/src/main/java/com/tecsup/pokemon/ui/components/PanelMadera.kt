@@ -103,7 +103,7 @@ private fun medirMarco(context: Context, @DrawableRes id: Int): MedidasMarco {
 
     fun esMadera(x: Int, y: Int) = (imagen.getPixel(x, y) ushr 24) > 60
 
-    // Recorre desde "inicio" hacia "paso" hasta "limite": devuelve (inicio de madera, fin de madera)
+    // Recorre desde "inicio" hacia "limite": devuelve (inicio de madera, fin de madera)
     fun recorrer(inicio: Int, limite: Int, paso: Int, pixel: (Int) -> Boolean): Pair<Int, Int> {
         var i = inicio
         while (i != limite && !pixel(i)) i += paso
@@ -241,6 +241,8 @@ private fun DrawScope.dibujarMarcoEstirable(imagen: ImageBitmap, c: CortesMarco,
 
 // Panel con marco de madera (imagen) y fondo crema.
 // - grosorMarco: tamaño del borde y sus adornos respecto a la imagen original.
+// - corteVertical: parte de arriba y de abajo de la imagen que nunca se estira
+//   (súbelo si las hojas o adornos son altos y el panel crece mucho).
 // - Estirado inteligente: esquinas, hojas y adornos centrales (Pokébola) no se deforman.
 // - El alto se ajusta al contenido, sin espacio de más.
 // - El crema queda escondido debajo de la madera y el contenido dentro del borde interior.
@@ -255,6 +257,7 @@ fun PanelMadera(
     extraArriba: Dp = 0.dp,     // espacio extra arriba (por ejemplo, para un letrero encima)
     brilloInferior: Boolean = false,
     grosorMarco: Float = 0.75f,
+    corteVertical: Float = 0.14f,
     contenido: @Composable () -> Unit
 ) {
     val context = LocalContext.current
@@ -262,7 +265,7 @@ fun PanelMadera(
     val imagen = ImageBitmap.imageResource(marco)
 
     // Cortes: al menos todo el borde de madera, o un mínimo para incluir hojas y adornos
-    val cortes = remember(imagen, medidas) {
+    val cortes = remember(imagen, medidas, corteVertical) {
         val w = imagen.width
         val h = imagen.height
         val anchoCentro = (w * 0.26f).roundToInt()
@@ -271,8 +274,8 @@ fun PanelMadera(
             der = (max(medidas.interior.der, 0.16f) * w).roundToInt(),
             centroIni = (w - anchoCentro) / 2,
             centroFin = (w + anchoCentro) / 2,
-            arr = (max(medidas.interior.arr, 0.14f) * h).roundToInt(),
-            aba = (max(medidas.interior.aba, 0.14f) * h).roundToInt()
+            arr = (max(medidas.interior.arr, corteVertical) * h).roundToInt(),
+            aba = (max(medidas.interior.aba, corteVertical) * h).roundToInt()
         )
     }
 

@@ -49,6 +49,7 @@ import com.tecsup.pokemon.ui.components.CortinaCuadros
 import com.tecsup.pokemon.ui.components.ItemBarra
 import com.tecsup.pokemon.ui.components.LocalRellenoBarra
 import com.tecsup.pokemon.ui.detalle.DetalleScreen
+import com.tecsup.pokemon.ui.evolucion.EvolucionDetalleScreen
 import com.tecsup.pokemon.ui.evolucion.EvolucionScreen
 import com.tecsup.pokemon.ui.favoritos.FavoritosScreen
 import com.tecsup.pokemon.ui.lista.ListaScreen
@@ -65,6 +66,7 @@ object Rutas {
     const val LISTA = "lista/{tipo}"
     const val DETALLE = "detalle/{id}?tipo={tipo}"
     const val EVOLUCION = "evolucion"
+    const val EVOLUCION_DETALLE = "evolucion/{cadenaId}"
     const val FAVORITOS = "favoritos"
     const val PERFIL = "perfil"
     const val ADMIN = "admin"
@@ -80,6 +82,8 @@ object Rutas {
     // El tipo es opcional: indica desde qué lista se entró (para el color del Detalle)
     fun detalle(id: Int, tipo: String? = null) =
         if (tipo != null) "detalle/$id?tipo=$tipo" else "detalle/$id"
+
+    fun evolucionDetalle(cadenaId: Int) = "evolucion/$cadenaId"
 }
 
 // Pestaña de la barra: su grafo, su pantalla de inicio y cómo se ve
@@ -97,7 +101,9 @@ private val PESTANAS = listOf(
 )
 
 // Pantallas donde se ve la barra (se oculta en Detalle y Admin)
-private val RUTAS_CON_BARRA = setOf(Rutas.TIPOS, Rutas.LISTA, Rutas.EVOLUCION, Rutas.FAVORITOS, Rutas.PERFIL)
+private val RUTAS_CON_BARRA = setOf(
+    Rutas.TIPOS, Rutas.LISTA, Rutas.EVOLUCION, Rutas.EVOLUCION_DETALLE, Rutas.FAVORITOS, Rutas.PERFIL
+)
 
 @Composable
 fun AppNav() {
@@ -262,10 +268,23 @@ fun AppNav() {
                                     }
                                 }
 
-                                // ----- Pestaña Evolución -----
+                                // ----- Pestaña Evolución: Lista de cadenas -> Detalle de la evolución -----
                                 navigation(route = Rutas.PESTANA_EVOLUCION, startDestination = Rutas.EVOLUCION) {
                                     composable(Rutas.EVOLUCION) {
-                                        EvolucionScreen()
+                                        EvolucionScreen(
+                                            viewModel = viewModel(factory = AppViewModelProvider.Factory),
+                                            onCadenaClick = { id -> navController.navigate(Rutas.evolucionDetalle(id)) }
+                                        )
+                                    }
+
+                                    composable(
+                                        route = Rutas.EVOLUCION_DETALLE,
+                                        arguments = listOf(navArgument("cadenaId") { type = NavType.IntType })
+                                    ) {
+                                        EvolucionDetalleScreen(
+                                            viewModel = viewModel(factory = AppViewModelProvider.Factory),
+                                            onVolver = { navController.popBackStack() }
+                                        )
                                     }
                                 }
 
