@@ -1,0 +1,11 @@
+package com.tecsup.pokemon.domain.model
+
+// Datos del perfil del entrenador (Firebase Auth + documento usuarios/{uid})
+data class PerfilUsuario(
+    val uid: String,
+    val correo: String,
+    val nombre: String,
+    val rol: Rol,
+    val foto: String? = null,   // JPEG de 256x256 en Base64 (null = sin foto)
+    val creadoEn: Long? = null  // Fecha de creación de la cuenta en milisegundos
+)
