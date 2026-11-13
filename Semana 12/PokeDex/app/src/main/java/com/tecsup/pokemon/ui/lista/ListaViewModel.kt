@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.tecsup.pokemon.data.catalogo.CatalogoRepository
 import com.tecsup.pokemon.data.repository.ItemRepository
+import com.tecsup.pokemon.domain.model.Deshabilitados
 import com.tecsup.pokemon.domain.model.Item
 import com.tecsup.pokemon.domain.model.OrdenPokemon
 import com.tecsup.pokemon.domain.model.Tipo
@@ -27,9 +29,18 @@ import kotlinx.coroutines.launch
 // Pokémon por página
 const val POKEMON_POR_PAGINA = 6
 
+// Todo lo que decide qué Pokémon se piden a Room
+private data class FiltroLista(
+    val texto: String,
+    val orden: OrdenPokemon,
+    val soloFavoritos: Boolean,
+    val fuera: Deshabilitados
+)
+
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class ListaViewModel(
     private val repo: ItemRepository,
+    catalogoRepo: CatalogoRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -55,14 +66,17 @@ class ListaViewModel(
     private val _pagina = MutableStateFlow(0)
     val pagina: StateFlow<Int> = _pagina.asStateFlow()
 
-    // Pokémon con Paging 3: se vuelve a consultar cuando cambia la búsqueda, el orden o el filtro
+    // Pokémon con Paging 3: se vuelve a consultar cuando cambia la búsqueda, el orden,
+    // el filtro o lo descontinuado (Pokémon sueltos y tipos completos)
     val pokemon: Flow<PagingData<Item>> = combine(
         _busqueda.debounce(300).map { limpiarBusqueda(it) }.distinctUntilChanged(),
         _orden,
-        _soloFavoritos
-    ) { texto, orden, soloFavoritos -> Triple(texto, orden, soloFavoritos) }
-        .flatMapLatest { (texto, orden, soloFavoritos) ->
-            repo.paginarPorTipo(tipo, texto, soloFavoritos, orden)
+        _soloFavoritos,
+        catalogoRepo.deshabilitados
+    ) { texto, orden, soloFavoritos, fuera -> FiltroLista(texto, orden, soloFavoritos, fuera) }
+        .distinctUntilChanged()
+        .flatMapLatest { f ->
+            repo.paginarPorTipo(tipo, f.texto, f.soloFavoritos, f.orden, f.fuera.pokemon, f.fuera.tipos)
         }
         .cachedIn(viewModelScope)
 

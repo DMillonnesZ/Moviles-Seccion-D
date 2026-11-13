@@ -2,18 +2,22 @@ package com.tecsup.pokemon.ui.tipos
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tecsup.pokemon.data.catalogo.CatalogoRepository
 import com.tecsup.pokemon.data.repository.ItemRepository
+import com.tecsup.pokemon.domain.model.Anuncio
 import com.tecsup.pokemon.domain.model.Tipo
 import com.tecsup.pokemon.notification.Notificador
 import com.tecsup.pokemon.ui.UiState
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
@@ -30,6 +34,7 @@ enum class OrdenTipos(val etiqueta: String) {
 @OptIn(FlowPreview::class)
 class TiposViewModel(
     private val repo: ItemRepository,
+    catalogoRepo: CatalogoRepository,
     private val notificador: Notificador
 ) : ViewModel() {
 
@@ -53,11 +58,24 @@ class TiposViewModel(
 
     private var refrescoTerminado = false
 
+    // Anuncio que el usuario cerró (vuelve a salir si el admin publica otro)
+    private val _anuncioCerrado = MutableStateFlow<Anuncio?>(null)
+
+    // Anuncio del admin para todos (null = no hay o se cerró)
+    val anuncio: StateFlow<Anuncio?> = combine(catalogoRepo.anuncio, _anuncioCerrado) { actual, cerrado ->
+        actual?.takeIf { it != cerrado }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    // Tipos de Room sin los descontinuados por el admin
+    private val tiposDisponibles = combine(repo.tipos, catalogoRepo.deshabilitados) { lista, fuera ->
+        lista.filter { it.nombre !in fuera.tipos }
+    }
+
     init {
-        // Tipos de Room + búsqueda (esperando 300 ms sin escribir) + orden elegido
+        // Tipos disponibles + búsqueda (esperando 300 ms sin escribir) + orden elegido
         viewModelScope.launch {
             combine(
-                repo.tipos,
+                tiposDisponibles,
                 _busqueda.debounce(300).map { normalizar(it) }.distinctUntilChanged(),
                 _orden
             ) { lista, texto, orden -> Triple(lista, texto, orden) }
@@ -76,6 +94,10 @@ class TiposViewModel(
 
     fun cambiarOrden(nuevo: OrdenTipos) {
         _orden.value = nuevo
+    }
+
+    fun cerrarAnuncio() {
+        _anuncioCerrado.value = anuncio.value
     }
 
     fun refrescar() {

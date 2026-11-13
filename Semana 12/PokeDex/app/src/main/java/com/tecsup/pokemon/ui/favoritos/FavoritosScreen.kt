@@ -1,6 +1,7 @@
 package com.tecsup.pokemon.ui.favoritos
 
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -36,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -64,6 +66,7 @@ import com.tecsup.pokemon.ui.components.TipoChip
 import com.tecsup.pokemon.ui.components.VacioView
 import com.tecsup.pokemon.ui.components.colorDeTipo
 import com.tecsup.pokemon.ui.components.desvanecerBordes
+import com.tecsup.pokemon.ui.components.escalaGrises
 import com.tecsup.pokemon.ui.components.tipoParaColor
 import com.tecsup.pokemon.util.Traductor
 import kotlinx.coroutines.delay
@@ -79,6 +82,7 @@ private val FondoBarraResumen = Color(0xFFECE4D8)
 
 // Pestaña Favoritos: resumen de la colección y tarjetas de los Pokémon marcados,
 // con buscador, filtro por tipo, orden y opción para compartir (póster o texto).
+// Los descontinuados por el admin se ven en gris con sello y no se abren.
 // onItemClick recibe el id y el tipo con el que se abre el Detalle (el filtrado, si hay).
 // onVolver lleva a Inicio (botón "Explorar Pokémon" cuando no hay favoritos).
 @Composable
@@ -97,6 +101,7 @@ fun FavoritosScreen(
     val todos by viewModel.todos.collectAsStateWithLifecycle()
     val conteoTipos by viewModel.conteoTipos.collectAsStateWithLifecycle()
     val quitado by viewModel.quitado.collectAsStateWithLifecycle()
+    val descontinuados by viewModel.descontinuados.collectAsStateWithLifecycle()
     var menuAbierto by remember { mutableStateOf(false) }
     // Ventana con la vista previa del póster
     var mostrarPoster by remember { mutableStateOf(false) }
@@ -278,17 +283,34 @@ fun FavoritosScreen(
                                     }
                                     itemsIndexed(e.datos, key = { _, item -> item.id }) { indice, item ->
                                         val tipoColor = colorDe(item, tipoFiltro)
+                                        val retirado = item.id in descontinuados
                                         // Se reacomoda animado al quitar un favorito
                                         Box(modifier = Modifier.animateItem()) {
                                             AparecerSuave(retrasoMs = (indice % 6) * 60) {
-                                                TarjetaPokemon(
-                                                    item = item,
-                                                    colorPrincipal = colorDeTipo(tipoColor),
-                                                    chips = chipsDe(item, tiposInfo, tipoFiltro),
-                                                    // El Detalle se abre con el mismo tipo (el filtrado, si hay)
-                                                    onClick = { onItemClick(item.id, tipoColor) },
-                                                    onFavoritoClick = { viewModel.quitar(item) }
-                                                )
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    // Descontinuado: en gris y con sello
+                                                    Box(modifier = if (retirado) Modifier.escalaGrises() else Modifier) {
+                                                        TarjetaPokemon(
+                                                            item = item,
+                                                            colorPrincipal = colorDeTipo(tipoColor),
+                                                            chips = chipsDe(item, tiposInfo, tipoFiltro),
+                                                            // El Detalle se abre con el mismo tipo (el filtrado, si hay)
+                                                            onClick = {
+                                                                if (retirado) {
+                                                                    Toast.makeText(
+                                                                        context,
+                                                                        "Este Pokémon fue descontinuado por el administrador",
+                                                                        Toast.LENGTH_SHORT
+                                                                    ).show()
+                                                                } else {
+                                                                    onItemClick(item.id, tipoColor)
+                                                                }
+                                                            },
+                                                            onFavoritoClick = { viewModel.quitar(item) }
+                                                        )
+                                                    }
+                                                    if (retirado) SelloDescontinuado()
+                                                }
                                             }
                                         }
                                     }
@@ -323,6 +345,25 @@ fun FavoritosScreen(
             onCerrar = { mostrarPoster = false }
         )
     }
+}
+
+// Sello rojo inclinado sobre la tarjeta de un Pokémon descontinuado
+@Composable
+private fun SelloDescontinuado() {
+    val forma = RoundedCornerShape(8.dp)
+    Text(
+        text = "DESCONTINUADO",
+        color = RojoCorazon,
+        fontFamily = FuenteMadera,
+        fontWeight = FontWeight.Bold,
+        fontSize = 13.sp,
+        modifier = Modifier
+            .graphicsLayer { rotationZ = -14f }
+            .clip(forma)
+            .background(Color.White.copy(alpha = 0.9f))
+            .border(2.dp, RojoCorazon, forma)
+            .padding(horizontal = 8.dp, vertical = 3.dp)
+    )
 }
 
 // Resumen de la colección: tipo favorito y barritas de los tipos con más favoritos.

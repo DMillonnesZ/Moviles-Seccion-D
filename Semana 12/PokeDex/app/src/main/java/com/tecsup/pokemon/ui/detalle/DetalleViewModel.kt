@@ -3,6 +3,7 @@ package com.tecsup.pokemon.ui.detalle
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tecsup.pokemon.data.catalogo.CatalogoRepository
 import com.tecsup.pokemon.data.repository.CartasRepository
 import com.tecsup.pokemon.data.repository.ItemRepository
 import com.tecsup.pokemon.domain.model.ItemDetalle
@@ -22,6 +23,7 @@ import java.io.IOException
 class DetalleViewModel(
     private val repo: ItemRepository,
     private val cartasRepo: CartasRepository,
+    private val catalogoRepo: CatalogoRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -55,8 +57,21 @@ class DetalleViewModel(
     fun cargar() {
         viewModelScope.launch {
             _estado.value = UiState.Cargando
+
+            // Se puede llegar a un descontinuado desde una cadena de evolución
+            val fuera = catalogoRepo.leerDeshabilitados()
+            if (id in fuera.pokemon) {
+                _estado.value = UiState.Error("Este Pokémon fue descontinuado por el administrador")
+                return@launch
+            }
+
             repo.obtenerDetalle(id)
                 .onSuccess { detalle ->
+                    // Si alguno de sus tipos fue descontinuado, el Pokémon tampoco se muestra
+                    if (detalle.tipos.any { it in fuera.tipos }) {
+                        _estado.value = UiState.Error("Este Pokémon pertenece a un tipo descontinuado por el administrador")
+                        return@onSuccess
+                    }
                     _estado.value = UiState.Exito(detalle)
                     cargarCartas(detalle.nombre)
                 }

@@ -2,6 +2,7 @@ package com.tecsup.pokemon.ui.favoritos
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tecsup.pokemon.data.catalogo.CatalogoRepository
 import com.tecsup.pokemon.data.repository.EvolucionRepository
 import com.tecsup.pokemon.data.repository.ItemRepository
 import com.tecsup.pokemon.domain.model.Item
@@ -33,7 +34,8 @@ enum class OrdenFavoritos(val etiqueta: String) {
 @OptIn(FlowPreview::class)
 class FavoritosViewModel(
     private val repo: ItemRepository,
-    evolucionRepo: EvolucionRepository
+    evolucionRepo: EvolucionRepository,
+    catalogoRepo: CatalogoRepository
 ) : ViewModel() {
 
     private val _busqueda = MutableStateFlow("")
@@ -60,6 +62,14 @@ class FavoritosViewModel(
         combine(repo.favoritos, evolucionRepo.tiposPorPokemon) { lista, tipos ->
             lista.map { it.copy(tipos = tipos[it.id].orEmpty()) }
         }
+
+    // Ids descontinuados: por el Pokémon o por alguno de sus tipos (se ven en gris y no se abren)
+    val descontinuados: StateFlow<Set<Int>> =
+        combine(favoritosConTipos, catalogoRepo.deshabilitados) { lista, fuera ->
+            lista.filter { item -> item.id in fuera.pokemon || item.tipos.any { it in fuera.tipos } }
+                .map { it.id }
+                .toSet()
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
     // Todos los favoritos ordenados por número (para compartir)
     val todos: StateFlow<List<Item>> = favoritosConTipos

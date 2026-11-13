@@ -28,7 +28,9 @@ interface ItemDao {
     )
     fun porTipo(tipo: String): Flow<List<ItemEntity>>
 
-    // Pokémon de un tipo, por páginas, con sus tipos, búsqueda, filtro de favoritos y orden
+    // Pokémon de un tipo, por páginas, con sus tipos, búsqueda, filtro de favoritos y orden.
+    // excluidos = Pokémon descontinuados por el admin
+    // tiposExcluidos = tipos descontinuados: sus Pokémon tampoco se muestran
     @Query(
         """
         SELECT items.*,
@@ -36,6 +38,8 @@ interface ItemDao {
         FROM items
         INNER JOIN item_tipo ON items.id = item_tipo.itemId
         WHERE item_tipo.tipo = :tipo
+          AND items.id NOT IN (:excluidos)
+          AND items.id NOT IN (SELECT t3.itemId FROM item_tipo t3 WHERE t3.tipo IN (:tiposExcluidos))
           AND (:texto = '' OR items.nombre LIKE '%' || :texto || '%' OR CAST(items.id AS TEXT) = :texto)
           AND (:soloFavoritos = 0 OR items.esFavorito = 1)
         ORDER BY
@@ -49,7 +53,9 @@ interface ItemDao {
         tipo: String,
         texto: String,
         soloFavoritos: Boolean,
-        orden: String
+        orden: String,
+        excluidos: List<Int>,
+        tiposExcluidos: List<String>
     ): PagingSource<Int, ItemConTipos>
 
     @Query("SELECT id FROM items WHERE esFavorito = 1")

@@ -20,11 +20,14 @@ interface ItemRepository {
     val tipos: Flow<List<Tipo>>
     fun itemsPorTipo(tipo: String): Flow<List<Item>>
 
-    // Pokémon de un tipo por páginas, con búsqueda, filtro de favoritos y orden
+    // Pokémon de un tipo por páginas, con búsqueda, filtro de favoritos y orden.
+    // excluidos = ids descontinuados; tiposExcluidos = tipos descontinuados (sus Pokémon no aparecen)
     fun paginarPorTipo(
         tipo: String,
         texto: String,
         soloFavoritos: Boolean,
-        orden: OrdenPokemon
+        orden: OrdenPokemon,
+        excluidos: Set<Int> = emptySet(),
+        tiposExcluidos: Set<String> = emptySet()
     ): Flow<PagingData<Item>>
 }

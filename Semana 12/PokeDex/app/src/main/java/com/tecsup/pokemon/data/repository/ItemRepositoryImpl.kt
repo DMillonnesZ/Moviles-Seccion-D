@@ -58,12 +58,15 @@ class ItemRepositoryImpl(
         dao.porTipo(tipo).map { lista -> lista.map { it.aModelo() } }
 
     // Paginación con placeholders: se conoce el total y solo se carga de Room
-    // la página que se está viendo; permite saltar directo a cualquier página
+    // la página que se está viendo; permite saltar directo a cualquier página.
+    // Los descontinuados (por Pokémon o por tipo) se quitan en la consulta, así el total de páginas cuadra.
     override fun paginarPorTipo(
         tipo: String,
         texto: String,
         soloFavoritos: Boolean,
-        orden: OrdenPokemon
+        orden: OrdenPokemon,
+        excluidos: Set<Int>,
+        tiposExcluidos: Set<String>
     ): Flow<PagingData<Item>> =
         Pager(
             config = PagingConfig(
@@ -73,7 +76,7 @@ class ItemRepositoryImpl(
                 jumpThreshold = 18
             )
         ) {
-            dao.paginarPorTipo(tipo, texto, soloFavoritos, orden.name)
+            dao.paginarPorTipo(tipo, texto, soloFavoritos, orden.name, excluidos.toList(), tiposExcluidos.toList())
         }.flow.map { pagina -> pagina.map { it.aModelo() } }
 
     override suspend fun refrescar(): Result<Int> = try {
