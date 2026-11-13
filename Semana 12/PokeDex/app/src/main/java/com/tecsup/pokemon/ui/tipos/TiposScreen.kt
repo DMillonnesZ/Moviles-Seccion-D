@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Campaign
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -58,8 +59,10 @@ import com.tecsup.pokemon.ui.components.desvanecerBordes
 
 private val CremaAnuncio = Color(0xFFFFF4DF)
 private val DoradoClaroAnuncio = Color(0xFFFFE7A0)
+private val DoradoAnuncio = Color(0xFFF5C451)
 private val DoradoBordeAnuncio = Color(0xFFD9A43A)
 private val AzulAnuncio = Color(0xFF3D8FD6)
+private val NaranjaAviso = Color(0xFFF57C00)
 private val GrisAnuncio = Color(0xFF7A6A5A)
 
 @Composable
@@ -139,26 +142,12 @@ fun TiposScreen(
             // ----- Anuncio del admin para todos -----
             BannerAnuncio(anuncio = anuncio, onCerrar = viewModel::cerrarAnuncio)
 
-            // Aviso de modo sin conexión con opción de reintentar
-            aviso?.let {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
-                        .background(MaterialTheme.colorScheme.errorContainer)
-                        .padding(horizontal = 12.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = it,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.weight(1f)
-                    )
-                    TextButton(onClick = viewModel::refrescar, enabled = !sincronizando) {
-                        Text("Reintentar")
-                    }
-                }
-            }
+            // ----- Aviso de sin conexión (con datos guardados) -----
+            AvisoSinConexion(
+                aviso = aviso,
+                sincronizando = sincronizando,
+                onReintentar = viewModel::refrescar
+            )
 
             // ----- Contenido: termina justo encima de la barra de navegación -----
             // Se desvanece suave arriba (bajo el buscador) y abajo (sobre la barra)
@@ -198,6 +187,95 @@ fun TiposScreen(
                                 }
                             }
                         }
+                }
+            }
+        }
+    }
+}
+
+// Aviso "Sin conexión": misma tarjeta crema del anuncio, nube tachada y píldora Reintentar
+@Composable
+private fun AvisoSinConexion(
+    aviso: String?,
+    sincronizando: Boolean,
+    onReintentar: () -> Unit
+) {
+    // Recuerda el último para que el texto no desaparezca mientras se oculta
+    var recordado by remember { mutableStateOf<String?>(null) }
+    SideEffect { if (aviso != null) recordado = aviso }
+    val mostrado = aviso ?: recordado
+    // "Sin conexión: mostrando datos guardados" -> título + detalle
+    val detalle = mostrado?.substringAfter(":", "")?.trim()?.replaceFirstChar { it.uppercase() }.orEmpty()
+    val forma = RoundedCornerShape(18.dp)
+
+    AnimatedVisibility(
+        visible = aviso != null,
+        enter = expandVertically() + fadeIn(),
+        exit = shrinkVertically() + fadeOut()
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 4.dp)
+                .fillMaxWidth()
+                .shadow(4.dp, forma)
+                .clip(forma)
+                .background(Brush.verticalGradient(listOf(Color.White, CremaAnuncio)))
+                .border(1.5.dp, Brush.verticalGradient(listOf(DoradoClaroAnuncio, DoradoBordeAnuncio)), forma)
+                .padding(start = 12.dp, end = 10.dp, top = 10.dp, bottom = 10.dp)
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Brush.radialGradient(listOf(Color(0xFFFFC27A), NaranjaAviso)))
+                    .border(2.dp, Color.White, CircleShape)
+            ) {
+                Icon(Icons.Rounded.CloudOff, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Sin conexión",
+                    color = CafeMadera,
+                    fontFamily = FuenteMadera,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp
+                )
+                if (detalle.isNotEmpty()) {
+                    Text(
+                        text = detalle,
+                        color = GrisAnuncio,
+                        fontFamily = FuenteMadera,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+            Spacer(Modifier.width(8.dp))
+            // Píldora dorada (gira mientras sincroniza)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .height(34.dp)
+                    .widthIn(min = 96.dp)
+                    .shadow(2.dp, RoundedCornerShape(50))
+                    .clip(RoundedCornerShape(50))
+                    .background(Brush.verticalGradient(listOf(DoradoClaroAnuncio, DoradoAnuncio)))
+                    .border(1.dp, CafeMadera.copy(alpha = 0.5f), RoundedCornerShape(50))
+                    .clickable(enabled = !sincronizando, onClick = onReintentar)
+                    .padding(horizontal = 12.dp)
+            ) {
+                if (sincronizando) {
+                    CircularProgressIndicator(color = CafeMadera, strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
+                } else {
+                    Text(
+                        text = "Reintentar",
+                        color = CafeMadera,
+                        fontFamily = FuenteMadera,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
                 }
             }
         }
