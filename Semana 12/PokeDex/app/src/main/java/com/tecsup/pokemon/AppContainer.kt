@@ -2,6 +2,8 @@ package com.tecsup.pokemon
 
 import android.content.Context
 import androidx.room.Room
+import com.tecsup.pokemon.data.admin.FirebaseUsuariosRepository
+import com.tecsup.pokemon.data.admin.UsuariosRepository
 import com.tecsup.pokemon.data.auth.AuthRepository
 import com.tecsup.pokemon.data.auth.FirebaseAuthRepository
 import com.tecsup.pokemon.data.local.AppDatabase
@@ -45,6 +47,9 @@ class AppContainer(context: Context) {
     )
 
     val authRepository: AuthRepository = FirebaseAuthRepository()
+
+    // Gestión de cuentas del Panel Admin (Firestore)
+    val usuariosRepository: UsuariosRepository = FirebaseUsuariosRepository()
 
     val notificador: Notificador = NotificadorAndroid(context)
 }
