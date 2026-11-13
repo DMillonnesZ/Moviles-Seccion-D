@@ -72,15 +72,19 @@ class TiposViewModel(
     }
 
     init {
-        // Tipos disponibles + búsqueda (esperando 300 ms sin escribir) + orden elegido
+        // Tipos disponibles + búsqueda + orden elegido.
+        // Buscador vacío = sin espera; al escribir, espera 300 ms sin teclear
         viewModelScope.launch {
             combine(
                 tiposDisponibles,
-                _busqueda.debounce(300).map { normalizar(it) }.distinctUntilChanged(),
+                _busqueda.debounce { if (it.isBlank()) 0L else 300L }
+                    .map { normalizar(it) }
+                    .distinctUntilChanged(),
                 _orden
             ) { lista, texto, orden -> Triple(lista, texto, orden) }
                 .collect { (lista, texto, orden) ->
-                    if (lista.isNotEmpty() || refrescoTerminado) {
+                    // Una lista vacía no tapa el error de "sin datos y sin internet"
+                    if (lista.isNotEmpty() || (refrescoTerminado && _estado.value !is UiState.Error)) {
                         _estado.value = UiState.Exito(filtrarYOrdenar(lista, texto, orden))
                     }
                 }
