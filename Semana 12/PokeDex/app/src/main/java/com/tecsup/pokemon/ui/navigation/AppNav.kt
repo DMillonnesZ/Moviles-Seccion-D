@@ -114,7 +114,7 @@ fun AppNav() {
     val sesionViewModel: SesionViewModel = viewModel(factory = AppViewModelProvider.Factory)
     val estadoSesion by sesionViewModel.estado.collectAsStateWithLifecycle()
 
-    // Cantidad de favoritos para el contador de la barra
+    // Cantidad de favoritos para el contador de la barra (y el rango del Perfil)
     val barraViewModel: BarraViewModel = viewModel(factory = AppViewModelProvider.Factory)
     val cantidadFavoritos by barraViewModel.cantidadFavoritos.collectAsStateWithLifecycle()
 
@@ -311,7 +311,10 @@ fun AppNav() {
                                 navigation(route = Rutas.PESTANA_PERFIL, startDestination = Rutas.PERFIL) {
                                     composable(Rutas.PERFIL) {
                                         PerfilScreen(
-                                            sesion = sesionActiva,
+                                            viewModel = viewModel(factory = AppViewModelProvider.Factory),
+                                            esAdmin = esAdmin,
+                                            // Los favoritos dan el rango del entrenador
+                                            cantidadFavoritos = cantidadFavoritos,
                                             onAdminClick = { navController.navigate(Rutas.ADMIN) },
                                             onCerrarSesion = {
                                                 sesionViewModel.cerrarSesion()

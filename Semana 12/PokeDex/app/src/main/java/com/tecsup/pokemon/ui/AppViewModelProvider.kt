@@ -15,6 +15,7 @@ import com.tecsup.pokemon.ui.lista.ListaViewModel
 import com.tecsup.pokemon.ui.login.LoginViewModel
 import com.tecsup.pokemon.ui.navigation.BarraViewModel
 import com.tecsup.pokemon.ui.navigation.SesionViewModel
+import com.tecsup.pokemon.ui.perfil.PerfilViewModel
 import com.tecsup.pokemon.ui.registro.RegistroViewModel
 import com.tecsup.pokemon.ui.tipos.TiposViewModel
 
@@ -66,6 +67,9 @@ object AppViewModelProvider {
                 repo = pokeDexApp().container.itemRepository,
                 evolucionRepo = pokeDexApp().container.evolucionRepository
             )
+        }
+        initializer {
+            PerfilViewModel(pokeDexApp().container.authRepository)
         }
         initializer {
             AdminViewModel(
