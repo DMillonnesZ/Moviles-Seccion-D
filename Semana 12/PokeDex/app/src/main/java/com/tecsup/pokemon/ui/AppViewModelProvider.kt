@@ -68,12 +68,15 @@ object AppViewModelProvider {
                 evolucionRepo = pokeDexApp().container.evolucionRepository
             )
         }
+        // Perfil: datos, foto y contraseña (Firebase)
         initializer {
             PerfilViewModel(pokeDexApp().container.authRepository)
         }
+        // Admin: cuentas (Firestore) + base local (Room) + aviso de sincronización
         initializer {
             AdminViewModel(
                 repo = pokeDexApp().container.itemRepository,
+                usuariosRepo = pokeDexApp().container.usuariosRepository,
                 notificador = pokeDexApp().container.notificador
             )
         }
