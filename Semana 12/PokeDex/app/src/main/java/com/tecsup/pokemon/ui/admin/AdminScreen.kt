@@ -26,6 +26,7 @@ import androidx.compose.material.icons.rounded.AddModerator
 import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Build
+import androidx.compose.material.icons.rounded.Campaign
 import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
@@ -37,18 +38,24 @@ import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.LockReset
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.RemoveModerator
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.SpeakerNotesOff
 import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.Style
 import androidx.compose.material.icons.rounded.Sync
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -69,8 +76,12 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.tecsup.pokemon.domain.model.AccionRegistro
+import com.tecsup.pokemon.domain.model.Anuncio
+import com.tecsup.pokemon.domain.model.Item
 import com.tecsup.pokemon.domain.model.Rol
+import com.tecsup.pokemon.domain.model.Tipo
 import com.tecsup.pokemon.domain.model.TipoAccion
 import com.tecsup.pokemon.domain.model.UsuarioAdmin
 import com.tecsup.pokemon.ui.UiState
@@ -94,6 +105,7 @@ import com.tecsup.pokemon.ui.components.TarjetaPestana
 import com.tecsup.pokemon.ui.components.VacioView
 import com.tecsup.pokemon.ui.components.VentanaMadera
 import com.tecsup.pokemon.ui.components.desvanecerBordes
+import com.tecsup.pokemon.ui.components.escalaGrises
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -110,13 +122,16 @@ private val VerdeAdmin = Color(0xFF35A82C)
 private val AzulAdmin = Color(0xFF3D8FD6)
 private val NaranjaAdmin = Color(0xFFF57C00)
 private val GrisAdmin = Color(0xFF7A6A5A)
+private val GrisApagado = Color(0xFFBDB4AA)
 
-// Largo máximo del motivo de suspensión
+// Largo máximo del motivo de suspensión y del anuncio
 private const val LARGO_MOTIVO = 120
+private const val LARGO_ANUNCIO = 200
 
-// Pestañas del panel (Catálogo se agrega en la Fase B)
+// Pestañas del panel
 private enum class PestanaAdmin(val etiqueta: String, val icono: ImageVector) {
     USUARIOS("Usuarios", Icons.Rounded.Group),
+    CATALOGO("Catálogo", Icons.Rounded.Inventory2),
     REGISTRO("Registro", Icons.Rounded.History),
     SISTEMA("Sistema", Icons.Rounded.Settings)
 }
@@ -127,12 +142,14 @@ private sealed interface VentanaAdmin {
     data class Suspender(val usuario: UsuarioAdmin) : VentanaAdmin
     data class CambiarRol(val usuario: UsuarioAdmin, val haciaAdmin: Boolean) : VentanaAdmin
     data class Restablecer(val usuario: UsuarioAdmin) : VentanaAdmin
+    data class DescontinuarTipo(val tipo: Tipo) : VentanaAdmin
+    data class EscribirAnuncio(val textoInicial: String) : VentanaAdmin
+    data object QuitarAnuncio : VentanaAdmin
     data object LimpiarCache : VentanaAdmin
 }
 
-// Panel Admin: cuentas (suspender, activar, roles, restablecer contraseña),
-// registro de acciones y sistema (base local y mantenimiento).
-// Título y pestañas fijos; el contenido se desliza con desvanecido.
+// Panel Admin: cuentas, catálogo (Pokémon y tipos descontinuados + anuncio global),
+// registro de acciones y sistema. Título y pestañas fijos; el contenido se desliza con desvanecido.
 @Composable
 fun AdminScreen(
     viewModel: AdminViewModel,
@@ -143,6 +160,12 @@ fun AdminScreen(
     val busqueda by viewModel.busqueda.collectAsStateWithLifecycle()
     val filtro by viewModel.filtro.collectAsStateWithLifecycle()
     val procesando by viewModel.procesando.collectAsStateWithLifecycle()
+    val anuncio by viewModel.anuncio.collectAsStateWithLifecycle()
+    val tiposCatalogo by viewModel.tiposCatalogo.collectAsStateWithLifecycle()
+    val pokemonCatalogo by viewModel.pokemonCatalogo.collectAsStateWithLifecycle()
+    val busquedaCatalogo by viewModel.busquedaCatalogo.collectAsStateWithLifecycle()
+    val soloDescontinuados by viewModel.soloDescontinuados.collectAsStateWithLifecycle()
+    val procesandoCatalogo by viewModel.procesandoCatalogo.collectAsStateWithLifecycle()
     val registro by viewModel.registro.collectAsStateWithLifecycle()
     val resumen by viewModel.resumen.collectAsStateWithLifecycle()
     val ocupado by viewModel.ocupado.collectAsStateWithLifecycle()
@@ -221,6 +244,25 @@ fun AdminScreen(
                             onUsuarioClick = { ventana = VentanaAdmin.Usuario(it) }
                         )
 
+                        PestanaAdmin.CATALOGO -> PestanaCatalogo(
+                            anuncio = anuncio,
+                            tipos = tiposCatalogo,
+                            resultado = pokemonCatalogo,
+                            busqueda = busquedaCatalogo,
+                            soloDescontinuados = soloDescontinuados,
+                            procesando = procesandoCatalogo,
+                            onEscribirAnuncio = { ventana = VentanaAdmin.EscribirAnuncio(anuncio?.texto.orEmpty()) },
+                            onQuitarAnuncio = { ventana = VentanaAdmin.QuitarAnuncio },
+                            // Apagar un tipo pide confirmación (también oculta sus Pokémon)
+                            onTipo = { tipo, disponible ->
+                                if (disponible) viewModel.cambiarTipo(tipo, true)
+                                else ventana = VentanaAdmin.DescontinuarTipo(tipo)
+                            },
+                            onBusqueda = viewModel::onBusquedaCatalogoChange,
+                            onSoloDescontinuados = viewModel::alternarSoloDescontinuados,
+                            onPokemon = viewModel::cambiarPokemon
+                        )
+
                         PestanaAdmin.REGISTRO -> PestanaRegistro(estado = registro)
 
                         PestanaAdmin.SISTEMA -> PestanaSistema(
@@ -292,6 +334,44 @@ fun AdminScreen(
             onCancelar = { ventana = null }
         )
 
+        is VentanaAdmin.DescontinuarTipo -> DialogoConfirmar(
+            titulo = "¿Descontinuar ${v.tipo.nombreEs}?",
+            texto = "Dejará de aparecer en Inicio y sus ${v.tipo.cantidad} Pokémon se ocultarán en toda la app " +
+                    "(también en las listas de sus otros tipos). En Favoritos se verán como descontinuados.",
+            icono = Icons.Rounded.VisibilityOff,
+            color = RojoAdmin,
+            textoConfirmar = "Descontinuar",
+            fondoConfirmar = FondoPildora.Rojo,
+            onConfirmar = {
+                ventana = null
+                viewModel.cambiarTipo(v.tipo, false)
+            },
+            onCancelar = { ventana = null }
+        )
+
+        is VentanaAdmin.EscribirAnuncio -> DialogoAnuncio(
+            textoInicial = v.textoInicial,
+            onPublicar = { texto ->
+                ventana = null
+                viewModel.publicarAnuncio(texto)
+            },
+            onCancelar = { ventana = null }
+        )
+
+        VentanaAdmin.QuitarAnuncio -> DialogoConfirmar(
+            titulo = "¿Quitar el anuncio?",
+            texto = "Dejará de aparecer en Inicio para todos los entrenadores.",
+            icono = Icons.Rounded.SpeakerNotesOff,
+            color = NaranjaAdmin,
+            textoConfirmar = "Quitar",
+            fondoConfirmar = FondoPildora.Rojo,
+            onConfirmar = {
+                ventana = null
+                viewModel.quitarAnuncio()
+            },
+            onCancelar = { ventana = null }
+        )
+
         VentanaAdmin.LimpiarCache -> {
             val datos = (resumen as? UiState.Exito)?.datos
             DialogoConfirmar(
@@ -320,7 +400,7 @@ fun AdminScreen(
 
 // ===================== Pestañas =====================
 
-// Tres píldoras: Usuarios (con burbuja de suspendidos), Registro y Sistema
+// Cuatro píldoras: Usuarios (con burbuja de suspendidos), Catálogo, Registro y Sistema
 @Composable
 private fun SelectorPestanas(
     seleccionada: PestanaAdmin,
@@ -328,7 +408,7 @@ private fun SelectorPestanas(
     onSeleccionar: (PestanaAdmin) -> Unit
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp)
@@ -355,16 +435,16 @@ private fun SelectorPestanas(
                             forma
                         )
                         .clickable { onSeleccionar(opcion) }
-                        .padding(horizontal = 6.dp)
+                        .padding(horizontal = 4.dp)
                 ) {
-                    Icon(opcion.icono, contentDescription = null, tint = CafeMadera, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(4.dp))
+                    Icon(opcion.icono, contentDescription = null, tint = CafeMadera, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(3.dp))
                     Text(
                         text = opcion.etiqueta,
                         color = CafeMadera,
                         fontFamily = FuenteMadera,
                         fontWeight = if (activa) FontWeight.Bold else FontWeight.Normal,
-                        fontSize = 14.sp,
+                        fontSize = 12.sp,
                         maxLines = 1
                     )
                 }
@@ -422,7 +502,7 @@ private fun PestanaUsuarios(
             modifier = Modifier.padding(vertical = 6.dp)
         ) {
             items(FiltroUsuarios.entries) { opcion ->
-                ChipFiltroUsuarios(
+                ChipConCantidad(
                     texto = opcion.etiqueta,
                     cantidad = conteo.de(opcion),
                     color = colorFiltro(opcion),
@@ -461,6 +541,57 @@ private fun PestanaUsuarios(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+// ----- Catálogo: anuncio, tipos y Pokémon -----
+@Composable
+private fun PestanaCatalogo(
+    anuncio: Anuncio?,
+    tipos: List<TipoCatalogo>,
+    resultado: ResultadoCatalogo,
+    busqueda: String,
+    soloDescontinuados: Boolean,
+    procesando: String?,
+    onEscribirAnuncio: () -> Unit,
+    onQuitarAnuncio: () -> Unit,
+    onTipo: (Tipo, Boolean) -> Unit,
+    onBusqueda: (String) -> Unit,
+    onSoloDescontinuados: () -> Unit,
+    onPokemon: (Item, Boolean) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .desvanecerBordes(arriba = 20.dp, abajo = 20.dp)
+    ) {
+        LazyColumn(
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            item(key = "anuncio") {
+                TarjetaAnuncio(
+                    anuncio = anuncio,
+                    guardando = procesando == "anuncio",
+                    onEscribir = onEscribirAnuncio,
+                    onQuitar = onQuitarAnuncio
+                )
+            }
+            item(key = "tipos") {
+                TarjetaTiposCatalogo(tipos = tipos, procesando = procesando, onTipo = onTipo)
+            }
+            item(key = "pokemon") {
+                TarjetaPokemonCatalogo(
+                    resultado = resultado,
+                    busqueda = busqueda,
+                    soloDescontinuados = soloDescontinuados,
+                    procesando = procesando,
+                    onBusqueda = onBusqueda,
+                    onSoloDescontinuados = onSoloDescontinuados,
+                    onPokemon = onPokemon
+                )
             }
         }
     }
@@ -538,11 +669,11 @@ private fun PestanaSistema(
     }
 }
 
-// ===================== Piezas de Usuarios =====================
+// ===================== Piezas compartidas del panel =====================
 
-// Chip de filtro con su cantidad
+// Chip con su cantidad (filtros de usuarios y "Solo descontinuados")
 @Composable
-private fun ChipFiltroUsuarios(
+private fun ChipConCantidad(
     texto: String,
     cantidad: Int,
     color: Color,
@@ -592,6 +723,25 @@ private fun ChipFiltroUsuarios(
         }
     }
 }
+
+// Etiqueta pequeña de color ("Tú", "Admin", "Suspendida")
+@Composable
+private fun EtiquetaMini(texto: String, color: Color) {
+    Text(
+        text = texto,
+        color = lerp(color, Color.Black, 0.25f),
+        fontFamily = FuenteMadera,
+        fontWeight = FontWeight.Bold,
+        fontSize = 11.sp,
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(color.copy(alpha = 0.15f))
+            .border(1.dp, color.copy(alpha = 0.4f), RoundedCornerShape(50))
+            .padding(horizontal = 8.dp, vertical = 1.dp)
+    )
+}
+
+// ===================== Piezas de Usuarios =====================
 
 private fun colorFiltro(filtro: FiltroUsuarios): Color = when (filtro) {
     FiltroUsuarios.TODOS -> DoradoBorde
@@ -698,21 +848,254 @@ private fun FotoConEstado(foto: String?, activo: Boolean, tamano: Int) {
     }
 }
 
-// Etiqueta pequeña de color ("Tú", "Admin", "Suspendida")
+// ===================== Piezas de Catálogo =====================
+
+// Anuncio actual con Editar y Quitar, o botón para publicar uno
 @Composable
-private fun EtiquetaMini(texto: String, color: Color) {
-    Text(
-        text = texto,
-        color = lerp(color, Color.Black, 0.25f),
-        fontFamily = FuenteMadera,
-        fontWeight = FontWeight.Bold,
-        fontSize = 11.sp,
+private fun TarjetaAnuncio(
+    anuncio: Anuncio?,
+    guardando: Boolean,
+    onEscribir: () -> Unit,
+    onQuitar: () -> Unit
+) {
+    TarjetaPestana(titulo = "Anuncio para todos", icono = Icons.Rounded.Campaign) {
+        if (anuncio != null) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(AzulAdmin.copy(alpha = 0.08f))
+                    .border(1.dp, AzulAdmin.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
+                    .padding(12.dp)
+            ) {
+                Text(anuncio.texto, color = CafeMadera, fontFamily = FuenteMadera, fontSize = 15.sp)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "Publicado por ${anuncio.autor} · ${haceCuanto(anuncio.fecha).replaceFirstChar { it.lowercase() }}",
+                    color = GrisAdmin,
+                    fontFamily = FuenteMadera,
+                    fontSize = 12.sp
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                BotonPildora(
+                    texto = "Editar",
+                    fondo = FondoPildora.Dorado,
+                    colorTexto = CafeMadera,
+                    onClick = onEscribir,
+                    habilitado = !guardando,
+                    modifier = Modifier.weight(1f)
+                )
+                BotonPildora(
+                    texto = "Quitar",
+                    fondo = FondoPildora.Rojo,
+                    colorTexto = Color.White,
+                    onClick = onQuitar,
+                    cargando = guardando,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        } else {
+            Text(
+                text = "No hay anuncio publicado. Lo que escribas aparecerá arriba en Inicio para todos los entrenadores.",
+                color = GrisAdmin,
+                fontFamily = FuenteMadera,
+                fontSize = 13.sp
+            )
+            Spacer(Modifier.height(12.dp))
+            BotonPildora(
+                texto = "Publicar anuncio",
+                fondo = FondoPildora.Verde,
+                colorTexto = Color.White,
+                onClick = onEscribir,
+                cargando = guardando,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+// Todos los tipos con su interruptor (apagar uno oculta también sus Pokémon)
+@Composable
+private fun TarjetaTiposCatalogo(
+    tipos: List<TipoCatalogo>,
+    procesando: String?,
+    onTipo: (Tipo, Boolean) -> Unit
+) {
+    val apagados = tipos.count { !it.disponible }
+    TarjetaPestana(titulo = "Tipos", icono = Icons.Rounded.Category) {
+        Text(
+            text = if (apagados == 0) {
+                "Todos los tipos están disponibles. Al apagar uno, también se ocultan sus Pokémon."
+            } else {
+                "$apagados ${if (apagados == 1) "tipo descontinuado" else "tipos descontinuados"}. " +
+                        "No aparecen en Inicio y sus Pokémon están ocultos."
+            },
+            color = GrisAdmin,
+            fontFamily = FuenteMadera,
+            fontSize = 13.sp
+        )
+        Spacer(Modifier.height(6.dp))
+        if (tipos.isEmpty()) {
+            Text(
+                text = "No hay tipos guardados. Sincroniza en la pestaña Sistema.",
+                color = GrisAdmin,
+                fontFamily = FuenteMadera,
+                fontSize = 13.sp
+            )
+        }
+        tipos.forEachIndexed { indice, (tipo, disponible) ->
+            if (indice > 0) DivisorSuave()
+            FilaCatalogo(
+                imagenUrl = tipo.iconoUrl,
+                titulo = tipo.nombreEs,
+                subtitulo = "${tipo.cantidad} Pokémon",
+                disponible = disponible,
+                procesando = procesando == "t${tipo.nombre}",
+                onCambiar = { onTipo(tipo, it) }
+            )
+        }
+    }
+}
+
+// Buscador de Pokémon con su interruptor
+@Composable
+private fun TarjetaPokemonCatalogo(
+    resultado: ResultadoCatalogo,
+    busqueda: String,
+    soloDescontinuados: Boolean,
+    procesando: String?,
+    onBusqueda: (String) -> Unit,
+    onSoloDescontinuados: () -> Unit,
+    onPokemon: (Item, Boolean) -> Unit
+) {
+    TarjetaPestana(titulo = "Pokémon", icono = Icons.Outlined.CatchingPokemon) {
+        BuscadorMadera(
+            valor = busqueda,
+            onValorChange = onBusqueda,
+            placeholder = "Nombre o N°",
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(8.dp))
+        ChipConCantidad(
+            texto = "Solo descontinuados",
+            cantidad = resultado.descontinuados,
+            color = RojoAdmin,
+            seleccionado = soloDescontinuados,
+            onClick = onSoloDescontinuados
+        )
+        Spacer(Modifier.height(6.dp))
+
+        if (resultado.lista.isEmpty()) {
+            Text(
+                text = if (soloDescontinuados) "No hay Pokémon descontinuados" else "No hay Pokémon que coincidan",
+                color = GrisAdmin,
+                fontFamily = FuenteMadera,
+                fontSize = 13.sp,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+        }
+        resultado.lista.forEachIndexed { indice, pokemon ->
+            if (indice > 0) DivisorSuave()
+            FilaCatalogo(
+                imagenUrl = pokemon.item.imagenUrl,
+                titulo = "#%03d %s".format(pokemon.item.id, pokemon.item.nombre.replaceFirstChar { it.uppercase() }),
+                subtitulo = null,
+                disponible = pokemon.disponible,
+                bloqueo = pokemon.tipoBloqueo,
+                procesando = procesando == "p${pokemon.item.id}",
+                onCambiar = { onPokemon(pokemon.item, it) }
+            )
+        }
+        if (resultado.total > resultado.lista.size) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "Mostrando ${resultado.lista.size} de ${resultado.total}. Escribe un nombre o número para encontrar más.",
+                color = GrisAdmin,
+                fontFamily = FuenteMadera,
+                fontSize = 12.sp
+            )
+        }
+    }
+}
+
+// Fila del catálogo: imagen (gris si está apagado), nombre, estado e interruptor.
+// bloqueo = tipo descontinuado que lo oculta: el interruptor queda bloqueado
+@Composable
+private fun FilaCatalogo(
+    imagenUrl: String,
+    titulo: String,
+    subtitulo: String?,
+    disponible: Boolean,
+    procesando: Boolean,
+    onCambiar: (Boolean) -> Unit,
+    bloqueo: String? = null
+) {
+    val estado = when {
+        bloqueo != null -> "Descontinuado por el tipo $bloqueo"
+        disponible -> "Disponible"
+        else -> "Descontinuado"
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(color.copy(alpha = 0.15f))
-            .border(1.dp, color.copy(alpha = 0.4f), RoundedCornerShape(50))
-            .padding(horizontal = 8.dp, vertical = 1.dp)
-    )
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 6.dp)
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(42.dp)
+                .clip(CircleShape)
+                .background(if (disponible) Color.White else GrisApagado.copy(alpha = 0.3f))
+                .border(1.dp, CafeMadera.copy(alpha = 0.2f), CircleShape)
+        ) {
+            AsyncImage(
+                model = imagenUrl,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(34.dp)
+                    .then(if (disponible) Modifier else Modifier.escalaGrises())
+            )
+        }
+        Spacer(Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = titulo,
+                color = if (disponible) CafeMadera else GrisAdmin,
+                fontFamily = FuenteMadera,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = listOfNotNull(subtitulo, estado).joinToString(" · "),
+                color = if (disponible) GrisAdmin else RojoAdmin,
+                fontFamily = FuenteMadera,
+                fontSize = 12.sp
+            )
+        }
+        if (procesando) {
+            CircularProgressIndicator(color = DoradoBorde, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
+        } else {
+            Switch(
+                checked = disponible,
+                onCheckedChange = onCambiar,
+                // Si lo oculta su tipo, solo vuelve reactivando el tipo
+                enabled = bloqueo == null,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = VerdeAdmin,
+                    checkedBorderColor = VerdeAdmin,
+                    uncheckedThumbColor = Color.White,
+                    uncheckedTrackColor = GrisApagado,
+                    uncheckedBorderColor = GrisApagado
+                )
+            )
+        }
+    }
 }
 
 // ===================== Piezas de Registro =====================
@@ -726,12 +1109,30 @@ private fun estiloDe(tipo: TipoAccion): EstiloAccion = when (tipo) {
     TipoAccion.HACER_ADMIN -> EstiloAccion(Icons.Rounded.AddModerator, DoradoBorde, "hizo admin a")
     TipoAccion.QUITAR_ADMIN -> EstiloAccion(Icons.Rounded.RemoveModerator, NaranjaAdmin, "quitó el admin a")
     TipoAccion.RESTABLECER_CLAVE -> EstiloAccion(Icons.Rounded.LockReset, AzulAdmin, "envió un cambio de contraseña a")
+    TipoAccion.DESCONTINUAR -> EstiloAccion(Icons.Rounded.VisibilityOff, GrisAdmin, "descontinuó")
+    TipoAccion.REACTIVAR -> EstiloAccion(Icons.Rounded.Visibility, VerdeAdmin, "reactivó")
+    TipoAccion.PUBLICAR_ANUNCIO -> EstiloAccion(Icons.Rounded.Campaign, AzulAdmin, "publicó un anuncio")
+    TipoAccion.QUITAR_ANUNCIO -> EstiloAccion(Icons.Rounded.SpeakerNotesOff, NaranjaAdmin, "quitó el anuncio")
+}
+
+// Texto debajo de la acción: motivo, "Pokémon #025", texto del anuncio...
+private fun detalleDe(accion: AccionRegistro): String? {
+    val detalle = accion.detalle?.takeIf { it.isNotBlank() } ?: return null
+    return when (accion.tipo) {
+        TipoAccion.SUSPENDER -> "Motivo: $detalle"
+        TipoAccion.PUBLICAR_ANUNCIO -> "“$detalle”"
+        // Un tipo arrastra a todos sus Pokémon
+        TipoAccion.DESCONTINUAR, TipoAccion.REACTIVAR ->
+            if (detalle == "Tipo") "Tipo (con todos sus Pokémon)" else detalle
+        else -> detalle
+    }
 }
 
 // "Ana suspendió a Luis · Motivo: ... · Hace 2 h"
 @Composable
 private fun FilaRegistro(accion: AccionRegistro) {
     val estilo = estiloDe(accion.tipo)
+    val detalle = detalleDe(accion)
     val forma = RoundedCornerShape(16.dp)
     Row(
         verticalAlignment = Alignment.Top,
@@ -757,18 +1158,22 @@ private fun FilaRegistro(accion: AccionRegistro) {
             Text(
                 text = buildAnnotatedString {
                     withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(accion.adminNombre) }
-                    append(" ${estilo.verbo} ")
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = lerp(estilo.color, Color.Black, 0.25f))) {
-                        append(accion.usuarioNombre)
+                    append(" ${estilo.verbo}")
+                    // En los anuncios no hay a quién
+                    if (accion.usuarioNombre.isNotBlank()) {
+                        append(" ")
+                        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = lerp(estilo.color, Color.Black, 0.25f))) {
+                            append(accion.usuarioNombre)
+                        }
                     }
                 },
                 color = CafeMadera,
                 fontFamily = FuenteMadera,
                 fontSize = 14.sp
             )
-            if (!accion.detalle.isNullOrBlank()) {
+            if (detalle != null) {
                 Text(
-                    text = if (accion.tipo == TipoAccion.SUSPENDER) "Motivo: ${accion.detalle}" else accion.detalle,
+                    text = detalle,
                     color = GrisAdmin,
                     fontFamily = FuenteMadera,
                     fontSize = 13.sp
@@ -916,7 +1321,7 @@ private fun TarjetaFuentes() {
         DivisorSuave()
         FilaOpcion(icono = Icons.Rounded.PhoneAndroid, titulo = "Room", subtitulo = "Copia en el teléfono para usar sin internet", color = VerdeAdmin)
         DivisorSuave()
-        FilaOpcion(icono = Icons.Rounded.LocalFireDepartment, titulo = "Firebase", subtitulo = "Cuentas, roles, perfiles y registro de acciones", color = NaranjaAdmin)
+        FilaOpcion(icono = Icons.Rounded.LocalFireDepartment, titulo = "Firebase", subtitulo = "Cuentas, roles, perfiles, catálogo y registro de acciones", color = NaranjaAdmin)
     }
 }
 
@@ -1160,7 +1565,56 @@ private fun DialogoSuspender(
     }
 }
 
-// Confirmación genérica (rol, restablecer contraseña, limpiar caché)
+// Escribir o editar el anuncio para todos
+@Composable
+private fun DialogoAnuncio(
+    textoInicial: String,
+    onPublicar: (String) -> Unit,
+    onCancelar: () -> Unit
+) {
+    var texto by remember { mutableStateOf(textoInicial) }
+
+    VentanaMadera(
+        titulo = "Anuncio para todos",
+        icono = Icons.Rounded.Campaign,
+        colorIcono = AzulAdmin,
+        onCerrar = onCancelar
+    ) {
+        Text(
+            text = "Aparecerá arriba en Inicio para todos los entrenadores hasta que lo quites.",
+            color = CafeMadera,
+            fontFamily = FuenteMadera,
+            fontSize = 14.sp,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(12.dp))
+        CampoCrema(
+            valor = texto,
+            onCambio = { if (it.length <= LARGO_ANUNCIO) texto = it },
+            etiqueta = "Mensaje",
+            icono = Icons.Rounded.EditNote,
+            unaLinea = false
+        )
+        Text(
+            text = "${texto.length}/$LARGO_ANUNCIO",
+            color = GrisAdmin,
+            fontFamily = FuenteMadera,
+            fontSize = 12.sp,
+            textAlign = TextAlign.End,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp, end = 6.dp)
+        )
+        Spacer(Modifier.height(14.dp))
+        BotonesVentana(
+            textoConfirmar = "Publicar",
+            onConfirmar = { onPublicar(texto) },
+            onCancelar = onCancelar
+        )
+    }
+}
+
+// Confirmación genérica (rol, contraseña, descontinuar tipo, quitar anuncio, limpiar caché)
 @Composable
 private fun DialogoConfirmar(
     titulo: String,

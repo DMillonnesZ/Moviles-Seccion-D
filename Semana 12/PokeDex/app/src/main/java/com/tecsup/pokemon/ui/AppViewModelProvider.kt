@@ -33,22 +33,28 @@ object AppViewModelProvider {
         initializer {
             RegistroViewModel(pokeDexApp().container.authRepository)
         }
+        // Inicio: tipos sin los descontinuados + anuncio del admin
         initializer {
             TiposViewModel(
                 repo = pokeDexApp().container.itemRepository,
+                catalogoRepo = pokeDexApp().container.catalogoRepository,
                 notificador = pokeDexApp().container.notificador
             )
         }
+        // Lista: Pokémon sin los descontinuados
         initializer {
             ListaViewModel(
                 repo = pokeDexApp().container.itemRepository,
+                catalogoRepo = pokeDexApp().container.catalogoRepository,
                 savedStateHandle = createSavedStateHandle()
             )
         }
+        // Detalle: avisa si el Pokémon fue descontinuado
         initializer {
             DetalleViewModel(
                 repo = pokeDexApp().container.itemRepository,
                 cartasRepo = pokeDexApp().container.cartasRepository,
+                catalogoRepo = pokeDexApp().container.catalogoRepository,
                 savedStateHandle = createSavedStateHandle()
             )
         }
@@ -62,21 +68,25 @@ object AppViewModelProvider {
                 savedStateHandle = createSavedStateHandle()
             )
         }
+        // Favoritos: marca los descontinuados
         initializer {
             FavoritosViewModel(
                 repo = pokeDexApp().container.itemRepository,
-                evolucionRepo = pokeDexApp().container.evolucionRepository
+                evolucionRepo = pokeDexApp().container.evolucionRepository,
+                catalogoRepo = pokeDexApp().container.catalogoRepository
             )
         }
         // Perfil: datos, foto y contraseña (Firebase)
         initializer {
             PerfilViewModel(pokeDexApp().container.authRepository)
         }
-        // Admin: cuentas (Firestore) + base local (Room) + aviso de sincronización
+        // Admin: cuentas + catálogo (Firestore) + base local (Room) + tipos de cada Pokémon
         initializer {
             AdminViewModel(
                 repo = pokeDexApp().container.itemRepository,
+                evolucionRepo = pokeDexApp().container.evolucionRepository,
                 usuariosRepo = pokeDexApp().container.usuariosRepository,
+                catalogoRepo = pokeDexApp().container.catalogoRepository,
                 notificador = pokeDexApp().container.notificador
             )
         }

@@ -3,12 +3,20 @@ package com.tecsup.pokemon.ui.admin
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tecsup.pokemon.data.admin.UsuariosRepository
+import com.tecsup.pokemon.data.catalogo.CatalogoRepository
+import com.tecsup.pokemon.data.repository.EvolucionRepository
 import com.tecsup.pokemon.data.repository.ItemRepository
 import com.tecsup.pokemon.domain.model.AccionRegistro
+import com.tecsup.pokemon.domain.model.Anuncio
+import com.tecsup.pokemon.domain.model.Deshabilitados
+import com.tecsup.pokemon.domain.model.Item
 import com.tecsup.pokemon.domain.model.Rol
+import com.tecsup.pokemon.domain.model.Tipo
 import com.tecsup.pokemon.domain.model.UsuarioAdmin
 import com.tecsup.pokemon.notification.Notificador
 import com.tecsup.pokemon.ui.UiState
+import com.tecsup.pokemon.util.Traductor
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +30,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import retrofit2.HttpException
 import java.io.IOException
+
+// Pokémon que se muestran a la vez en el catálogo (se afina con el buscador)
+private const val MAXIMO_CATALOGO = 30
 
 // Totales de la base local (pestaña Sistema)
 data class ResumenAdmin(
@@ -69,9 +80,29 @@ data class ConteoUsuarios(
     }
 }
 
+// Tipo con su estado en el catálogo
+data class TipoCatalogo(val tipo: Tipo, val disponible: Boolean)
+
+// Pokémon con su estado. tipoBloqueo = tipo descontinuado que lo oculta (en español);
+// mientras lo tenga, solo vuelve reactivando ese tipo
+data class PokemonCatalogo(
+    val item: Item,
+    val disponible: Boolean,
+    val tipoBloqueo: String?
+)
+
+// Pokémon que coinciden con la búsqueda (máximo 30) y totales
+data class ResultadoCatalogo(
+    val lista: List<PokemonCatalogo> = emptyList(),
+    val total: Int = 0,
+    val descontinuados: Int = 0
+)
+
 class AdminViewModel(
     private val repo: ItemRepository,
+    evolucionRepo: EvolucionRepository,
     private val usuariosRepo: UsuariosRepository,
+    private val catalogoRepo: CatalogoRepository,
     private val notificador: Notificador
 ) : ViewModel() {
 
@@ -118,6 +149,62 @@ class AdminViewModel(
     private val _procesando = MutableStateFlow<String?>(null)
     val procesando: StateFlow<String?> = _procesando.asStateFlow()
 
+    // ===================== Catálogo =====================
+
+    // Anuncio actual para todos
+    val anuncio: StateFlow<Anuncio?> = catalogoRepo.anuncio
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    private val deshabilitados: StateFlow<Deshabilitados> = catalogoRepo.deshabilitados
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Deshabilitados())
+
+    // Todos los tipos con su interruptor
+    val tiposCatalogo: StateFlow<List<TipoCatalogo>> =
+        combine(repo.tipos, deshabilitados) { tipos, fuera ->
+            tipos.map { TipoCatalogo(it, disponible = it.nombre !in fuera.tipos) }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private val _busquedaCatalogo = MutableStateFlow("")
+    val busquedaCatalogo: StateFlow<String> = _busquedaCatalogo.asStateFlow()
+
+    private val _soloDescontinuados = MutableStateFlow(false)
+    val soloDescontinuados: StateFlow<Boolean> = _soloDescontinuados.asStateFlow()
+
+    // Pokémon con sus tipos (la relación Pokémon - tipo está en Room)
+    private val pokemonConTipos: Flow<List<Item>> =
+        combine(repo.items, evolucionRepo.tiposPorPokemon) { items, tipos ->
+            items.map { it.copy(tipos = tipos[it.id].orEmpty()) }
+        }
+
+    // Pokémon que coinciden con la búsqueda (o solo los descontinuados, sueltos o por tipo)
+    val pokemonCatalogo: StateFlow<ResultadoCatalogo> = combine(
+        pokemonConTipos,
+        deshabilitados,
+        _busquedaCatalogo,
+        _soloDescontinuados,
+        tiposCatalogo
+    ) { items, fuera, texto, solo, tipos ->
+        val nombresEs = tipos.associate { it.tipo.nombre to it.tipo.nombreEs }
+        val todos = items.map { item ->
+            val bloqueo = item.tipos.firstOrNull { it in fuera.tipos }
+            PokemonCatalogo(
+                item = item,
+                disponible = item.id !in fuera.pokemon && bloqueo == null,
+                tipoBloqueo = bloqueo?.let { nombresEs[it] ?: Traductor.tipoEs(it) }
+            )
+        }
+        val filtrados = todos.filter { (!solo || !it.disponible) && it.item.coincideCatalogo(texto) }
+        ResultadoCatalogo(
+            lista = filtrados.take(MAXIMO_CATALOGO),
+            total = filtrados.size,
+            descontinuados = todos.count { !it.disponible }
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ResultadoCatalogo())
+
+    // Elemento del catálogo que se está guardando ("p25", "tfire" o "anuncio")
+    private val _procesandoCatalogo = MutableStateFlow<String?>(null)
+    val procesandoCatalogo: StateFlow<String?> = _procesandoCatalogo.asStateFlow()
+
     // ===================== Registro =====================
 
     val registro: StateFlow<UiState<List<AccionRegistro>>> = usuariosRepo.registro()
@@ -133,7 +220,7 @@ class AdminViewModel(
     private val _ocupado = MutableStateFlow<AccionAdmin?>(null)
     val ocupado: StateFlow<AccionAdmin?> = _ocupado.asStateFlow()
 
-    // Aviso común a las tres pestañas
+    // Aviso común a todas las pestañas
     private val _aviso = MutableStateFlow<AvisoAdmin?>(null)
     val aviso: StateFlow<AvisoAdmin?> = _aviso.asStateFlow()
 
@@ -191,6 +278,65 @@ class AdminViewModel(
                     _aviso.value = AvisoAdmin(e.message ?: "No se pudo completar la acción", esError = true)
                 }
             _procesando.value = null
+        }
+    }
+
+    // ----- Acciones del catálogo -----
+
+    fun onBusquedaCatalogoChange(texto: String) {
+        _busquedaCatalogo.value = texto
+    }
+
+    fun alternarSoloDescontinuados() {
+        _soloDescontinuados.value = !_soloDescontinuados.value
+    }
+
+    fun cambiarPokemon(item: Item, disponible: Boolean) {
+        val nombre = item.nombre.replaceFirstChar { it.uppercase() }
+        cambiarCatalogo(
+            clave = "p${item.id}",
+            textoExito = if (disponible) "$nombre vuelve a estar disponible" else "$nombre fue descontinuado"
+        ) {
+            catalogoRepo.cambiarPokemon(item.id, item.nombre, disponible)
+        }
+    }
+
+    // Descontinuar un tipo también oculta todos sus Pokémon
+    fun cambiarTipo(tipo: Tipo, disponible: Boolean) =
+        cambiarCatalogo(
+            clave = "t${tipo.nombre}",
+            textoExito = if (disponible) "El tipo ${tipo.nombreEs} y sus Pokémon vuelven a estar disponibles"
+            else "El tipo ${tipo.nombreEs} y sus Pokémon fueron descontinuados"
+        ) {
+            catalogoRepo.cambiarTipo(tipo.nombre, tipo.nombreEs, disponible)
+        }
+
+    fun publicarAnuncio(texto: String) =
+        cambiarCatalogo(clave = "anuncio", textoExito = "Anuncio publicado para todos") {
+            catalogoRepo.publicarAnuncio(texto)
+        }
+
+    fun quitarAnuncio() =
+        cambiarCatalogo(clave = "anuncio", textoExito = "Anuncio quitado") {
+            catalogoRepo.quitarAnuncio()
+        }
+
+    // Ejecuta un cambio del catálogo mostrando la carga y el aviso del resultado
+    private fun cambiarCatalogo(
+        clave: String,
+        textoExito: String,
+        accion: suspend () -> Result<Unit>
+    ) {
+        if (_procesandoCatalogo.value != null) return
+        viewModelScope.launch {
+            _procesandoCatalogo.value = clave
+            _aviso.value = null
+            accion()
+                .onSuccess { _aviso.value = AvisoAdmin(textoExito, esError = false) }
+                .onFailure { e ->
+                    _aviso.value = AvisoAdmin(e.message ?: "No se pudo guardar el cambio", esError = true)
+                }
+            _procesandoCatalogo.value = null
         }
     }
 
@@ -265,10 +411,18 @@ class AdminViewModel(
     }
 }
 
-// Búsqueda por nombre o correo (sin distinguir mayúsculas)
+// Búsqueda de usuarios por nombre o correo (sin distinguir mayúsculas)
 private fun UsuarioAdmin.coincide(texto: String): Boolean {
     val buscado = texto.trim()
     if (buscado.isEmpty()) return true
     return nombre.contains(buscado, ignoreCase = true) ||
             (correo?.contains(buscado, ignoreCase = true) == true)
+}
+
+// Búsqueda de Pokémon por nombre o número ("25", "#025")
+private fun Item.coincideCatalogo(texto: String): Boolean {
+    val buscado = texto.trim().lowercase().removePrefix("#")
+    if (buscado.isEmpty()) return true
+    if (buscado.all { it.isDigit() }) return id == buscado.toIntOrNull()
+    return nombre.contains(buscado, ignoreCase = true)
 }
