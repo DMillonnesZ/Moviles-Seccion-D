@@ -6,16 +6,12 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,10 +19,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.outlined.CatchingPokemon
 import androidx.compose.material.icons.rounded.AdminPanelSettings
@@ -46,14 +40,9 @@ import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.Visibility
-import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -66,34 +55,32 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tecsup.pokemon.domain.model.PerfilUsuario
 import com.tecsup.pokemon.domain.model.Rol
 import com.tecsup.pokemon.ui.components.AparecerSuave
 import com.tecsup.pokemon.ui.components.BotonVolver
+import com.tecsup.pokemon.ui.components.BotonesVentana
 import com.tecsup.pokemon.ui.components.CafeMadera
+import com.tecsup.pokemon.ui.components.CampoCrema
+import com.tecsup.pokemon.ui.components.DivisorSuave
+import com.tecsup.pokemon.ui.components.FilaOpcion
 import com.tecsup.pokemon.ui.components.FondoInicio
+import com.tecsup.pokemon.ui.components.FondoPildora
+import com.tecsup.pokemon.ui.components.FotoUsuario
 import com.tecsup.pokemon.ui.components.FuenteMadera
 import com.tecsup.pokemon.ui.components.LetreroSeccion
 import com.tecsup.pokemon.ui.components.LocalRellenoBarra
-import com.tecsup.pokemon.ui.components.PestanaMetodo
-import com.tecsup.pokemon.ui.components.Pokebola
+import com.tecsup.pokemon.ui.components.TarjetaPestana
+import com.tecsup.pokemon.ui.components.VentanaMadera
 import com.tecsup.pokemon.ui.components.desvanecerBordes
-import com.tecsup.pokemon.util.ImagenPerfil
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -104,9 +91,7 @@ private val DoradoClaro = Color(0xFFFFE7A0)
 private val Dorado = Color(0xFFF5C451)
 private val DoradoBorde = Color(0xFFD9A43A)
 private val RojoPerfil = Color(0xFFE53935)
-private val RojoClaroPerfil = Color(0xFFFF7A6E)
 private val VerdePerfil = Color(0xFF35A82C)
-private val VerdeClaroPerfil = Color(0xFF7BD857)
 private val NaranjaPerfil = Color(0xFFF39C12)
 private val AzulPerfil = Color(0xFF3D8FD6)
 private val GrisPerfil = Color(0xFF7A6A5A)
@@ -122,8 +107,10 @@ private val RANGOS = listOf(
     Rango("Maestro Pokémon", 30, Icons.Rounded.EmojiEvents, Color(0xFFE0A21B))
 )
 
-// Perfil del entrenador: foto, nombre, rango por favoritos y opciones de la cuenta.
+// Perfil: foto, nombre, rango por favoritos (solo entrenadores) y opciones de la cuenta.
+// El admin solo administra, así que no ve "Mi colección".
 // El título queda fijo; solo el contenido se desliza y se desvanece en los bordes.
+// Tarjetas, filas, ventanas, campos y botones vienen de ui/components.
 @Composable
 fun PerfilScreen(
     viewModel: PerfilViewModel,
@@ -223,10 +210,13 @@ fun PerfilScreen(
                             )
                         }
                         Spacer(Modifier.height(20.dp))
-                        AparecerSuave(retrasoMs = 120) {
-                            TarjetaColeccion(cantidad = cantidadFavoritos)
+                        // La colección y el rango son solo para entrenadores
+                        if (!esAdministrador) {
+                            AparecerSuave(retrasoMs = 120) {
+                                TarjetaColeccion(cantidad = cantidadFavoritos)
+                            }
+                            Spacer(Modifier.height(20.dp))
                         }
-                        Spacer(Modifier.height(20.dp))
                         AparecerSuave(retrasoMs = 240) {
                             TarjetaCuenta(
                                 correo = datos.correo,
@@ -306,35 +296,6 @@ fun PerfilScreen(
 
 // ===================== Tarjetas =====================
 
-// Tarjeta crema con borde dorado y pestaña arriba (mismo estilo que el resumen de Favoritos)
-@Composable
-private fun TarjetaPerfil(
-    titulo: String,
-    icono: ImageVector,
-    contenido: @Composable ColumnScope.() -> Unit
-) {
-    val forma = RoundedCornerShape(20.dp)
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .padding(top = 14.dp)
-                .fillMaxWidth()
-                .shadow(4.dp, forma)
-                .clip(forma)
-                .background(Brush.verticalGradient(listOf(Color.White, CremaPerfil)))
-                .border(1.5.dp, Brush.verticalGradient(listOf(DoradoClaro, DoradoBorde)), forma)
-                .padding(start = 16.dp, end = 16.dp, top = 28.dp, bottom = 16.dp),
-            content = contenido
-        )
-        PestanaMetodo(
-            texto = titulo,
-            icono = icono,
-            modifier = Modifier.padding(start = 10.dp)
-        )
-    }
-}
-
 // Foto, nombre editable, rol y fecha de registro
 @Composable
 private fun TarjetaEntrenador(
@@ -344,7 +305,11 @@ private fun TarjetaEntrenador(
     onCambiarFoto: () -> Unit,
     onEditarNombre: () -> Unit
 ) {
-    TarjetaPerfil(titulo = "Entrenador", icono = Icons.Rounded.Badge) {
+    TarjetaPestana(
+        titulo = if (esAdmin) "Administrador" else "Entrenador",
+        icono = if (esAdmin) Icons.Rounded.AdminPanelSettings else Icons.Rounded.Badge,
+        alineacion = Alignment.CenterHorizontally
+    ) {
         AvatarPerfil(foto = perfil.foto, guardando = guardandoFoto, onClick = onCambiarFoto)
 
         Spacer(Modifier.height(12.dp))
@@ -380,7 +345,7 @@ private fun TarjetaEntrenador(
                 Icon(Icons.Rounded.CalendarMonth, contentDescription = null, tint = GrisPerfil, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(4.dp))
                 Text(
-                    text = "Entrenador desde el ${formatearFecha(fecha)}",
+                    text = "${if (esAdmin) "Administrador" else "Entrenador"} desde el ${formatearFecha(fecha)}",
                     color = GrisPerfil,
                     fontFamily = FuenteMadera,
                     fontSize = 13.sp
@@ -390,10 +355,9 @@ private fun TarjetaEntrenador(
     }
 }
 
-// Foto redonda con aro dorado que gira y botón de cámara
+// Foto redonda (FotoUsuario) con aro dorado que gira y botón de cámara
 @Composable
 private fun AvatarPerfil(foto: String?, guardando: Boolean, onClick: () -> Unit) {
-    val imagen = remember(foto) { ImagenPerfil.aImagen(foto) }
     val giro by rememberInfiniteTransition(label = "halo").animateFloat(
         initialValue = 0f,
         targetValue = 360f,
@@ -411,30 +375,21 @@ private fun AvatarPerfil(foto: String?, guardando: Boolean, onClick: () -> Unit)
                 .background(Brush.sweepGradient(listOf(Dorado, Color.White, DoradoBorde, DoradoClaro, Dorado)))
         )
         // Foto o Pokébola
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(126.dp)
-                .clip(CircleShape)
-                .background(CremaPerfil)
-                .border(3.dp, Color.White, CircleShape)
-                .clickable(onClick = onClick)
-        ) {
-            if (imagen != null) {
-                Image(
-                    bitmap = imagen,
-                    contentDescription = "Foto de perfil",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                Pokebola(apertura = 0f, brillo = 0f, modifier = Modifier.size(80.dp))
-            }
+        Box(contentAlignment = Alignment.Center) {
+            FotoUsuario(
+                foto = foto,
+                tamano = 126.dp,
+                modifier = Modifier
+                    .border(3.dp, Color.White, CircleShape)
+                    .clip(CircleShape)
+                    .clickable(onClick = onClick)
+            )
             if (guardando) {
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .matchParentSize()
+                        .size(126.dp)
+                        .clip(CircleShape)
                         .background(Color.Black.copy(alpha = 0.45f))
                 ) {
                     CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp, modifier = Modifier.size(36.dp))
@@ -500,7 +455,11 @@ private fun TarjetaColeccion(cantidad: Int) {
         label = "rango"
     )
 
-    TarjetaPerfil(titulo = "Mi colección", icono = Icons.Rounded.EmojiEvents) {
+    TarjetaPestana(
+        titulo = "Mi colección",
+        icono = Icons.Rounded.EmojiEvents,
+        alineacion = Alignment.CenterHorizontally
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             // Favoritos
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
@@ -600,9 +559,9 @@ private fun TarjetaCuenta(
     onAdminClick: () -> Unit,
     onCerrarSesion: () -> Unit
 ) {
-    TarjetaPerfil(titulo = "Cuenta", icono = Icons.Rounded.Settings) {
+    TarjetaPestana(titulo = "Cuenta", icono = Icons.Rounded.Settings) {
         FilaOpcion(icono = Icons.Rounded.Email, titulo = "Correo", subtitulo = correo, color = AzulPerfil)
-        Divisor()
+        DivisorSuave()
         FilaOpcion(
             icono = Icons.Rounded.LockReset,
             titulo = "Cambiar contraseña",
@@ -610,16 +569,16 @@ private fun TarjetaCuenta(
             onClick = onCambiarClave
         )
         if (esAdmin) {
-            Divisor()
+            DivisorSuave()
             FilaOpcion(
                 icono = Icons.Rounded.AdminPanelSettings,
                 titulo = "Panel Admin",
-                subtitulo = "Gestionar la PokeDex",
+                subtitulo = "Gestionar usuarios y datos",
                 color = VerdePerfil,
                 onClick = onAdminClick
             )
         }
-        Divisor()
+        DivisorSuave()
         FilaOpcion(
             icono = Icons.AutoMirrored.Rounded.Logout,
             titulo = "Cerrar sesión",
@@ -630,135 +589,7 @@ private fun TarjetaCuenta(
     }
 }
 
-// Fila con ícono en círculo, título, subtítulo opcional y flecha si se puede tocar
-@Composable
-private fun FilaOpcion(
-    icono: ImageVector,
-    titulo: String,
-    color: Color,
-    subtitulo: String? = null,
-    peligro: Boolean = false,
-    onClick: (() -> Unit)? = null
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .clickable(enabled = onClick != null) { onClick?.invoke() }
-            .padding(horizontal = 6.dp, vertical = 9.dp)
-    ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(38.dp)
-                .clip(CircleShape)
-                .background(color.copy(alpha = 0.15f))
-        ) {
-            Icon(icono, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-        }
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = titulo,
-                color = if (peligro) RojoPerfil else CafeMadera,
-                fontFamily = FuenteMadera,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-            if (subtitulo != null) {
-                Text(
-                    text = subtitulo,
-                    color = GrisPerfil,
-                    fontFamily = FuenteMadera,
-                    fontSize = 13.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-        if (onClick != null) {
-            Icon(
-                Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                contentDescription = null,
-                tint = CafeMadera.copy(alpha = 0.5f)
-            )
-        }
-    }
-}
-
-@Composable
-private fun Divisor() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp)
-            .height(1.dp)
-            .background(CafeMadera.copy(alpha = 0.1f))
-    )
-}
-
 // ===================== Ventanas =====================
-
-// Ventana base: entra rebotando, ícono en círculo y título
-@Composable
-private fun VentanaPerfil(
-    titulo: String,
-    icono: ImageVector,
-    onCerrar: () -> Unit,
-    colorIcono: Color = DoradoBorde,
-    contenido: @Composable ColumnScope.() -> Unit
-) {
-    val escala = remember { Animatable(0.8f) }
-    LaunchedEffect(Unit) {
-        escala.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
-    }
-    val forma = RoundedCornerShape(24.dp)
-
-    Dialog(
-        onDismissRequest = onCerrar,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .padding(horizontal = 24.dp)
-                .fillMaxWidth()
-                .graphicsLayer {
-                    scaleX = escala.value
-                    scaleY = escala.value
-                }
-                .shadow(10.dp, forma)
-                .clip(forma)
-                .background(Brush.verticalGradient(listOf(Color.White, CremaPerfil)))
-                .border(2.dp, Brush.verticalGradient(listOf(DoradoClaro, DoradoBorde)), forma)
-                .padding(20.dp)
-        ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(64.dp)
-                    .shadow(4.dp, CircleShape, ambientColor = colorIcono, spotColor = colorIcono)
-                    .clip(CircleShape)
-                    .background(Brush.radialGradient(listOf(lerp(colorIcono, Color.White, 0.45f), colorIcono)))
-                    .border(3.dp, Color.White, CircleShape)
-            ) {
-                Icon(icono, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                text = titulo,
-                color = CafeMadera,
-                fontFamily = FuenteMadera,
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
-                textAlign = TextAlign.Center
-            )
-            Spacer(Modifier.height(14.dp))
-            contenido()
-        }
-    }
-}
 
 // Elegir foto: galería, cámara o quitarla
 @Composable
@@ -769,14 +600,14 @@ private fun DialogoFoto(
     onQuitar: () -> Unit,
     onCerrar: () -> Unit
 ) {
-    VentanaPerfil(titulo = "Foto de perfil", icono = Icons.Rounded.PhotoCamera, onCerrar = onCerrar) {
+    VentanaMadera(titulo = "Foto de perfil", icono = Icons.Rounded.PhotoCamera, onCerrar = onCerrar) {
         FilaOpcion(
             icono = Icons.Rounded.PhotoLibrary,
             titulo = "Elegir de la galería",
             color = AzulPerfil,
             onClick = onGaleria
         )
-        Divisor()
+        DivisorSuave()
         FilaOpcion(
             icono = Icons.Rounded.PhotoCamera,
             titulo = "Tomar una foto",
@@ -784,7 +615,7 @@ private fun DialogoFoto(
             onClick = onCamara
         )
         if (tieneFoto) {
-            Divisor()
+            DivisorSuave()
             FilaOpcion(
                 icono = Icons.Rounded.Delete,
                 titulo = "Quitar foto",
@@ -807,7 +638,7 @@ private fun DialogoFoto(
     }
 }
 
-// Editar el nombre de entrenador
+// Editar el nombre
 @Composable
 private fun DialogoNombre(
     actual: String,
@@ -817,11 +648,11 @@ private fun DialogoNombre(
 ) {
     var texto by remember { mutableStateOf(actual) }
 
-    VentanaPerfil(titulo = "Tu nombre", icono = Icons.Rounded.Edit, onCerrar = onCerrar) {
-        CampoPerfil(
+    VentanaMadera(titulo = "Tu nombre", icono = Icons.Rounded.Edit, onCerrar = onCerrar) {
+        CampoCrema(
             valor = texto,
             onCambio = { if (it.length <= LARGO_MAXIMO_NOMBRE) texto = it },
-            etiqueta = "Nombre de entrenador",
+            etiqueta = "Nombre",
             icono = Icons.Rounded.Person
         )
         Text(
@@ -835,7 +666,7 @@ private fun DialogoNombre(
                 .padding(top = 4.dp, end = 6.dp)
         )
         Spacer(Modifier.height(14.dp))
-        BotonesDialogo(
+        BotonesVentana(
             textoConfirmar = "Guardar",
             cargando = guardando,
             onConfirmar = { onGuardar(texto) },
@@ -854,8 +685,8 @@ private fun DialogoClave(
     onGuardar: () -> Unit,
     onCerrar: () -> Unit
 ) {
-    VentanaPerfil(titulo = "Cambiar contraseña", icono = Icons.Rounded.LockReset, onCerrar = onCerrar) {
-        CampoPerfil(
+    VentanaMadera(titulo = "Cambiar contraseña", icono = Icons.Rounded.LockReset, onCerrar = onCerrar) {
+        CampoCrema(
             valor = estado.actual,
             onCambio = onActualChange,
             etiqueta = "Contraseña actual",
@@ -863,7 +694,7 @@ private fun DialogoClave(
             esClave = true
         )
         Spacer(Modifier.height(8.dp))
-        CampoPerfil(
+        CampoCrema(
             valor = estado.nueva,
             onCambio = onNuevaChange,
             etiqueta = "Contraseña nueva",
@@ -875,7 +706,7 @@ private fun DialogoClave(
             MedidorFuerza(fuerza = estado.fuerza)
         }
         Spacer(Modifier.height(8.dp))
-        CampoPerfil(
+        CampoCrema(
             valor = estado.confirmar,
             onCambio = onConfirmarChange,
             etiqueta = "Confirmar contraseña",
@@ -893,7 +724,7 @@ private fun DialogoClave(
             )
         }
         Spacer(Modifier.height(14.dp))
-        BotonesDialogo(
+        BotonesVentana(
             textoConfirmar = "Guardar",
             cargando = estado.cargando,
             onConfirmar = onGuardar,
@@ -909,7 +740,7 @@ private fun DialogoCerrarSesion(
     onConfirmar: () -> Unit,
     onCancelar: () -> Unit
 ) {
-    VentanaPerfil(
+    VentanaMadera(
         titulo = "¿Cerrar sesión?",
         icono = Icons.AutoMirrored.Rounded.Logout,
         colorIcono = RojoPerfil,
@@ -927,60 +758,13 @@ private fun DialogoCerrarSesion(
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(16.dp))
-        BotonesDialogo(
+        BotonesVentana(
             textoConfirmar = "Salir",
-            fondoConfirmar = Brush.verticalGradient(listOf(RojoClaroPerfil, RojoPerfil)),
-            cargando = false,
+            fondoConfirmar = FondoPildora.Rojo,
             onConfirmar = onConfirmar,
             onCancelar = onCancelar
         )
     }
-}
-
-// ===================== Piezas pequeñas =====================
-
-// Campo de texto blanco con borde dorado; si es clave, con botón para ver/ocultar
-@Composable
-private fun CampoPerfil(
-    valor: String,
-    onCambio: (String) -> Unit,
-    etiqueta: String,
-    icono: ImageVector,
-    esClave: Boolean = false
-) {
-    var visible by remember { mutableStateOf(false) }
-    OutlinedTextField(
-        value = valor,
-        onValueChange = onCambio,
-        singleLine = true,
-        label = { Text(etiqueta, fontFamily = FuenteMadera) },
-        leadingIcon = { Icon(icono, contentDescription = null, tint = CafeMadera.copy(alpha = 0.8f)) },
-        trailingIcon = if (esClave) {
-            {
-                IconButton(onClick = { visible = !visible }) {
-                    Icon(
-                        imageVector = if (visible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                        contentDescription = if (visible) "Ocultar" else "Mostrar",
-                        tint = CafeMadera.copy(alpha = 0.7f)
-                    )
-                }
-            }
-        } else null,
-        visualTransformation = if (esClave && !visible) PasswordVisualTransformation() else VisualTransformation.None,
-        keyboardOptions = KeyboardOptions(keyboardType = if (esClave) KeyboardType.Password else KeyboardType.Text),
-        textStyle = TextStyle(fontFamily = FuenteMadera, color = CafeMadera, fontSize = 16.sp),
-        shape = RoundedCornerShape(16.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = DoradoBorde,
-            unfocusedBorderColor = CafeMadera.copy(alpha = 0.3f),
-            focusedLabelColor = CafeMadera,
-            unfocusedLabelColor = CafeMadera.copy(alpha = 0.6f),
-            cursorColor = CafeMadera,
-            focusedContainerColor = Color.White,
-            unfocusedContainerColor = Color.White
-        ),
-        modifier = Modifier.fillMaxWidth()
-    )
 }
 
 // Tres barritas: débil (rojo), media (naranja), fuerte (verde)
@@ -1010,72 +794,6 @@ private fun MedidorFuerza(fuerza: Int) {
             fontWeight = FontWeight.Bold,
             fontSize = 12.sp
         )
-    }
-}
-
-// Botones Cancelar (dorado) y confirmar (verde por defecto)
-@Composable
-private fun BotonesDialogo(
-    textoConfirmar: String,
-    cargando: Boolean,
-    onConfirmar: () -> Unit,
-    onCancelar: () -> Unit,
-    fondoConfirmar: Brush = Brush.verticalGradient(listOf(VerdeClaroPerfil, VerdePerfil))
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        BotonPildora(
-            texto = "Cancelar",
-            fondo = Brush.verticalGradient(listOf(DoradoClaro, Dorado)),
-            colorTexto = CafeMadera,
-            habilitado = !cargando,
-            cargando = false,
-            onClick = onCancelar,
-            modifier = Modifier.weight(1f)
-        )
-        BotonPildora(
-            texto = textoConfirmar,
-            fondo = fondoConfirmar,
-            colorTexto = Color.White,
-            habilitado = !cargando,
-            cargando = cargando,
-            onClick = onConfirmar,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-private fun BotonPildora(
-    texto: String,
-    fondo: Brush,
-    colorTexto: Color,
-    habilitado: Boolean,
-    cargando: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val forma = RoundedCornerShape(50)
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .height(46.dp)
-            .shadow(3.dp, forma)
-            .clip(forma)
-            .background(fondo)
-            .border(1.5.dp, Color.White.copy(alpha = 0.6f), forma)
-            .clickable(enabled = habilitado, onClick = onClick)
-    ) {
-        if (cargando) {
-            CircularProgressIndicator(color = colorTexto, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
-        } else {
-            Text(
-                text = texto,
-                color = colorTexto,
-                fontFamily = FuenteMadera,
-                fontWeight = FontWeight.Bold,
-                fontSize = 15.sp
-            )
-        }
     }
 }
 

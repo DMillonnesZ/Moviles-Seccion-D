@@ -40,7 +40,6 @@ import coil.compose.AsyncImage
 
 private val CremaDialogo = Color(0xFFFFF4DF)
 private val DoradoClaroDialogo = Color(0xFFFFE7A0)
-private val DoradoDialogo = Color(0xFFF5C451)
 private val DoradoBordeDialogo = Color(0xFFD9A43A)
 private val RojoQuitar = Color(0xFFE53935)
 private val RojoOscuro = Color(0xFFB71C1C)
@@ -168,56 +167,26 @@ fun DialogoQuitarFavorito(
                 )
 
                 Spacer(Modifier.height(20.dp))
+                // Botones píldora compartidos (VentanaMadera.kt)
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    BotonDialogo(
+                    BotonPildora(
                         texto = "Cancelar",
-                        fondo = Brush.verticalGradient(listOf(DoradoClaroDialogo, DoradoDialogo)),
-                        borde = CafeMadera.copy(alpha = 0.5f),
+                        fondo = FondoPildora.Dorado,
                         colorTexto = CafeMadera,
+                        borde = CafeMadera.copy(alpha = 0.5f),
                         onClick = onCancelar,
                         modifier = Modifier.weight(1f)
                     )
-                    BotonDialogo(
+                    BotonPildora(
                         texto = "Quitar",
-                        fondo = Brush.verticalGradient(listOf(Color(0xFFFF6B66), RojoQuitar)),
-                        borde = RojoOscuro,
+                        fondo = FondoPildora.Rojo,
                         colorTexto = Color.White,
+                        borde = RojoOscuro,
                         onClick = onConfirmar,
                         modifier = Modifier.weight(1f)
                     )
                 }
             }
         }
-    }
-}
-
-// Botón en forma de píldora para el diálogo
-@Composable
-private fun BotonDialogo(
-    texto: String,
-    fondo: Brush,
-    borde: Color,
-    colorTexto: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val forma = RoundedCornerShape(50)
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .height(46.dp)
-            .shadow(3.dp, forma)
-            .clip(forma)
-            .background(fondo)
-            .border(1.5.dp, borde, forma)
-            .clickable(onClick = onClick)
-    ) {
-        Text(
-            text = texto,
-            color = colorTexto,
-            fontFamily = FuenteMadera,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp
-        )
     }
 }
