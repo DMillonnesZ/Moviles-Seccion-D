@@ -18,7 +18,6 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeoutOrNull
 
 private const val USUARIOS = "usuarios"
-private const val REGISTRO = "registro_admin"
 private const val ESPERA_MS = 8_000L
 
 // Implementación con Firestore. Cada cambio de una cuenta y su entrada en el
@@ -28,11 +27,14 @@ class FirebaseUsuariosRepository(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) : UsuariosRepository {
 
+    // Entradas del registro de acciones (compartido con el catálogo)
+    private val registroAdmin = RegistroAdmin(auth, db)
+
     override val uidActual: String?
         get() = auth.currentUser?.uid
 
     override fun usuarios(): Flow<List<UsuarioAdmin>> = callbackFlow {
-        val registro = db.collection(USUARIOS).addSnapshotListener { snap, error ->
+        val escucha = db.collection(USUARIOS).addSnapshotListener { snap, error ->
             if (error != null) {
                 close(Exception(mensajeDe(error)))
                 return@addSnapshotListener
@@ -45,11 +47,11 @@ class FirebaseUsuariosRepository(
                 )
             trySend(lista)
         }
-        awaitClose { registro.remove() }
+        awaitClose { escucha.remove() }
     }
 
     override fun registro(limite: Long): Flow<List<AccionRegistro>> = callbackFlow {
-        val registro = db.collection(REGISTRO)
+        val escucha = db.collection(RegistroAdmin.COLECCION)
             .orderBy("fecha", Query.Direction.DESCENDING)
             .limit(limite)
             .addSnapshotListener { snap, error ->
@@ -59,7 +61,7 @@ class FirebaseUsuariosRepository(
                 }
                 trySend(snap?.documents.orEmpty().mapNotNull { it.aAccion() })
             }
-        awaitClose { registro.remove() }
+        awaitClose { escucha.remove() }
     }
 
     override suspend fun cambiarEstado(usuario: UsuarioAdmin, activo: Boolean, motivo: String?): Result<Unit> {
@@ -88,13 +90,13 @@ class FirebaseUsuariosRepository(
     override suspend fun restablecerClave(usuario: UsuarioAdmin): Result<Unit> {
         val correo = usuario.correo
             ?: return Result.failure(Exception("${usuario.nombre} aún no tiene correo registrado"))
-        val admin = auth.currentUser ?: return Result.failure(Exception("No hay sesión activa"))
+        if (auth.currentUser == null) return Result.failure(Exception("No hay sesión activa"))
         return try {
             auth.sendPasswordResetEmail(correo).await()
             // El registro no bloquea: si falla, el correo ya se envió
             runCatching {
-                db.collection(REGISTRO).document()
-                    .set(entradaRegistro(admin.uid, admin.email, usuario, TipoAccion.RESTABLECER_CLAVE, correo))
+                registroAdmin.nuevaEntrada()
+                    .set(registroAdmin.datos(usuario.uid, usuario.nombre, TipoAccion.RESTABLECER_CLAVE, correo))
             }
             Result.success(Unit)
         } catch (e: FirebaseNetworkException) {
@@ -118,42 +120,13 @@ class FirebaseUsuariosRepository(
         return try {
             val lote = db.batch()
             lote.update(db.collection(USUARIOS).document(usuario.uid), cambios)
-            lote.set(
-                db.collection(REGISTRO).document(),
-                entradaRegistro(admin.uid, admin.email, usuario, tipo, detalle)
-            )
+            lote.set(registroAdmin.nuevaEntrada(), registroAdmin.datos(usuario.uid, usuario.nombre, tipo, detalle))
             // Sin internet el lote queda guardado y se sube después
             withTimeoutOrNull(ESPERA_MS) { lote.commit().await() }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(Exception(mensajeDe(e)))
         }
-    }
-
-    private suspend fun entradaRegistro(
-        adminUid: String,
-        adminCorreo: String?,
-        usuario: UsuarioAdmin,
-        tipo: TipoAccion,
-        detalle: String?
-    ): Map<String, Any?> = mapOf(
-        "adminUid" to adminUid,
-        "adminNombre" to nombreDe(adminUid, adminCorreo),
-        "usuarioUid" to usuario.uid,
-        "usuarioNombre" to usuario.nombre,
-        "tipo" to tipo.name,
-        "detalle" to detalle,
-        "fecha" to FieldValue.serverTimestamp()
-    )
-
-    // Nombre del admin para el registro (si no lo tiene, la parte del correo antes de @)
-    private suspend fun nombreDe(uid: String, correo: String?): String {
-        val nombre = runCatching {
-            withTimeoutOrNull(3_000) {
-                db.collection(USUARIOS).document(uid).get().await().getString("nombre")
-            }
-        }.getOrNull()
-        return nombre?.takeIf { it.isNotBlank() } ?: correo?.substringBefore("@") ?: "Admin"
     }
 
     private fun mensajeDe(e: Exception): String = when {
@@ -189,7 +162,7 @@ private fun DocumentSnapshot.aAccion(): AccionRegistro? {
     return AccionRegistro(
         id = id,
         adminNombre = getString("adminNombre") ?: "Admin",
-        usuarioNombre = getString("usuarioNombre") ?: "un usuario",
+        usuarioNombre = getString("usuarioNombre") ?: "",
         tipo = tipo,
         detalle = getString("detalle"),
         // Mientras el servidor confirma la hora, usa una estimada
