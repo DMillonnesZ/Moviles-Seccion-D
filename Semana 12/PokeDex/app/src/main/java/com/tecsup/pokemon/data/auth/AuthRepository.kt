@@ -5,13 +5,15 @@ import com.tecsup.pokemon.domain.model.Sesion
 import kotlinx.coroutines.flow.Flow
 
 interface AuthRepository {
+    // Si la cuenta está suspendida devuelve un fallo con CuentaSuspendidaException
     suspend fun iniciarSesion(correo: String, clave: String): Result<Sesion>
     suspend fun registrar(nombre: String, correo: String, clave: String): Result<Sesion>
+    // null = sin sesión. Lanza CuentaSuspendidaException si la cuenta guardada fue suspendida
     suspend fun sesionActual(): Sesion?
     fun cerrarSesion()
 
     // ----- Perfil -----
-    // Perfil del usuario actual; avisa cada vez que cambia
+    // Perfil del usuario actual; avisa cada vez que cambia (también si lo suspenden)
     fun perfil(): Flow<PerfilUsuario?>
     suspend fun actualizarNombre(nombre: String): Result<Unit>
     // null = quitar la foto

@@ -19,6 +19,7 @@ import com.tecsup.pokemon.ui.components.AparecerSuave
 import com.tecsup.pokemon.ui.components.BotonMadera
 import com.tecsup.pokemon.ui.components.CampoMadera
 import com.tecsup.pokemon.ui.components.CartelTitulo
+import com.tecsup.pokemon.ui.components.DialogoCuentaSuspendida
 import com.tecsup.pokemon.ui.components.EnlaceMadera
 import com.tecsup.pokemon.ui.components.ErrorTemporal
 import com.tecsup.pokemon.ui.components.FondoPokedex
@@ -138,5 +139,13 @@ fun LoginScreen(
                 }
             }
         }
+    }
+
+    // Cuenta suspendida por un admin: aviso con el motivo
+    if (estado.cuentaSuspendida) {
+        DialogoCuentaSuspendida(
+            motivo = estado.motivoSuspension,
+            onAceptar = viewModel::cerrarAvisoSuspension
+        )
     }
 }

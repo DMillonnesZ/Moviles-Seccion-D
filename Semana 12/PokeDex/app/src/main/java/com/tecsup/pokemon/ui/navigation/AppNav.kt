@@ -46,6 +46,7 @@ import com.tecsup.pokemon.ui.admin.AdminScreen
 import com.tecsup.pokemon.ui.components.BarraNavegacion
 import com.tecsup.pokemon.ui.components.Cargando
 import com.tecsup.pokemon.ui.components.CortinaCuadros
+import com.tecsup.pokemon.ui.components.DialogoCuentaSuspendida
 import com.tecsup.pokemon.ui.components.ItemBarra
 import com.tecsup.pokemon.ui.components.LocalRellenoBarra
 import com.tecsup.pokemon.ui.detalle.DetalleScreen
@@ -110,9 +111,10 @@ private val RUTAS_CON_BARRA = setOf(
 
 @Composable
 fun AppNav() {
-    // Vive mientras la app esté abierta: sabe quién está logueado y su rol
+    // Vive mientras la app esté abierta: sabe quién está logueado, su rol y si lo suspendieron
     val sesionViewModel: SesionViewModel = viewModel(factory = AppViewModelProvider.Factory)
     val estadoSesion by sesionViewModel.estado.collectAsStateWithLifecycle()
+    val suspension by sesionViewModel.suspension.collectAsStateWithLifecycle()
 
     // Cantidad de favoritos para el contador de la barra (y el rango del Perfil)
     val barraViewModel: BarraViewModel = viewModel(factory = AppViewModelProvider.Factory)
@@ -165,6 +167,18 @@ fun AppNav() {
                                 popUpTo(Rutas.TIPOS) { saveState = true }
                                 launchSingleTop = true
                                 restoreState = true
+                            }
+                        }
+                    }
+
+                    // Si la sesión se cierra desde fuera (cuenta suspendida), vuelve al Login
+                    LaunchedEffect(sesion) {
+                        val ruta = navController.currentDestination?.route
+                        if (sesion is EstadoSesion.SinSesion && ruta != null &&
+                            ruta != Rutas.LOGIN && ruta != Rutas.REGISTRO
+                        ) {
+                            navController.navigate(Rutas.LOGIN) {
+                                popUpTo(navController.graph.id) { inclusive = true }
                             }
                         }
                     }
@@ -362,6 +376,14 @@ fun AppNav() {
                         }
                     }
                 }
+            }
+
+            // Aviso de cuenta suspendida (al abrir la app o si la suspenden con la sesión abierta)
+            suspension?.let { aviso ->
+                DialogoCuentaSuspendida(
+                    motivo = aviso.motivo,
+                    onAceptar = sesionViewModel::avisoSuspensionVisto
+                )
             }
         }
 
