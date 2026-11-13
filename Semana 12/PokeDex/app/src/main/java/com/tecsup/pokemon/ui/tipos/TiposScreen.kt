@@ -27,6 +27,10 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,6 +69,8 @@ private val AzulAnuncio = Color(0xFF3D8FD6)
 private val NaranjaAviso = Color(0xFFF57C00)
 private val GrisAnuncio = Color(0xFF7A6A5A)
 
+// PullToRefreshBox es experimental en Material 3: se acepta solo en esta función
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TiposScreen(
     viewModel: TiposViewModel,
@@ -77,6 +83,9 @@ fun TiposScreen(
     val orden by viewModel.orden.collectAsStateWithLifecycle()
     val anuncio by viewModel.anuncio.collectAsStateWithLifecycle()
     var menuAbierto by remember { mutableStateOf(false) }
+
+    // Estado del gesto de deslizar hacia abajo
+    val estadoDeslizar = rememberPullToRefreshState()
 
     FondoInicio {
         Column(
@@ -149,44 +158,62 @@ fun TiposScreen(
                 onReintentar = viewModel::refrescar
             )
 
-            // ----- Contenido: termina justo encima de la barra de navegación -----
-            // Se desvanece suave arriba (bajo el buscador) y abajo (sobre la barra)
-            Box(
+            // ----- Contenido: deslizar hacia abajo sincroniza (PullToRefreshBox) -----
+            // Termina encima de la barra; el indicador queda fuera del desvanecido para que se vea completo
+            PullToRefreshBox(
+                isRefreshing = sincronizando,
+                onRefresh = viewModel::refrescar,
+                state = estadoDeslizar,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(bottom = LocalRellenoBarra.current)
-                    .desvanecerBordes(arriba = 24.dp, abajo = 20.dp)
+                    .padding(bottom = LocalRellenoBarra.current),
+                indicator = {
+                    PullToRefreshDefaults.Indicator(
+                        state = estadoDeslizar,
+                        isRefreshing = sincronizando,
+                        containerColor = CremaAnuncio,
+                        color = CafeMadera,
+                        modifier = Modifier.align(Alignment.TopCenter)
+                    )
+                }
             ) {
-                when (val e = estado) {
-                    is UiState.Cargando -> Cargando("Descargando tipos...")
-                    is UiState.Error -> ErrorView(e.mensaje, onReintentar = viewModel::refrescar)
-                    is UiState.Exito ->
-                        if (e.datos.isEmpty()) {
-                            if (busqueda.isNotBlank()) VacioView("No hay tipos que coincidan con \"$busqueda\"")
-                            else VacioView("No hay tipos guardados.\nToca sincronizar para descargarlos.")
-                        } else {
-                            LazyVerticalGrid(
-                                columns = GridCells.Adaptive(minSize = 104.dp),
-                                // Márgenes arriba y abajo: sin scroll, nada queda desvanecido
-                                contentPadding = PaddingValues(
-                                    start = 16.dp,
-                                    end = 16.dp,
-                                    top = 20.dp,
-                                    bottom = 24.dp
-                                ),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                items(e.datos, key = { it.nombre }) { tipo ->
-                                    TarjetaTipo(
-                                        tipo = tipo,
-                                        onClick = { onTipoClick(tipo.nombre) },
-                                        // Se reacomoda animada al filtrar u ordenar
-                                        modifier = Modifier.animateItem()
-                                    )
+                // Se desvanece suave arriba (bajo el buscador) y abajo (sobre la barra)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .desvanecerBordes(arriba = 24.dp, abajo = 20.dp)
+                ) {
+                    when (val e = estado) {
+                        is UiState.Cargando -> Cargando("Descargando tipos...")
+                        is UiState.Error -> ErrorView(e.mensaje, onReintentar = viewModel::refrescar)
+                        is UiState.Exito ->
+                            if (e.datos.isEmpty()) {
+                                if (busqueda.isNotBlank()) VacioView("No hay tipos que coincidan con \"$busqueda\"")
+                                else VacioView("No hay tipos guardados.\nToca sincronizar para descargarlos.")
+                            } else {
+                                LazyVerticalGrid(
+                                    columns = GridCells.Adaptive(minSize = 104.dp),
+                                    // Márgenes arriba y abajo: sin scroll, nada queda desvanecido
+                                    contentPadding = PaddingValues(
+                                        start = 16.dp,
+                                        end = 16.dp,
+                                        top = 20.dp,
+                                        bottom = 24.dp
+                                    ),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(e.datos, key = { it.nombre }) { tipo ->
+                                        TarjetaTipo(
+                                            tipo = tipo,
+                                            onClick = { onTipoClick(tipo.nombre) },
+                                            // Se reacomoda animada al filtrar u ordenar
+                                            modifier = Modifier.animateItem()
+                                        )
+                                    }
                                 }
                             }
-                        }
+                    }
                 }
             }
         }
