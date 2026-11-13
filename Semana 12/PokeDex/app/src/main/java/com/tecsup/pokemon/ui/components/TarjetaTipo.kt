@@ -12,6 +12,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CatchingPokemon
 import androidx.compose.material.icons.rounded.CatchingPokemon
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -100,16 +101,29 @@ fun TarjetaTipo(
                 .fillMaxSize()
                 .padding(bottom = 40.dp)
         ) {
-            // Ícono de la API: ya trae el color de su tipo, solo se enmarca
-            AsyncImage(
-                model = tipo.iconoUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
+            // Fondo de reemplazo (color del tipo + Pokébola) y encima el ícono de la API.
+            // Sin internet el ícono no carga y queda el fondo, como en las tarjetas de Pokémon
+            Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(60.dp)
                     .clip(RoundedCornerShape(14.dp))
+                    .background(Brush.verticalGradient(listOf(lerp(color, Color.White, 0.35f), color)))
                     .border(2.dp, lerp(color, Color.Black, 0.35f), RoundedCornerShape(14.dp))
-            )
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.CatchingPokemon,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.45f),
+                    modifier = Modifier.size(40.dp)
+                )
+                AsyncImage(
+                    model = tipo.iconoUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.matchParentSize()
+                )
+            }
 
             Spacer(Modifier.height(6.dp))
 
