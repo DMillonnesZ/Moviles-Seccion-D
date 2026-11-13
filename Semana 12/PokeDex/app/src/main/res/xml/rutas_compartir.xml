@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Carpeta de la caché que se puede compartir con otras apps -->
 <paths>
+    <!-- Pósters de favoritos para compartir -->
     <cache-path name="compartidos" path="compartidos/" />
+    <!-- Fotos tomadas con la cámara para el perfil -->
+    <cache-path name="fotos" path="fotos/" />
 </paths>
