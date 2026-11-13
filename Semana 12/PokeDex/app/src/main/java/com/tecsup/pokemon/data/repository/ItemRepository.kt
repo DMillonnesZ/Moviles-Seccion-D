@@ -17,6 +17,15 @@ interface ItemRepository {
     suspend fun cantidadFavoritos(): Int
     suspend fun limpiarCache()
 
+    // ----- Favoritos por cuenta -----
+
+    // Marca en Room los favoritos de la cuenta logueada.
+    // adoptarLocales = si la cuenta aún no tiene lista, se suben los del teléfono (sesión ya abierta)
+    suspend fun cargarFavoritosCuenta(adoptarLocales: Boolean)
+
+    // Desmarca los favoritos del teléfono (al cerrar sesión)
+    suspend fun limpiarFavoritosLocales()
+
     val tipos: Flow<List<Tipo>>
     fun itemsPorTipo(tipo: String): Flow<List<Item>>
 

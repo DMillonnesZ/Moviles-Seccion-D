@@ -70,6 +70,18 @@ interface ItemDao {
     @Query("UPDATE items SET esFavorito = NOT esFavorito WHERE id = :id")
     suspend fun alternarFavorito(id: Int)
 
+    // Estado actual de un favorito (null si el Pokémon no está guardado)
+    @Query("SELECT esFavorito FROM items WHERE id = :id")
+    suspend fun esFavorito(id: Int): Boolean?
+
+    // Deja como favoritos solo los ids de la cuenta (el resto se desmarca)
+    @Query("UPDATE items SET esFavorito = (id IN (:ids))")
+    suspend fun aplicarFavoritos(ids: List<Int>)
+
+    // Desmarca todos (al cerrar sesión)
+    @Query("UPDATE items SET esFavorito = 0")
+    suspend fun quitarFavoritos()
+
     // ----- Tipos -----
 
     @Query("SELECT * FROM tipos ORDER BY nombreEs")

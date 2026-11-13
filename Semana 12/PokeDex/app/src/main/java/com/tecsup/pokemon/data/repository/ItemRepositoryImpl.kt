@@ -4,6 +4,7 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
+import com.tecsup.pokemon.data.favoritos.FavoritosRepository
 import com.tecsup.pokemon.data.local.ItemDao
 import com.tecsup.pokemon.data.local.ItemTipoEntity
 import com.tecsup.pokemon.data.mapper.aDetalle
@@ -29,14 +30,20 @@ import kotlinx.coroutines.flow.map
 import retrofit2.HttpException
 import java.io.IOException
 
-// Room es la fuente única de verdad: la UI lee de Room y Retrofit solo la actualiza
+// Room es la fuente única de verdad: la UI lee de Room y Retrofit solo la actualiza.
+// Los favoritos son de cada cuenta: se guardan en Room y en Firestore (FavoritosRepository).
 class ItemRepositoryImpl(
     private val api: ApiService,
-    private val dao: ItemDao
+    private val dao: ItemDao,
+    private val favoritosRemoto: FavoritosRepository
 ) : ItemRepository {
 
     // Ids >= 10000 son formas especiales (megas, gigamax...)
     private val idMaximo = 10000
+
+    // Favoritos de la cuenta logueada (null = aún no se leyeron)
+    @Volatile
+    private var favoritosCuenta: Set<Int>? = null
 
     // Los 18 tipos que pueden atacar, para calcular debilidades
     private val tiposAtacantes = listOf(
@@ -80,16 +87,16 @@ class ItemRepositoryImpl(
         }.flow.map { pagina -> pagina.map { it.aModelo() } }
 
     override suspend fun refrescar(): Result<Int> = try {
-        // 1. Se guardan los favoritos actuales para no perderlos al sincronizar
-        val favoritos = dao.idsFavoritos().toSet()
-
-        // 2. Nombres de todos los tipos
+        // 1. Nombres de todos los tipos
         val nombres = api.listarTipos().results.map { it.name }
 
-        // 3. Detalle de cada tipo, en paralelo; se descartan los tipos vacíos
+        // 2. Detalle de cada tipo, en paralelo; se descartan los tipos vacíos
         val detalles = coroutineScope {
             nombres.map { nombre -> async { api.listarPorTipo(nombre) } }.awaitAll()
         }.filter { it.pokemon.isNotEmpty() }
+
+        // 3. Favoritos de la cuenta (o los del teléfono si aún no se leyeron)
+        val favoritos = favoritosCuenta ?: dao.idsFavoritos().toSet()
 
         // 4. Pokémon únicos, sin formas especiales, con su favorito reaplicado
         val items = detalles
@@ -111,6 +118,10 @@ class ItemRepositoryImpl(
             tipos = detalles.map { it.aEntity() },
             relaciones = relaciones
         )
+
+        // 7. Si los favoritos de la cuenta llegaron mientras se descargaba, se aplican ahora
+        favoritosCuenta?.let { dao.aplicarFavoritos(it.toList()) }
+
         Result.success(items.size)
     } catch (e: IOException) {          // sin internet
         Result.failure(e)
@@ -168,12 +179,40 @@ class ItemRepositoryImpl(
         Result.failure(e)
     }
 
-    override suspend fun alternarFavorito(id: Int) = dao.alternarFavorito(id)
+    // Cambia en Room (la pantalla reacciona al instante) y en la cuenta (Firestore)
+    override suspend fun alternarFavorito(id: Int) {
+        dao.alternarFavorito(id)
+        val ahora = dao.esFavorito(id) ?: return
+        val actuales = favoritosCuenta ?: dao.idsFavoritos().toSet()
+        favoritosCuenta = if (ahora) actuales + id else actuales - id
+        if (ahora) favoritosRemoto.agregar(id) else favoritosRemoto.quitar(id)
+    }
+
+    override suspend fun cargarFavoritosCuenta(adoptarLocales: Boolean) {
+        // Sin conexión ni copia guardada: se deja Room como está
+        val remotos = favoritosRemoto.leer().getOrElse { return }
+        val ids = if (remotos == null) {
+            // La cuenta aún no tiene lista: se suben los del teléfono o se empieza vacía
+            val iniciales = if (adoptarLocales) dao.idsFavoritos().toSet() else emptySet()
+            favoritosRemoto.guardarTodos(iniciales)
+            iniciales
+        } else {
+            remotos
+        }
+        favoritosCuenta = ids
+        dao.aplicarFavoritos(ids.toList())
+    }
+
+    override suspend fun limpiarFavoritosLocales() {
+        favoritosCuenta = null
+        dao.quitarFavoritos()
+    }
 
     override suspend fun cantidadGuardada(): Int = dao.contar()
 
     override suspend fun cantidadFavoritos(): Int = dao.contarFavoritos()
 
+    // Los favoritos siguen en la cuenta: al sincronizar se vuelven a marcar
     override suspend fun limpiarCache() = dao.borrarTodo()
 
     // Multiplica el daño de cada tipo atacante contra todos los tipos del Pokémon.

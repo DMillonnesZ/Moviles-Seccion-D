@@ -21,8 +21,12 @@ import com.tecsup.pokemon.ui.tipos.TiposViewModel
 
 object AppViewModelProvider {
     val Factory = viewModelFactory {
+        // Sesión: también carga y limpia los favoritos de cada cuenta
         initializer {
-            SesionViewModel(pokeDexApp().container.authRepository)
+            SesionViewModel(
+                authRepo = pokeDexApp().container.authRepository,
+                itemRepo = pokeDexApp().container.itemRepository
+            )
         }
         initializer {
             BarraViewModel(pokeDexApp().container.itemRepository)

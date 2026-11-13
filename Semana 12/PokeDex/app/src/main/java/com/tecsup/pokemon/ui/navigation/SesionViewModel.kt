@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tecsup.pokemon.data.auth.AuthRepository
 import com.tecsup.pokemon.data.auth.CuentaSuspendidaException
+import com.tecsup.pokemon.data.repository.ItemRepository
 import com.tecsup.pokemon.domain.model.Sesion
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +22,8 @@ sealed interface EstadoSesion {
 data class AvisoSuspension(val motivo: String?)
 
 class SesionViewModel(
-    private val authRepo: AuthRepository
+    private val authRepo: AuthRepository,
+    private val itemRepo: ItemRepository
 ) : ViewModel() {
 
     private val _estado = MutableStateFlow<EstadoSesion>(EstadoSesion.Verificando)
@@ -41,14 +43,18 @@ class SesionViewModel(
                 val sesion = authRepo.sesionActual()
                 if (sesion == null) {
                     _estado.value = EstadoSesion.SinSesion
+                    itemRepo.limpiarFavoritosLocales()
                 } else {
                     _estado.value = EstadoSesion.Activa(sesion)
                     vigilarCuenta()
+                    // Sesión que ya estaba abierta: si la cuenta no tiene lista, adopta la del teléfono
+                    itemRepo.cargarFavoritosCuenta(adoptarLocales = true)
                 }
             } catch (e: CuentaSuspendidaException) {
                 // La suspendieron mientras la app estaba cerrada
                 _suspension.value = AvisoSuspension(e.motivo)
                 _estado.value = EstadoSesion.SinSesion
+                itemRepo.limpiarFavoritosLocales()
             }
         }
     }
@@ -56,6 +62,8 @@ class SesionViewModel(
     fun sesionIniciada(sesion: Sesion) {
         _estado.value = EstadoSesion.Activa(sesion)
         vigilarCuenta()
+        // Cada cuenta ve solo sus favoritos
+        viewModelScope.launch { itemRepo.cargarFavoritosCuenta(adoptarLocales = false) }
     }
 
     fun cerrarSesion() {
@@ -63,6 +71,8 @@ class SesionViewModel(
         vigilancia = null
         authRepo.cerrarSesion()
         _estado.value = EstadoSesion.SinSesion
+        // El siguiente usuario no ve los favoritos del anterior
+        viewModelScope.launch { itemRepo.limpiarFavoritosLocales() }
     }
 
     fun avisoSuspensionVisto() {

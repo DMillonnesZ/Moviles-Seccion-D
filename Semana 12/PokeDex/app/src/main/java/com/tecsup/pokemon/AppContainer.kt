@@ -8,6 +8,8 @@ import com.tecsup.pokemon.data.auth.AuthRepository
 import com.tecsup.pokemon.data.auth.FirebaseAuthRepository
 import com.tecsup.pokemon.data.catalogo.CatalogoRepository
 import com.tecsup.pokemon.data.catalogo.FirebaseCatalogoRepository
+import com.tecsup.pokemon.data.favoritos.FavoritosRepository
+import com.tecsup.pokemon.data.favoritos.FirebaseFavoritosRepository
 import com.tecsup.pokemon.data.local.AppDatabase
 import com.tecsup.pokemon.data.remote.RetrofitClient
 import com.tecsup.pokemon.data.repository.CartasRepository
@@ -31,10 +33,14 @@ class AppContainer(context: Context) {
         .addMigrations(AppDatabase.MIGRACION_1_2)
         .build()
 
-    // PokeAPI + Room
+    // Favoritos de cada cuenta (Firestore)
+    private val favoritosRepository: FavoritosRepository = FirebaseFavoritosRepository()
+
+    // PokeAPI + Room + favoritos por cuenta
     val itemRepository: ItemRepository = ItemRepositoryImpl(
         api = RetrofitClient.api,
-        dao = database.itemDao()
+        dao = database.itemDao(),
+        favoritosRemoto = favoritosRepository
     )
 
     // TCGdex (segunda API)
