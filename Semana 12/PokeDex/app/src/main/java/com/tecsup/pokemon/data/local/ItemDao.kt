@@ -1,5 +1,6 @@
 package com.tecsup.pokemon.data.local
 
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Transaction
@@ -27,6 +28,36 @@ interface ItemDao {
     )
     fun porTipo(tipo: String): Flow<List<ItemEntity>>
 
+    // Pokémon de un tipo, por páginas, con sus tipos, búsqueda, filtro de favoritos y orden.
+    // excluidos = Pokémon descontinuados por el admin
+    // tiposExcluidos = tipos descontinuados: sus Pokémon tampoco se muestran
+    @Query(
+        """
+        SELECT items.*,
+            (SELECT GROUP_CONCAT(t2.tipo) FROM item_tipo t2 WHERE t2.itemId = items.id) AS tipos
+        FROM items
+        INNER JOIN item_tipo ON items.id = item_tipo.itemId
+        WHERE item_tipo.tipo = :tipo
+          AND items.id NOT IN (:excluidos)
+          AND items.id NOT IN (SELECT t3.itemId FROM item_tipo t3 WHERE t3.tipo IN (:tiposExcluidos))
+          AND (:texto = '' OR items.nombre LIKE '%' || :texto || '%' OR CAST(items.id AS TEXT) = :texto)
+          AND (:soloFavoritos = 0 OR items.esFavorito = 1)
+        ORDER BY
+          CASE WHEN :orden = 'NUM_ASC' THEN items.id END ASC,
+          CASE WHEN :orden = 'NUM_DESC' THEN items.id END DESC,
+          CASE WHEN :orden = 'NOMBRE_ASC' THEN items.nombre END ASC,
+          CASE WHEN :orden = 'NOMBRE_DESC' THEN items.nombre END DESC
+        """
+    )
+    fun paginarPorTipo(
+        tipo: String,
+        texto: String,
+        soloFavoritos: Boolean,
+        orden: String,
+        excluidos: List<Int>,
+        tiposExcluidos: List<String>
+    ): PagingSource<Int, ItemConTipos>
+
     @Query("SELECT id FROM items WHERE esFavorito = 1")
     suspend fun idsFavoritos(): List<Int>
 
@@ -39,10 +70,34 @@ interface ItemDao {
     @Query("UPDATE items SET esFavorito = NOT esFavorito WHERE id = :id")
     suspend fun alternarFavorito(id: Int)
 
+    // Estado actual de un favorito (null si el Pokémon no está guardado)
+    @Query("SELECT esFavorito FROM items WHERE id = :id")
+    suspend fun esFavorito(id: Int): Boolean?
+
+    // Deja como favoritos solo los ids de la cuenta (el resto se desmarca)
+    @Query("UPDATE items SET esFavorito = (id IN (:ids))")
+    suspend fun aplicarFavoritos(ids: List<Int>)
+
+    // Desmarca todos (al cerrar sesión)
+    @Query("UPDATE items SET esFavorito = 0")
+    suspend fun quitarFavoritos()
+
     // ----- Tipos -----
 
     @Query("SELECT * FROM tipos ORDER BY nombreEs")
     fun tipos(): Flow<List<TipoEntity>>
+
+    // Tipos con la cantidad de Pokémon de cada uno
+    @Query(
+        """
+        SELECT tipos.*, COUNT(item_tipo.itemId) AS cantidad
+        FROM tipos
+        LEFT JOIN item_tipo ON tipos.nombre = item_tipo.tipo
+        GROUP BY tipos.nombre
+        ORDER BY tipos.nombreEs
+        """
+    )
+    fun tiposConCantidad(): Flow<List<TipoConCantidad>>
 
     // ----- Guardar -----
 

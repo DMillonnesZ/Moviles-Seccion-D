@@ -1,6 +1,8 @@
 package com.tecsup.pokemon.data.mapper
 
+import com.tecsup.pokemon.data.local.ItemConTipos
 import com.tecsup.pokemon.data.local.ItemEntity
+import com.tecsup.pokemon.data.local.TipoConCantidad
 import com.tecsup.pokemon.data.local.TipoEntity
 import com.tecsup.pokemon.data.remote.dto.PokemonDto
 import com.tecsup.pokemon.data.remote.dto.RecursoDto
@@ -41,10 +43,22 @@ fun ItemEntity.aModelo(): Item = Item(
     esFavorito = esFavorito
 )
 
+// Pokémon con sus tipos: "fire,flying" -> ["fire", "flying"]
+fun ItemConTipos.aModelo(): Item = item.aModelo().copy(
+    tipos = tipos?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
+)
+
 fun TipoEntity.aModelo(): Tipo = Tipo(
     nombre = nombre,
     nombreEs = nombreEs,
     iconoUrl = iconoUrl
+)
+
+fun TipoConCantidad.aModelo(): Tipo = Tipo(
+    nombre = tipo.nombre,
+    nombreEs = tipo.nombreEs,
+    iconoUrl = tipo.iconoUrl,
+    cantidad = cantidad
 )
 
 // ----- DTO -> Modelo (el detalle no se guarda, se pide al tocar) -----

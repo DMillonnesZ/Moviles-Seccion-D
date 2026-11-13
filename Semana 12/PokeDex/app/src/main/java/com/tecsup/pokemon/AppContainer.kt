@@ -2,10 +2,20 @@ package com.tecsup.pokemon
 
 import android.content.Context
 import androidx.room.Room
+import com.tecsup.pokemon.data.admin.FirebaseUsuariosRepository
+import com.tecsup.pokemon.data.admin.UsuariosRepository
 import com.tecsup.pokemon.data.auth.AuthRepository
 import com.tecsup.pokemon.data.auth.FirebaseAuthRepository
+import com.tecsup.pokemon.data.catalogo.CatalogoRepository
+import com.tecsup.pokemon.data.catalogo.FirebaseCatalogoRepository
+import com.tecsup.pokemon.data.favoritos.FavoritosRepository
+import com.tecsup.pokemon.data.favoritos.FirebaseFavoritosRepository
 import com.tecsup.pokemon.data.local.AppDatabase
 import com.tecsup.pokemon.data.remote.RetrofitClient
+import com.tecsup.pokemon.data.repository.CartasRepository
+import com.tecsup.pokemon.data.repository.CartasRepositoryImpl
+import com.tecsup.pokemon.data.repository.EvolucionRepository
+import com.tecsup.pokemon.data.repository.EvolucionRepositoryImpl
 import com.tecsup.pokemon.data.repository.ItemRepository
 import com.tecsup.pokemon.data.repository.ItemRepositoryImpl
 import com.tecsup.pokemon.notification.Notificador
@@ -18,14 +28,39 @@ class AppContainer(context: Context) {
         context,
         AppDatabase::class.java,
         "pokedex.db"
-    ).build()
+    )
+        // Versión 1 -> 2: agrega las cadenas evolutivas sin perder favoritos ni Pokémon
+        .addMigrations(AppDatabase.MIGRACION_1_2)
+        .build()
 
+    // Favoritos de cada cuenta (Firestore)
+    private val favoritosRepository: FavoritosRepository = FirebaseFavoritosRepository()
+
+    // PokeAPI + Room + favoritos por cuenta
     val itemRepository: ItemRepository = ItemRepositoryImpl(
         api = RetrofitClient.api,
-        dao = database.itemDao()
+        dao = database.itemDao(),
+        favoritosRemoto = favoritosRepository
+    )
+
+    // TCGdex (segunda API)
+    val cartasRepository: CartasRepository = CartasRepositoryImpl(
+        api = RetrofitClient.tcg
+    )
+
+    // Cadenas evolutivas (PokeAPI + Room)
+    val evolucionRepository: EvolucionRepository = EvolucionRepositoryImpl(
+        api = RetrofitClient.api,
+        dao = database.evolucionDao()
     )
 
     val authRepository: AuthRepository = FirebaseAuthRepository()
+
+    // Gestión de cuentas del Panel Admin (Firestore)
+    val usuariosRepository: UsuariosRepository = FirebaseUsuariosRepository()
+
+    // Pokémon y tipos descontinuados + anuncio global (Firestore)
+    val catalogoRepository: CatalogoRepository = FirebaseCatalogoRepository()
 
     val notificador: Notificador = NotificadorAndroid(context)
 }

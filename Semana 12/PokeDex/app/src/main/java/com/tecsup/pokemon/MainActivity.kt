@@ -13,15 +13,31 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.tecsup.pokemon.ui.components.PantallaCompleta
 import com.tecsup.pokemon.ui.navigation.AppNav
 import com.tecsup.pokemon.ui.theme.PokeDexTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Splash del sistema: debe ir antes de super.onCreate
+        val splash = installSplashScreen()
+
+        // Al terminar, el splash del sistema se desvanece suavemente en vez de cortarse
+        splash.setOnExitAnimationListener { proveedor ->
+            proveedor.view.animate()
+                .alpha(0f)
+                .setDuration(400L)
+                .withEndAction { proveedor.remove() }
+                .start()
+        }
+
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             PokeDexTheme {
+                // Oculta barra de estado y de navegación en toda la app
+                PantallaCompleta()
                 PedirPermisoNotificaciones()
                 AppNav()
             }

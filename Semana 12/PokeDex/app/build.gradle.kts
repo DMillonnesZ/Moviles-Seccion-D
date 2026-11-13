@@ -49,7 +49,12 @@ dependencies {
     // Room
     implementation("androidx.room:room-runtime:2.8.4")
     implementation("androidx.room:room-ktx:2.8.4")
+    implementation("androidx.room:room-paging:2.8.4")
     ksp("androidx.room:room-compiler:2.8.4")
+
+    // Paginación
+    implementation("androidx.paging:paging-runtime-ktx:3.3.6")
+    implementation("androidx.paging:paging-compose:3.3.6")
 
     // Lifecycle y navegación
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
@@ -62,11 +67,15 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
-    // Imágenes por URL
+    // Imágenes por URL y animaciones (GIF / WebP animado)
     implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("io.coil-kt:coil-gif:2.7.0")
 
     // Íconos extendidos
     implementation("androidx.compose.material:material-icons-extended")
+
+    // Splash del sistema (Android 12+)
+    implementation("androidx.core:core-splashscreen:1.0.1")
 
     // Compose y AndroidX
     implementation(platform(libs.androidx.compose.bom))

@@ -3,6 +3,7 @@ package com.tecsup.pokemon.ui.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tecsup.pokemon.data.auth.AuthRepository
+import com.tecsup.pokemon.data.auth.CuentaSuspendidaException
 import com.tecsup.pokemon.domain.model.Sesion
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +17,9 @@ data class LoginUiState(
     val clave: String = "",
     val cargando: Boolean = false,
     val error: String? = null,
-    val sesion: Sesion? = null      // distinto de null = login exitoso
+    val sesion: Sesion? = null,              // distinto de null = login exitoso
+    val cuentaSuspendida: Boolean = false,   // true = mostrar el aviso de cuenta suspendida
+    val motivoSuspension: String? = null
 )
 
 class LoginViewModel(
@@ -34,12 +37,22 @@ class LoginViewModel(
         _estado.update { it.copy(clave = valor, error = null) }
     }
 
+    // Oculta el error (la pantalla lo llama después de unos segundos)
+    fun limpiarError() {
+        _estado.update { it.copy(error = null) }
+    }
+
+    // Cierra el aviso de cuenta suspendida
+    fun cerrarAvisoSuspension() {
+        _estado.update { it.copy(cuentaSuspendida = false, motivoSuspension = null) }
+    }
+
     fun iniciarSesion() {
         val actual = _estado.value
 
         // Validación local: no se llama a Firebase si hay campos vacíos (PA-04)
         if (actual.correo.isBlank() || actual.clave.isBlank()) {
-            _estado.update { it.copy(error = "Ingresa tu correo y contraseña") }
+            _estado.update { it.copy(error = "Completa correo y contraseña") }
             return
         }
 
@@ -50,8 +63,15 @@ class LoginViewModel(
                     _estado.update { it.copy(cargando = false, sesion = sesion) }
                 }
                 .onFailure { e ->
-                    _estado.update {
-                        it.copy(cargando = false, error = e.message ?: "No se pudo iniciar sesión")
+                    if (e is CuentaSuspendidaException) {
+                        // Aviso en ventana (no el error que se oculta solo)
+                        _estado.update {
+                            it.copy(cargando = false, cuentaSuspendida = true, motivoSuspension = e.motivo)
+                        }
+                    } else {
+                        _estado.update {
+                            it.copy(cargando = false, error = e.message ?: "No se pudo iniciar sesión")
+                        }
                     }
                 }
         }

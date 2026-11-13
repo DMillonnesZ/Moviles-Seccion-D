@@ -8,44 +8,89 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.tecsup.pokemon.PokeDexApp
 import com.tecsup.pokemon.ui.admin.AdminViewModel
 import com.tecsup.pokemon.ui.detalle.DetalleViewModel
+import com.tecsup.pokemon.ui.evolucion.EvolucionDetalleViewModel
+import com.tecsup.pokemon.ui.evolucion.EvolucionViewModel
 import com.tecsup.pokemon.ui.favoritos.FavoritosViewModel
 import com.tecsup.pokemon.ui.lista.ListaViewModel
 import com.tecsup.pokemon.ui.login.LoginViewModel
+import com.tecsup.pokemon.ui.navigation.BarraViewModel
 import com.tecsup.pokemon.ui.navigation.SesionViewModel
+import com.tecsup.pokemon.ui.perfil.PerfilViewModel
+import com.tecsup.pokemon.ui.registro.RegistroViewModel
 import com.tecsup.pokemon.ui.tipos.TiposViewModel
 
 object AppViewModelProvider {
     val Factory = viewModelFactory {
+        // Sesión: también carga y limpia los favoritos de cada cuenta
         initializer {
-            SesionViewModel(pokeDexApp().container.authRepository)
+            SesionViewModel(
+                authRepo = pokeDexApp().container.authRepository,
+                itemRepo = pokeDexApp().container.itemRepository
+            )
+        }
+        initializer {
+            BarraViewModel(pokeDexApp().container.itemRepository)
         }
         initializer {
             LoginViewModel(pokeDexApp().container.authRepository)
         }
         initializer {
+            RegistroViewModel(pokeDexApp().container.authRepository)
+        }
+        // Inicio: tipos sin los descontinuados + anuncio del admin
+        initializer {
             TiposViewModel(
                 repo = pokeDexApp().container.itemRepository,
+                catalogoRepo = pokeDexApp().container.catalogoRepository,
                 notificador = pokeDexApp().container.notificador
             )
         }
+        // Lista: Pokémon sin los descontinuados
         initializer {
             ListaViewModel(
                 repo = pokeDexApp().container.itemRepository,
+                catalogoRepo = pokeDexApp().container.catalogoRepository,
                 savedStateHandle = createSavedStateHandle()
             )
         }
+        // Detalle: avisa si el Pokémon fue descontinuado
         initializer {
             DetalleViewModel(
                 repo = pokeDexApp().container.itemRepository,
+                cartasRepo = pokeDexApp().container.cartasRepository,
+                catalogoRepo = pokeDexApp().container.catalogoRepository,
                 savedStateHandle = createSavedStateHandle()
             )
         }
         initializer {
-            FavoritosViewModel(pokeDexApp().container.itemRepository)
+            EvolucionViewModel(pokeDexApp().container.evolucionRepository)
         }
+        initializer {
+            EvolucionDetalleViewModel(
+                repo = pokeDexApp().container.evolucionRepository,
+                itemRepo = pokeDexApp().container.itemRepository,
+                savedStateHandle = createSavedStateHandle()
+            )
+        }
+        // Favoritos: marca los descontinuados
+        initializer {
+            FavoritosViewModel(
+                repo = pokeDexApp().container.itemRepository,
+                evolucionRepo = pokeDexApp().container.evolucionRepository,
+                catalogoRepo = pokeDexApp().container.catalogoRepository
+            )
+        }
+        // Perfil: datos, foto y contraseña (Firebase)
+        initializer {
+            PerfilViewModel(pokeDexApp().container.authRepository)
+        }
+        // Admin: cuentas + catálogo (Firestore) + base local (Room) + tipos de cada Pokémon
         initializer {
             AdminViewModel(
                 repo = pokeDexApp().container.itemRepository,
+                evolucionRepo = pokeDexApp().container.evolucionRepository,
+                usuariosRepo = pokeDexApp().container.usuariosRepository,
+                catalogoRepo = pokeDexApp().container.catalogoRepository,
                 notificador = pokeDexApp().container.notificador
             )
         }

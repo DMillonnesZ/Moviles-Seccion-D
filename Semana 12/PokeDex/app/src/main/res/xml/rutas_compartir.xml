@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Pósters de favoritos para compartir -->
+    <cache-path name="compartidos" path="compartidos/" />
+    <!-- Fotos tomadas con la cámara para el perfil -->
+    <cache-path name="fotos" path="fotos/" />
+</paths>
