@@ -13,8 +13,9 @@ data class LoginUiState(
     val correo: String = "",
     val clave: String = "",
     val cargando: Boolean = false,
+    val cargandoGoogle: Boolean = false,
     val error: String? = null,
-    val exito: Boolean = false,  // true = se muestra la bienvenida y luego se va al mapa
+    val exito: Boolean = false,  // true = la navegación lleva al mapa
     val nombre: String? = null   // para el saludo de la bienvenida
 ) {
     // Check verde en el campo de correo
@@ -37,6 +38,28 @@ class LoginViewModel(private val authRepo: AuthRepository) : ViewModel() {
     // La pantalla lo llama cuando el aviso termina de mostrarse
     fun limpiarError() {
         _estado.update { it.copy(error = null) }
+    }
+
+    // Error al pedir la cuenta de Google (sin cuentas, sin configurar...)
+    fun errorGoogle(mensaje: String) {
+        _estado.update { it.copy(cargandoGoogle = false, error = mensaje) }
+    }
+
+    // La pantalla obtiene el token con Credential Manager (necesita la Activity);
+    // el ViewModel solo lo pasa al repositorio, sin tocar Firebase ni Context
+    fun entrarConGoogle(idToken: String) {
+        viewModelScope.launch {
+            _estado.update { it.copy(cargandoGoogle = true, error = null) }
+            authRepo.iniciarSesionConGoogle(idToken)
+                .onSuccess {
+                    _estado.update {
+                        it.copy(cargandoGoogle = false, exito = true, nombre = authRepo.nombreActivo.value)
+                    }
+                }
+                .onFailure { e ->
+                    _estado.update { it.copy(cargandoGoogle = false, error = e.message ?: "No se pudo entrar con Google") }
+                }
+        }
     }
 
     fun iniciarSesion() {

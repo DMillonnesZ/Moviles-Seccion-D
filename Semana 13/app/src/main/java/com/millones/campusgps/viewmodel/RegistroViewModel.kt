@@ -16,8 +16,10 @@ data class RegistroUiState(
     val confirmar: String = "",
     val fuerzaClave: Int = 0,          // 0 vacía, 1 débil, 2 media, 3 fuerte
     val cargando: Boolean = false,
+    val cargandoGoogle: Boolean = false,
     val error: String? = null,
-    val cuentaCreada: Boolean = false  // true = mostrar la celebración
+    val cuentaCreada: Boolean = false,  // true = mostrar la celebración
+    val entroConGoogle: Boolean = false // true = ya tiene sesión, va directo al mapa
 ) {
     // Checks verdes de cada campo (las mismas reglas que valida registrar())
     val nombreValido: Boolean get() = nombre.trim().length >= 2
@@ -49,6 +51,22 @@ class RegistroViewModel(private val authRepo: AuthRepository) : ViewModel() {
 
     fun limpiarError() {
         _estado.update { it.copy(error = null) }
+    }
+
+    fun errorGoogle(mensaje: String) {
+        _estado.update { it.copy(cargandoGoogle = false, error = mensaje) }
+    }
+
+    // Con Google la cuenta se crea y queda la sesión abierta: va directo al mapa
+    fun entrarConGoogle(idToken: String) {
+        viewModelScope.launch {
+            _estado.update { it.copy(cargandoGoogle = true, error = null) }
+            authRepo.iniciarSesionConGoogle(idToken)
+                .onSuccess { _estado.update { it.copy(cargandoGoogle = false, entroConGoogle = true) } }
+                .onFailure { e ->
+                    _estado.update { it.copy(cargandoGoogle = false, error = e.message ?: "No se pudo entrar con Google") }
+                }
+        }
     }
 
     fun registrar() {

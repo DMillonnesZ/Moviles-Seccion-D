@@ -33,7 +33,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -98,6 +97,15 @@ fun NavegacionApp(authVm: AuthViewModel) {
         if (accionCortina == null) accionCortina = accion
     }
 
+    // Entra al mapa con la cortina y borra el historial de acceso (atrás no vuelve al login)
+    fun irAlMapa() {
+        conCortina {
+            nav.navigate(Rutas.PRINCIPAL) {
+                popUpTo(nav.graph.id) { inclusive = true }
+            }
+        }
+    }
+
     val entrada by nav.currentBackStackEntryAsState()
     val rutaActual = entrada?.destination?.route
     val mostrarBarra = esPestana(rutaActual)
@@ -119,133 +127,128 @@ fun NavegacionApp(authVm: AuthViewModel) {
     Box(modifier = Modifier.fillMaxSize()) {
         // Las pantallas se crean cuando termina el splash, así sus animaciones de entrada se ven
         if (splashTerminado) {
-        // Scaffold principal: la barra va en bottomBar y flota sobre las pantallas.
-        // Su alto (0 cuando está oculta) llega a cada pantalla con LocalRellenoBarra.
-        Scaffold(
-            containerColor = CampusColores.AzulProfundo,
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            bottomBar = {
-                AnimatedVisibility(
-                    visible = mostrarBarra,
-                    enter = slideInVertically { it } + fadeIn(),
-                    exit = slideOutVertically { it } + fadeOut()
-                ) {
-                    BarraNavegacion(
-                        items = PESTANAS.map { it.item },
-                        seleccionada = pestanaActual,
-                        onSeleccionar = { irAPestana(it) },
-                        modifier = Modifier
-                            .windowInsetsPadding(InsetsCampus.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
-                            .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
-                    )
+            // Scaffold principal: la barra va en bottomBar y flota sobre las pantallas.
+            // Su alto (0 cuando está oculta) llega a cada pantalla con LocalRellenoBarra.
+            Scaffold(
+                containerColor = CampusColores.AzulProfundo,
+                contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                bottomBar = {
+                    AnimatedVisibility(
+                        visible = mostrarBarra,
+                        enter = slideInVertically { it } + fadeIn(),
+                        exit = slideOutVertically { it } + fadeOut()
+                    ) {
+                        BarraNavegacion(
+                            items = PESTANAS.map { it.item },
+                            seleccionada = pestanaActual,
+                            onSeleccionar = { irAPestana(it) },
+                            modifier = Modifier
+                                .windowInsetsPadding(InsetsCampus.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
+                                .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+                        )
+                    }
                 }
-            }
-        ) { espacio ->
-        CompositionLocalProvider(LocalRellenoBarra provides espacio.calculateBottomPadding()) {
-            NavHost(
-                navController = nav,
-                startDestination = inicio,
-                // Entre pestañas: fundido. Entre pantallas de acceso: lo tapa la cortina.
-                enterTransition = {
-                    if (esPestana(initialState.destination.route) && esPestana(targetState.destination.route)) {
-                        fadeIn(tween(250))
-                    } else {
-                        EnterTransition.None
-                    }
-                },
-                exitTransition = {
-                    if (esPestana(initialState.destination.route) && esPestana(targetState.destination.route)) {
-                        fadeOut(tween(200))
-                    } else {
-                        ExitTransition.None
-                    }
-                },
-                popEnterTransition = { EnterTransition.None },
-                popExitTransition = { ExitTransition.None }
-            ) {
-                composable(
-                    route = Rutas.LOGIN,
-                    // Entra con fundido y acercamiento (después de crear la cuenta)
-                    enterTransition = {
-                        fadeIn(tween(700)) + scaleIn(initialScale = 1.1f, animationSpec = tween(700))
-                    },
-                    // Al volver desde Registro u Olvido lo tapa la cortina
-                    popEnterTransition = { EnterTransition.None }
-                ) {
-                    PantallaLogin(
-                        vm = viewModel(factory = AuthViewModelFactory()),
-                        // Login correcto: cortina, mapa y se borra el historial de acceso
-                        onLoginExitoso = {
-                            conCortina {
-                                nav.navigate(Rutas.PRINCIPAL) {
-                                    popUpTo(nav.graph.id) { inclusive = true }
-                                }
+            ) { espacio ->
+                CompositionLocalProvider(LocalRellenoBarra provides espacio.calculateBottomPadding()) {
+                    NavHost(
+                        navController = nav,
+                        startDestination = inicio,
+                        // Entre pestañas: fundido. Entre pantallas de acceso: lo tapa la cortina.
+                        enterTransition = {
+                            if (esPestana(initialState.destination.route) && esPestana(targetState.destination.route)) {
+                                fadeIn(tween(250))
+                            } else {
+                                EnterTransition.None
                             }
                         },
-                        onRegistro = { conCortina { nav.navigate(Rutas.REGISTRO) } },
-                        onOlvido = { conCortina { nav.navigate(Rutas.OLVIDO) } }
-                    )
-                }
-
-                composable(
-                    route = Rutas.REGISTRO,
-                    // Al ir al login después de crear la cuenta
-                    exitTransition = { fadeOut(tween(400)) }
-                ) {
-                    // Botón atrás del celular: también vuelve con cortina
-                    BackHandler { conCortina { nav.popBackStack() } }
-                    PantallaRegistro(
-                        vm = viewModel(factory = AuthViewModelFactory()),
-                        // Login nuevo con su animación; se borran Login y Registro del historial
-                        onCuentaCreada = {
-                            nav.navigate(Rutas.LOGIN) {
-                                popUpTo(Rutas.LOGIN) { inclusive = true }
+                        exitTransition = {
+                            if (esPestana(initialState.destination.route) && esPestana(targetState.destination.route)) {
+                                fadeOut(tween(200))
+                            } else {
+                                ExitTransition.None
                             }
                         },
-                        onIrLogin = { conCortina { nav.popBackStack() } }
-                    )
-                }
+                        popEnterTransition = { EnterTransition.None },
+                        popExitTransition = { ExitTransition.None }
+                    ) {
+                        composable(
+                            route = Rutas.LOGIN,
+                            // Entra con fundido y acercamiento (después de crear la cuenta)
+                            enterTransition = {
+                                fadeIn(tween(700)) + scaleIn(initialScale = 1.1f, animationSpec = tween(700))
+                            },
+                            // Al volver desde Registro u Olvido lo tapa la cortina
+                            popEnterTransition = { EnterTransition.None }
+                        ) {
+                            PantallaLogin(
+                                vm = viewModel(factory = AuthViewModelFactory()),
+                                // Login correcto (correo o Google)
+                                onLoginExitoso = { irAlMapa() },
+                                onRegistro = { conCortina { nav.navigate(Rutas.REGISTRO) } },
+                                onOlvido = { conCortina { nav.navigate(Rutas.OLVIDO) } }
+                            )
+                        }
 
-                composable(Rutas.OLVIDO) {
-                    BackHandler { conCortina { nav.popBackStack() } }
-                    PantallaOlvidoClave(
-                        vm = viewModel(factory = AuthViewModelFactory()),
-                        onIrLogin = { conCortina { nav.popBackStack() } }
-                    )
-                }
+                        composable(
+                            route = Rutas.REGISTRO,
+                            // Al ir al login después de crear la cuenta
+                            exitTransition = { fadeOut(tween(400)) }
+                        ) {
+                            // Botón atrás del celular: también vuelve con cortina
+                            BackHandler { conCortina { nav.popBackStack() } }
+                            PantallaRegistro(
+                                vm = viewModel(factory = AuthViewModelFactory()),
+                                // Login nuevo con su animación; se borran Login y Registro del historial
+                                onCuentaCreada = {
+                                    nav.navigate(Rutas.LOGIN) {
+                                        popUpTo(Rutas.LOGIN) { inclusive = true }
+                                    }
+                                },
+                                // Con Google ya tiene sesión: directo al mapa
+                                onEntroConGoogle = { irAlMapa() },
+                                onIrLogin = { conCortina { nav.popBackStack() } }
+                            )
+                        }
 
-                navigation(route = Rutas.PRINCIPAL, startDestination = Rutas.MAPA) {
-                    composable(Rutas.MAPA) {
-                        PantallaMapa()
-                    }
-                    composable(Rutas.EVENTOS) {
-                        PantallaProximamente(
-                            titulo = "Eventos",
-                            subtitulo = "Lo que pasa en el campus",
-                            icono = Icons.Rounded.Event,
-                            mensaje = "Aquí verás los eventos del campus con su imagen y descripción."
-                        )
-                    }
-                    composable(Rutas.CHAT) {
-                        PantallaProximamente(
-                            titulo = "Chat",
-                            subtitulo = "Sala general del campus",
-                            icono = Icons.Rounded.Forum,
-                            mensaje = "Aquí podrás conversar en tiempo real con otros estudiantes."
-                        )
-                    }
-                    composable(Rutas.PERFIL) {
-                        PantallaPerfil(
-                            correo = usuario,
-                            nombre = nombre,
-                            onCerrarSesion = authVm::cerrarSesion
-                        )
+                        composable(Rutas.OLVIDO) {
+                            BackHandler { conCortina { nav.popBackStack() } }
+                            PantallaOlvidoClave(
+                                vm = viewModel(factory = AuthViewModelFactory()),
+                                onIrLogin = { conCortina { nav.popBackStack() } }
+                            )
+                        }
+
+                        navigation(route = Rutas.PRINCIPAL, startDestination = Rutas.MAPA) {
+                            composable(Rutas.MAPA) {
+                                PantallaMapa()
+                            }
+                            composable(Rutas.EVENTOS) {
+                                PantallaProximamente(
+                                    titulo = "Eventos",
+                                    subtitulo = "Lo que pasa en el campus",
+                                    icono = Icons.Rounded.Event,
+                                    mensaje = "Aquí verás los eventos del campus con su imagen y descripción."
+                                )
+                            }
+                            composable(Rutas.CHAT) {
+                                PantallaProximamente(
+                                    titulo = "Chat",
+                                    subtitulo = "Sala general del campus",
+                                    icono = Icons.Rounded.Forum,
+                                    mensaje = "Aquí podrás conversar en tiempo real con otros estudiantes."
+                                )
+                            }
+                            composable(Rutas.PERFIL) {
+                                PantallaPerfil(
+                                    correo = usuario,
+                                    nombre = nombre,
+                                    onCerrarSesion = authVm::cerrarSesion
+                                )
+                            }
+                        }
                     }
                 }
             }
-
-        }
-        }
         }
 
         // Splash encima de todo; al terminar se desvanece y se agranda un poco
@@ -265,8 +268,8 @@ fun NavegacionApp(authVm: AuthViewModel) {
     }
 
     // Si la sesión se cierra (desde Perfil o porque Firebase la invalidó), vuelve al login.
-    // La entrada al mapa NO se decide aquí: la avisa PantallaLogin, porque el registro
-    // abre y cierra una sesión de Firebase y eso dispararía la navegación por error.
+    // La entrada al mapa NO se decide aquí: la avisa la pantalla de acceso, porque el registro
+    // con correo abre y cierra una sesión de Firebase y eso dispararía la navegación por error.
     LaunchedEffect(usuario) {
         val ruta = nav.currentDestination?.route
         if (usuario == null && ruta != null && ruta !in RUTAS_ACCESO) {

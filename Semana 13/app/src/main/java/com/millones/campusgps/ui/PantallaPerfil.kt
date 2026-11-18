@@ -9,10 +9,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -53,8 +51,9 @@ import com.millones.campusgps.ui.componentes.LocalRellenoBarra
 import com.millones.campusgps.ui.componentes.TarjetaPestana
 import com.millones.campusgps.ui.componentes.VentanaCampus
 import com.millones.campusgps.ui.componentes.desvanecerBordes
+import com.millones.campusgps.ui.componentes.rememberCerrarSesionCompleta
 
-// Perfil: cabecera azul, avatar con la inicial del correo, datos y cerrar sesión.
+// Perfil: cabecera azul, avatar con la inicial del nombre, datos y cerrar sesión.
 // La foto real (mejora 8) reemplazará la inicial cuando exista Storage.
 @Composable
 fun PantallaPerfil(
@@ -63,8 +62,10 @@ fun PantallaPerfil(
     onCerrarSesion: () -> Unit
 ) {
     var confirmarSalida by rememberSaveable { mutableStateOf(false) }
+    // Cierra la sesión y también olvida la cuenta de Google elegida
+    val cerrarSesion = rememberCerrarSesionCompleta(onCerrarSesion)
     val relleno = LocalRellenoBarra.current
-    // Nombre del registro; las cuentas antiguas sin nombre usan la parte del correo antes de @
+    // Nombre del registro o de Google; si no hay, la parte del correo antes de @
     val nombreVisible = nombre?.takeIf { it.isNotBlank() }
         ?: correo?.substringBefore("@")
         ?: "Invitado"
@@ -73,80 +74,81 @@ fun PantallaPerfil(
         containerColor = CampusColores.Superficie,
         contentWindowInsets = InsetsCampus
     ) { espacio ->
-    val arriba = espacio.calculateTopPadding()
-    val abajo = if (relleno > 0.dp) relleno else espacio.calculateBottomPadding()
+        val arriba = espacio.calculateTopPadding()
+        // Con la barra visible, su alto ya incluye la parte de abajo de la pantalla
+        val abajo = if (relleno > 0.dp) relleno else espacio.calculateBottomPadding()
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // La cabecera azul llega hasta el borde (detrás de la cámara)
-        CabeceraCurva(alto = arriba + 210.dp)
+        Box(modifier = Modifier.fillMaxSize()) {
+            // La cabecera azul llega hasta el borde (detrás de la cámara)
+            CabeceraCurva(alto = arriba + 210.dp)
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(18.dp),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = arriba)
-                .desvanecerBordes(arriba = 16.dp)
-                .verticalScroll(rememberScrollState())
-                .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = abajo + 20.dp)
-        ) {
-            EntradaSuave {
-                Text(
-                    text = "Mi perfil",
-                    color = Color.White,
-                    fontFamily = FuenteCampus,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 24.sp
-                )
-            }
-
-            EntradaSuave(retrasoMs = 100L) {
-                Avatar(inicial = nombreVisible.firstOrNull()?.uppercaseChar() ?: '?')
-            }
-
-            EntradaSuave(retrasoMs = 180L) {
-                Text(
-                    text = nombreVisible,
-                    color = CampusColores.TextoOscuro,
-                    fontFamily = FuenteCampus,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 22.sp,
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            EntradaSuave(retrasoMs = 260L) {
-                TarjetaPestana(titulo = "Mi cuenta", icono = Icons.Rounded.Person) {
-                    FilaOpcion(
-                        icono = Icons.Rounded.Email,
-                        titulo = "Correo",
-                        subtitulo = correo ?: "Sin sesión",
-                        color = CampusColores.AzulPrimario
-                    )
-                    DivisorSuave()
-                    FilaOpcion(
-                        icono = Icons.Rounded.PersonPinCircle,
-                        titulo = "Compartir mi ubicación",
-                        subtitulo = "Próximamente",
-                        color = CampusColores.Exito
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(18.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = arriba)
+                    .desvanecerBordes(arriba = 16.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = abajo + 20.dp)
+            ) {
+                EntradaSuave {
+                    Text(
+                        text = "Mi perfil",
+                        color = Color.White,
+                        fontFamily = FuenteCampus,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 24.sp
                     )
                 }
-            }
 
-            EntradaSuave(retrasoMs = 340L) {
-                TarjetaPestana(titulo = "Sesión", icono = Icons.Rounded.Lock) {
-                    FilaOpcion(
-                        icono = Icons.AutoMirrored.Rounded.Logout,
-                        titulo = "Cerrar sesión",
-                        subtitulo = "Volverás a la pantalla de inicio",
-                        color = CampusColores.Error,
-                        peligro = true,
-                        onClick = { confirmarSalida = true }
+                EntradaSuave(retrasoMs = 100L) {
+                    Avatar(inicial = nombreVisible.firstOrNull()?.uppercaseChar() ?: '?')
+                }
+
+                EntradaSuave(retrasoMs = 180L) {
+                    Text(
+                        text = nombreVisible,
+                        color = CampusColores.TextoOscuro,
+                        fontFamily = FuenteCampus,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 22.sp,
+                        textAlign = TextAlign.Center
                     )
+                }
+
+                EntradaSuave(retrasoMs = 260L) {
+                    TarjetaPestana(titulo = "Mi cuenta", icono = Icons.Rounded.Person) {
+                        FilaOpcion(
+                            icono = Icons.Rounded.Email,
+                            titulo = "Correo",
+                            subtitulo = correo ?: "Sin sesión",
+                            color = CampusColores.AzulPrimario
+                        )
+                        DivisorSuave()
+                        FilaOpcion(
+                            icono = Icons.Rounded.PersonPinCircle,
+                            titulo = "Compartir mi ubicación",
+                            subtitulo = "Próximamente",
+                            color = CampusColores.Exito
+                        )
+                    }
+                }
+
+                EntradaSuave(retrasoMs = 340L) {
+                    TarjetaPestana(titulo = "Sesión", icono = Icons.Rounded.Lock) {
+                        FilaOpcion(
+                            icono = Icons.AutoMirrored.Rounded.Logout,
+                            titulo = "Cerrar sesión",
+                            subtitulo = "Volverás a la pantalla de inicio",
+                            color = CampusColores.Error,
+                            peligro = true,
+                            onClick = { confirmarSalida = true }
+                        )
+                    }
                 }
             }
         }
-    }
     }
 
     if (confirmarSalida) {
@@ -157,7 +159,7 @@ fun PantallaPerfil(
             onCerrar = { confirmarSalida = false }
         ) {
             Text(
-                text = "Tendrás que ingresar tu correo y contraseña otra vez.",
+                text = "Tendrás que volver a ingresar a tu cuenta.",
                 color = CampusColores.TextoSecundario,
                 fontFamily = FuenteCampus,
                 fontSize = 15.sp,
@@ -170,7 +172,7 @@ fun PantallaPerfil(
                 onCancelar = { confirmarSalida = false },
                 onConfirmar = {
                     confirmarSalida = false
-                    onCerrarSesion()
+                    cerrarSesion()
                 }
             )
         }

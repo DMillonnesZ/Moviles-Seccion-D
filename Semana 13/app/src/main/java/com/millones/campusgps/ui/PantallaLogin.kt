@@ -30,6 +30,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.millones.campusgps.ui.componentes.AvisoTemporal
+import com.millones.campusgps.ui.componentes.BotonGoogle
+import com.millones.campusgps.ui.componentes.SeparadorO
+import com.millones.campusgps.ui.componentes.rememberAccesoGoogle
 import com.millones.campusgps.ui.componentes.BotonCampus
 import com.millones.campusgps.ui.componentes.CampoCampus
 import com.millones.campusgps.ui.componentes.CampusColores
@@ -55,10 +58,17 @@ fun PantallaLogin(
 ) {
     val estado by vm.estado.collectAsState()
 
-    // Ingreso correcto: la navegación lleva al mapa con la cortina de cuadros
+    // Ingreso correcto (correo o Google): la navegación lleva al mapa con la cortina de cuadros
     LaunchedEffect(estado.exito) {
         if (estado.exito) onLoginExitoso()
     }
+
+    // Abre la hoja de cuentas de Google; el token va al ViewModel
+    val entrarConGoogle = rememberAccesoGoogle(
+        onToken = vm::entrarConGoogle,
+        onError = vm::errorGoogle
+    )
+    val ocupado = estado.cargando || estado.cargandoGoogle
 
     FondoAuth {
         Scaffold(
@@ -143,6 +153,18 @@ fun PantallaLogin(
                                     texto = "Iniciar sesión",
                                     onClick = vm::iniciarSesion,
                                     cargando = estado.cargando
+                                )
+                            }
+
+                            EntradaSuave(retrasoMs = 560L) {
+                                SeparadorO()
+                            }
+
+                            EntradaSuave(retrasoMs = 600L) {
+                                BotonGoogle(
+                                    onClick = entrarConGoogle,
+                                    cargando = estado.cargandoGoogle,
+                                    habilitado = !ocupado
                                 )
                             }
                         }

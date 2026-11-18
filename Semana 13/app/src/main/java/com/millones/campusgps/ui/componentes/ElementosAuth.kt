@@ -53,7 +53,6 @@ import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ErrorOutline
-import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.CircularProgressIndicator
@@ -136,8 +135,9 @@ fun EntradaSuave(
 
 // Nombre de la app (CartelTitulo de la PokeDex): ícono de GPS dibujado y el nombre con
 // degradado suave, resplandor difuminado y un brillo que lo recorre; la frase va debajo
+// compacto = true: más pequeño y sin la frase (pantallas con muchos campos, como el registro)
 @Composable
-fun LogoCampus() {
+fun LogoCampus(compacto: Boolean = false) {
     // Zona libre: la ruta del fondo rodea este bloque y no pasa sobre las letras
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -145,18 +145,23 @@ fun LogoCampus() {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             // El pin es el destino de la ruta del fondo
-            LogoGps(tamano = 50.dp, modifier = Modifier.marcarDestino())
-            Spacer(Modifier.width(12.dp))
-            NombreCampus(fontSize = 40.sp)
+            LogoGps(
+                tamano = if (compacto) 40.dp else 50.dp,
+                modifier = Modifier.marcarDestino()
+            )
+            Spacer(Modifier.width(if (compacto) 10.dp else 12.dp))
+            NombreCampus(fontSize = if (compacto) 32.sp else 40.sp)
         }
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = "Encuentra tu camino en el campus",
-            color = Color.White.copy(alpha = 0.8f),
-            fontFamily = FuenteCampus,
-            fontSize = 14.sp,
-            letterSpacing = 0.2.sp
-        )
+        if (!compacto) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "Encuentra tu camino en el campus",
+                color = Color.White.copy(alpha = 0.8f),
+                fontFamily = FuenteCampus,
+                fontSize = 14.sp,
+                letterSpacing = 0.2.sp
+            )
+        }
     }
 }
 
@@ -290,37 +295,39 @@ fun LogoGps(
 }
 
 // Tarjeta blanca donde va el formulario (se conserva la idea del diseño anterior)
+// compacta = true: menos espacio entre elementos y menos relleno (registro)
 @Composable
 fun TarjetaAuth(
     modifier: Modifier = Modifier,
+    compacta: Boolean = false,
     contenido: @Composable ColumnScope.() -> Unit
 ) {
     val forma = RoundedCornerShape(32.dp)
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(if (compacta) 10.dp else 16.dp),
         modifier = modifier
             .fillMaxWidth()
             .shadow(24.dp, forma, ambientColor = CampusColores.AzulNoche, spotColor = CampusColores.AzulNoche)
             .clip(forma)
             .background(Color.White)
-            .padding(horizontal = 24.dp, vertical = 28.dp),
+            .padding(horizontal = 24.dp, vertical = if (compacta) 20.dp else 28.dp),
         content = contenido
     )
 }
 
 // Encabezado de la tarjeta: título de color partido y descripción
 @Composable
-fun EncabezadoTarjeta(titulo: String, descripcion: String) {
+fun EncabezadoTarjeta(titulo: String, descripcion: String, compacto: Boolean = false) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(if (compacto) 2.dp else 6.dp)
     ) {
         TextoBicolor(
             texto = titulo,
             arriba = CampusColores.AzulProfundo,
             abajo = CampusColores.AzulPrimario,
-            fontSize = 26.sp
+            fontSize = if (compacto) 23.sp else 26.sp
         )
         Text(
             text = descripcion,
@@ -410,7 +417,8 @@ fun CampoCampus(
     esClave: Boolean = false,
     tipoTeclado: KeyboardType = KeyboardType.Text,
     habilitado: Boolean = true,
-    valido: Boolean = false
+    valido: Boolean = false,
+    alto: Dp = 60.dp
 ) {
     var verClave by rememberSaveable { mutableStateOf(false) }
     val estadoTexto = rememberTextFieldState(initialText = valor)
@@ -454,7 +462,7 @@ fun CampoCampus(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .height(60.dp)
+            .height(alto)
             .shadow(if (enfocado) 6.dp else 0.dp, forma, ambientColor = CampusColores.AzulCielo, spotColor = CampusColores.AzulCielo)
             .clip(forma)
             .background(CampusColores.Superficie)
@@ -628,7 +636,8 @@ fun FlechaDibujada(color: Color, modifier: Modifier = Modifier) {
 fun BotonCampus(
     texto: String,
     onClick: () -> Unit,
-    cargando: Boolean = false
+    cargando: Boolean = false,
+    alto: Dp = 60.dp
 ) {
     val interaccion = remember { MutableInteractionSource() }
     val presionado by interaccion.collectIsPressedAsState()
@@ -643,12 +652,12 @@ fun BotonCampus(
         modifier = Modifier.fillMaxWidth()
     ) {
         val ancho by animateDpAsState(
-            targetValue = if (cargando) 60.dp else maxWidth,
+            targetValue = if (cargando) alto else maxWidth,
             animationSpec = tween(380, easing = FastOutSlowInEasing),
             label = "anchoBoton"
         )
         val esquina by animateDpAsState(
-            targetValue = if (cargando) 30.dp else 20.dp,
+            targetValue = if (cargando) alto / 2 else 20.dp,
             animationSpec = tween(380, easing = FastOutSlowInEasing),
             label = "esquinaBoton"
         )
@@ -658,7 +667,7 @@ fun BotonCampus(
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .width(ancho)
-                .height(60.dp)
+                .height(alto)
                 .graphicsLayer {
                     scaleX = escala
                     scaleY = escala

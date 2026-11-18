@@ -2,6 +2,7 @@ package com.millones.campusgps.data
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -58,6 +59,19 @@ class FirebaseAuthRepository(
             Result.failure(Exception(mensajeDe(e)))
         }
 
+    // Firebase crea la cuenta la primera vez y después solo inicia sesión.
+    // El nombre viene de la cuenta de Google.
+    override suspend fun iniciarSesionConGoogle(idToken: String): Result<Unit> =
+        try {
+            val credencial = GoogleAuthProvider.getCredential(idToken, null)
+            auth.signInWithCredential(credencial).await()
+            _usuario.value = auth.currentUser?.email
+            _nombre.value = auth.currentUser?.displayName
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(Exception(mensajeDe(e)))
+        }
+
     override fun cerrarSesion() {
         auth.signOut()
     }
@@ -74,6 +88,9 @@ class FirebaseAuthRepository(
             "ERROR_EMAIL_ALREADY_IN_USE" -> "Ese correo ya está registrado"
             "ERROR_NETWORK_REQUEST_FAILED" -> "Sin conexión. Revisa tu internet e intenta de nuevo"
             "ERROR_TOO_MANY_REQUESTS" -> "Demasiados intentos. Espera un momento"
+            "ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL" ->
+                "Ese correo ya tiene cuenta con contraseña. Ingresa con tu correo"
+            "ERROR_USER_DISABLED" -> "Esta cuenta está deshabilitada"
             else -> "No se pudo completar la operación. Intenta de nuevo"
         }
 }
