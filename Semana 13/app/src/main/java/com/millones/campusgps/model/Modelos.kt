@@ -71,6 +71,78 @@ data class ResultadoBusqueda(
     val esLugarRegistrado: Boolean
 )
 
+// ----- Perfil -----
+
+// Perfil público de un usuario (usuarios/{uid}). foto = imagen en Base64 (null = inicial)
+data class Perfil(
+    val uid: String,
+    val nombre: String,
+    val carrera: String,
+    val foto: String?
+)
+
+data class EstadisticasPerfil(
+    val lugares: Int = 0,
+    val favoritos: Int = 0,
+    val asistire: Int = 0,
+    val opiniones: Int = 0
+)
+
+// Radios de "Cerca" que se pueden elegir en el perfil
+val RADIOS_CERCANOS = listOf(100, 300, 500)
+
+// ----- Opiniones (Chat) -----
+
+enum class TipoObjetivo(val valor: String) {
+    LUGAR("lugar"),
+    EVENTO("evento");
+
+    companion object {
+        fun de(valor: String?): TipoObjetivo? = entries.firstOrNull { it.valor == valor }
+    }
+}
+
+// Opinión con calificación (1 a 5) sobre un lugar o un evento
+data class Comentario(
+    val id: String,
+    val texto: String,
+    val calificacion: Int,
+    val autorUid: String,
+    val autorNombre: String,
+    val creadoEn: Long,
+    val tipo: TipoObjetivo,
+    val objetivoId: String,
+    val objetivoNombre: String,
+    val esMio: Boolean
+)
+
+data class ResumenCalificacion(val promedio: Float, val total: Int)
+
+// Lugar o evento sobre el que se puede opinar. destacado = favorito o "asistiré"
+data class ObjetivoOpinion(
+    val id: String,
+    val nombre: String,
+    val tipo: TipoObjetivo,
+    val detalle: String,
+    val destacado: Boolean
+)
+
+// Lugar o evento mejor calificado (carrusel de arriba del Chat)
+data class Destacado(
+    val id: String,
+    val nombre: String,
+    val tipo: TipoObjetivo,
+    val resumen: ResumenCalificacion
+)
+
+enum class FiltroOpiniones(val etiqueta: String) {
+    TODAS("Todas"),
+    FAVORITOS("Mis favoritos"),
+    LUGARES("Lugares"),
+    EVENTOS("Eventos"),
+    MIAS("Mías")
+}
+
 // Categorías que se pueden elegir al guardar un lugar
 val CATEGORIAS_LUGAR = listOf("Estudio", "Comida", "Eventos", "Servicios", "Otro")
 

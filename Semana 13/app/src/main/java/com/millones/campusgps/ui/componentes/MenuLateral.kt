@@ -57,7 +57,9 @@ fun MenuLateral(
     items: List<ItemBarra>,
     seleccionada: Int,
     onSeleccionar: (Int) -> Unit,
-    onCerrarSesion: () -> Unit
+    onCerrarSesion: () -> Unit,
+    // Foto de perfil en Base64 (null = inicial)
+    fotoBase64: String? = null
 ) {
     ModalDrawerSheet(
         drawerContainerColor = VidrioMapa.FondoSolido,
@@ -95,7 +97,7 @@ fun MenuLateral(
             Spacer(Modifier.height(22.dp))
 
             // ----- Saludo y usuario -----
-            TarjetaUsuario(nombre = nombre, correo = correo)
+            TarjetaUsuario(nombre = nombre, correo = correo, fotoBase64 = fotoBase64)
 
             Spacer(Modifier.height(24.dp))
 
@@ -175,7 +177,7 @@ private fun TituloSeccion(texto: String) {
 
 // Saludo con el primer nombre, la inicial en círculo y el correo
 @Composable
-private fun TarjetaUsuario(nombre: String?, correo: String?) {
+private fun TarjetaUsuario(nombre: String?, correo: String?, fotoBase64: String?) {
     val nombreVisible = nombre?.takeIf { it.isNotBlank() }
     val primerNombre = nombreVisible?.substringBefore(" ") ?: "estudiante"
     val inicial = (nombreVisible ?: correo ?: "?").first().uppercaseChar()
@@ -189,22 +191,11 @@ private fun TarjetaUsuario(nombre: String?, correo: String?) {
             .border(1.dp, VidrioMapa.Borde, RoundedCornerShape(20.dp))
             .padding(14.dp)
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(DegradadosCampus.Primario)
-                .border(2.dp, Color.White.copy(alpha = 0.8f), CircleShape)
-        ) {
-            Text(
-                text = "$inicial",
-                color = Color.White,
-                fontFamily = FuenteCampus,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 20.sp
-            )
-        }
+        AvatarUsuario(
+            nombre = "$inicial",
+            fotoBase64 = fotoBase64,
+            tamano = 48.dp
+        )
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(

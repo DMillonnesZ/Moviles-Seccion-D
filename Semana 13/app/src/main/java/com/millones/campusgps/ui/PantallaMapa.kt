@@ -61,6 +61,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -135,6 +136,10 @@ fun PantallaMapa() {
     val personas by vm.personas.collectAsState()
     val compartiendo by vm.compartiendo.collectAsState()
     val eventos by vm.eventos.collectAsState()
+    val radioCercanos by vm.radioCercanos.collectAsState()
+
+    // Pedido de abrir un lugar desde el Chat o el Perfil
+    val lugarPedido by SolicitudesNavegacion.lugar.collectAsState()
     val borrador by vm.borrador.collectAsState()
     val guardando by vm.guardando.collectAsState()
     val aviso by vm.aviso.collectAsState()
@@ -205,6 +210,15 @@ fun PantallaMapa() {
     // Evento cuyo detalle está abierto (al tocar su marcador)
     var eventoId by rememberSaveable { mutableStateOf<String?>(null) }
 
+    // Abre el lugar pedido por otra pestaña: el mapa viaja ahí y se abre su detalle
+    LaunchedEffect(lugarPedido) {
+        lugarPedido?.let { id ->
+            vm.seleccionar(id)
+            detalleId = id
+            SolicitudesNavegacion.lugarAtendido()
+        }
+    }
+
     // Lugar registrado dentro del radio = tu ubicación actual
     val aquiId = lugarActual?.lugar?.id
     val error = estado as? UbicacionUi.Error
@@ -235,6 +249,7 @@ fun PantallaMapa() {
                 onMantenerPresionado = { punto -> vm.nuevoLugarEn(punto.latitude, punto.longitude) },
                 onTocarLugar = { detalleId = it },
                 onTocarEvento = { eventoId = it },
+                radioCercanos = radioCercanos,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(top = arriba + 96.dp, bottom = abajo + altoPanel + 80.dp)
             )
@@ -331,6 +346,7 @@ fun PantallaMapa() {
                     cercanos = cercanos,
                     hayLugares = lugares.isNotEmpty(),
                     ubicado = posicion != null,
+                    radioCercanos = radioCercanos,
                     pestana = pestana,
                     onPestana = { pestana = it },
                     seleccionado = seleccionado,
@@ -682,6 +698,7 @@ private fun PanelLugares(
     cercanos: List<LugarConDistancia>,
     hayLugares: Boolean,
     ubicado: Boolean,
+    radioCercanos: Float,
     pestana: Int,
     onPestana: (Int) -> Unit,
     seleccionado: String?,
@@ -786,14 +803,15 @@ private fun PanelLugares(
                 lista.isEmpty() && !ubicado -> PanelVacio(
                     icono = Icons.Rounded.NearMe,
                     titulo = "Ubícate primero",
-                    mensaje = "Toca el botón azul para ver los lugares a menos de ${RADIO_CERCANOS.toInt()} m."
+                    mensaje = "Toca el botón azul para ver los lugares a menos de ${radioCercanos.toInt()} m."
                 )
                 lista.isEmpty() -> PanelVacio(
                     icono = Icons.Rounded.NearMe,
                     titulo = "No hay lugares cerca",
-                    mensaje = "Ninguno de tus lugares está a menos de ${RADIO_CERCANOS.toInt()} m. Los ves en el mapa en azul o amarillo."
+                    mensaje = "Ninguno de tus lugares está a menos de ${radioCercanos.toInt()} m. Puedes cambiar el radio en Perfil."
                 )
                 else -> ListaLugares(
+                    radioCercanos = radioCercanos,
                     lugares = lista,
                     seleccionado = seleccionado,
                     aquiId = aquiId,

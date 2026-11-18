@@ -58,6 +58,9 @@ import com.millones.campusgps.ui.componentes.ItemBarra
 import com.millones.campusgps.ui.componentes.LocalRellenoBarra
 import com.millones.campusgps.ui.componentes.PantallaCompleta
 import com.millones.campusgps.viewmodel.AuthViewModel
+import com.millones.campusgps.viewmodel.CampusViewModelFactory
+import com.millones.campusgps.viewmodel.OpinionesViewModel
+import androidx.compose.ui.platform.LocalContext
 import com.millones.campusgps.viewmodel.AuthViewModelFactory
 
 private object Rutas {
@@ -88,7 +91,7 @@ private val PESTANAS = listOf(
     ),
     Pestana(
         Rutas.CHAT,
-        ItemBarra("Chat", Icons.Rounded.Forum, descripcion = "Conversa con otros estudiantes", color = CampusColores.VerdeMenta)
+        ItemBarra("Chat", Icons.Rounded.Forum, descripcion = "Opina y califica lugares y eventos", color = CampusColores.VerdeMenta)
     ),
     Pestana(
         Rutas.PERFIL,
@@ -103,6 +106,21 @@ fun NavegacionApp(authVm: AuthViewModel) {
     val nav = rememberNavController()
     val usuario by authVm.usuarioActivo.collectAsState()
     val nombre by authVm.nombreActivo.collectAsState()
+    val contexto = LocalContext.current
+
+    // Opiniones a nivel de la navegación (una instancia por usuario): da la insignia de
+    // no leídos de la barra, la foto del menú y la misma lista que usa la pestaña Chat
+    val opinionesVm: OpinionesViewModel? = if (usuario != null) {
+        viewModel<OpinionesViewModel>(key = "opiniones-$usuario", factory = CampusViewModelFactory(contexto))
+    } else {
+        null
+    }
+    val noLeidos = opinionesVm?.noLeidos?.collectAsState()?.value ?: 0
+    val perfiles = opinionesVm?.perfiles?.collectAsState()?.value.orEmpty()
+    val miFoto = opinionesVm?.miUid?.let { perfiles[it]?.foto }
+    val itemsBarra = PESTANAS.map { pestana ->
+        if (pestana.ruta == Rutas.CHAT) pestana.item.copy(insignia = noLeidos) else pestana.item
+    }
 
     // Se decide una sola vez: NavHost no debe cambiar su inicio después de crearse
     val inicio = remember { if (usuario == null) Rutas.LOGIN else Rutas.PRINCIPAL }
@@ -143,6 +161,17 @@ fun NavegacionApp(authVm: AuthViewModel) {
         }
     }
 
+    // Abrir un lugar en el mapa o un evento desde el Chat o el Perfil
+    fun abrirLugar(id: String) {
+        SolicitudesNavegacion.abrirLugar(id)
+        irAPestana(PESTANAS.indexOfFirst { it.ruta == Rutas.MAPA })
+    }
+
+    fun abrirEvento(id: String) {
+        SolicitudesNavegacion.abrirEvento(id)
+        irAPestana(PESTANAS.indexOfFirst { it.ruta == Rutas.EVENTOS })
+    }
+
     // ----- Menú lateral desplegable (se abre con el botón ☰ del mapa) -----
     val menu = rememberDrawerState(DrawerValue.Closed)
     val alcance = rememberCoroutineScope()
@@ -166,7 +195,8 @@ fun NavegacionApp(authVm: AuthViewModel) {
                     MenuLateral(
                         nombre = nombre,
                         correo = usuario,
-                        items = PESTANAS.map { it.item },
+                        items = itemsBarra,
+                        fotoBase64 = miFoto,
                         seleccionada = pestanaActual,
                         onSeleccionar = { indice ->
                             alcance.launch { menu.close() }
@@ -192,7 +222,7 @@ fun NavegacionApp(authVm: AuthViewModel) {
                         exit = slideOutVertically { it } + fadeOut()
                     ) {
                         BarraNavegacion(
-                            items = PESTANAS.map { it.item },
+                            items = itemsBarra,
                             seleccionada = pestanaActual,
                             onSeleccionar = { irAPestana(it) },
                             modifier = Modifier
@@ -279,18 +309,20 @@ fun NavegacionApp(authVm: AuthViewModel) {
                                 PantallaEventos()
                             }
                             composable(Rutas.CHAT) {
-                                PantallaProximamente(
-                                    titulo = "Chat",
-                                    subtitulo = "Sala general del campus",
-                                    icono = Icons.Rounded.Forum,
-                                    mensaje = "Aquí podrás conversar en tiempo real con otros estudiantes."
-                                )
+                                opinionesVm?.let { vm ->
+                                    PantallaChat(
+                                        vm = vm,
+                                        onAbrirLugar = ::abrirLugar,
+                                        onAbrirEvento = ::abrirEvento
+                                    )
+                                }
                             }
                             composable(Rutas.PERFIL) {
                                 PantallaPerfil(
-                                    correo = usuario,
-                                    nombre = nombre,
-                                    onCerrarSesion = authVm::cerrarSesion
+                                    vm = viewModel(factory = CampusViewModelFactory(contexto)),
+                                    onCerrarSesion = authVm::cerrarSesion,
+                                    onAbrirLugar = ::abrirLugar,
+                                    onAbrirEvento = ::abrirEvento
                                 )
                             }
                         }

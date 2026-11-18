@@ -119,6 +119,16 @@ fun PantallaEventos() {
     var detalleId by rememberSaveable { mutableStateOf<String?>(null) }
     var porEliminar by remember { mutableStateOf<Evento?>(null) }
 
+    // Pedido de abrir un evento desde el Chat o el Perfil
+    val eventoPedido by SolicitudesNavegacion.evento.collectAsState()
+    LaunchedEffect(eventoPedido) {
+        eventoPedido?.let { id ->
+            vm.elegirFiltro(FiltroEventos.PROXIMOS)
+            detalleId = id
+            SolicitudesNavegacion.eventoAtendido()
+        }
+    }
+
     Scaffold(
         containerColor = CampusColores.AzulNoche,
         contentWindowInsets = InsetsCampus
