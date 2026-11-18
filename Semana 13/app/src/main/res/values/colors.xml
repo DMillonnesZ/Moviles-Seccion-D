@@ -9,4 +9,6 @@
     <color name="white">#FFFFFFFF</color>
     <!-- Fondo de la ventana y del splash del sistema (igual a CampusColores.AzulProfundo) -->
     <color name="azul_noche">#FF0A1F44</color>
+    <!-- Fondo claro del splash (igual al de splash_fondo.jpg) -->
+    <color name="fondo_splash">#FFEAF2FD</color>
 </resources>

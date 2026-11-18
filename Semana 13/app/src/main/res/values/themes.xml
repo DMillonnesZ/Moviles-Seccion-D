@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Fondo azul noche desde el primer instante: evita el destello blanco antes del splash -->
+    <!-- Fondo claro desde el primer instante, igual al del splash: evita un destello de otro color -->
     <style name="Theme.CampusGPS" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@color/azul_noche</item>
+        <item name="android:windowBackground">@color/fondo_splash</item>
     </style>
 </resources>
