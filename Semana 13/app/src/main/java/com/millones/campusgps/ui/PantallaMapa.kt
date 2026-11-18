@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -25,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -103,7 +103,7 @@ fun PantallaMapa() {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -118,18 +118,19 @@ fun PantallaMapa() {
                     Text("Obtener mi ubicación")
                 }
 
-                when (val e = estado) {
-                    UbicacionUi.Inicial -> Text("Pulsa el botón para empezar")
-                    UbicacionUi.Buscando -> Text("Buscando...")
-                    is UbicacionUi.Lista -> Text(
-                        "Latitud: ${e.posicion.latitud}\nLongitud: ${e.posicion.longitud}",
-                        textAlign = TextAlign.Center
-                    )
-                    is UbicacionUi.Error -> Text(
-                        e.mensaje,
+                (estado as? UbicacionUi.Error)?.let {
+                    Text(
+                        text = it.mensaje,
                         color = MaterialTheme.colorScheme.error
                     )
                 }
+
+                ListaLugares(
+                    lugares = lugares,
+                    seleccionado = seleccionado,
+                    onClick = { vm.seleccionar(it) },
+                    modifier = Modifier.height(220.dp)
+                )
             }
         }
     }
