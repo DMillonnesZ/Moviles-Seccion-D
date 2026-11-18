@@ -94,7 +94,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.millones.campusgps.model.LugarConDistancia
 import com.millones.campusgps.model.UbicacionUi
-import com.millones.campusgps.ui.componentes.AvisoTemporal
+import com.millones.campusgps.ui.componentes.AvisoFlotante
 import com.millones.campusgps.ui.componentes.BotonVidrio
 import com.millones.campusgps.ui.componentes.CampusColores
 import com.millones.campusgps.ui.componentes.DegradadosCampus
@@ -134,6 +134,7 @@ fun PantallaMapa() {
     val lugarActual by vm.lugarActual.collectAsState()
     val personas by vm.personas.collectAsState()
     val compartiendo by vm.compartiendo.collectAsState()
+    val eventos by vm.eventos.collectAsState()
     val borrador by vm.borrador.collectAsState()
     val guardando by vm.guardando.collectAsState()
     val aviso by vm.aviso.collectAsState()
@@ -201,6 +202,8 @@ fun PantallaMapa() {
     var porEliminar by remember { mutableStateOf<LugarConDistancia?>(null) }
     // Lugar cuyo detalle está abierto
     var detalleId by rememberSaveable { mutableStateOf<String?>(null) }
+    // Evento cuyo detalle está abierto (al tocar su marcador)
+    var eventoId by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Lugar registrado dentro del radio = tu ubicación actual
     val aquiId = lugarActual?.lugar?.id
@@ -209,9 +212,6 @@ fun PantallaMapa() {
     // Guarda el último error para que se vea mientras la tarjeta se desvanece
     var ultimoError by remember { mutableStateOf<UbicacionUi.Error?>(null) }
     if (error != null) ultimoError = error
-    // Igual con el color del aviso
-    var avisoExito by remember { mutableStateOf(true) }
-    aviso?.let { avisoExito = it.exito }
 
     Scaffold(
         containerColor = CampusColores.AzulNoche,
@@ -227,12 +227,14 @@ fun PantallaMapa() {
                 posicion = posicion,
                 lugares = lugares,
                 personas = personas,
+                eventos = eventos,
                 lugarActualId = aquiId,
                 seleccionado = seleccionado,
                 borrador = borrador,
                 camara = camara,
                 onMantenerPresionado = { punto -> vm.nuevoLugarEn(punto.latitude, punto.longitude) },
                 onTocarLugar = { detalleId = it },
+                onTocarEvento = { eventoId = it },
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(top = arriba + 96.dp, bottom = abajo + altoPanel + 80.dp)
             )
@@ -262,18 +264,14 @@ fun PantallaMapa() {
                 )
             }
 
-            // ----- Aviso (lugar guardado, foto, errores...) -----
-            Box(
+            // ----- Aviso en insignia flotante (lugar guardado, ubicación compartida, errores...) -----
+            AvisoFlotante(
+                aviso = aviso,
+                onOcultar = vm::limpiarAviso,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(start = 16.dp, end = 16.dp, top = arriba + 92.dp)
-            ) {
-                AvisoTemporal(
-                    mensaje = aviso?.texto,
-                    onOcultar = vm::limpiarAviso,
-                    exito = avisoExito
-                )
-            }
+            )
 
             // ----- Tu ubicación: calle donde estás (izquierda, encima del panel) -----
             EntradaSuave(
@@ -397,6 +395,19 @@ fun PantallaMapa() {
             onEliminar = {
                 porEliminar = detalle
                 detalleId = null
+            }
+        )
+    }
+
+    // ----- Detalle de un evento (tocar su marcador) -----
+    eventos.firstOrNull { it.id == eventoId }?.let { evento ->
+        DetalleEvento(
+            evento = evento,
+            onCerrar = { eventoId = null },
+            onAsistir = { vm.alternarAsistencia(evento) },
+            onEliminar = {
+                vm.eliminarEvento(evento)
+                eventoId = null
             }
         )
     }
@@ -852,7 +863,8 @@ private fun Leyenda(modifier: Modifier = Modifier) {
             ColoresLugar.Actual to "Aquí",
             ColoresLugar.Cerca to "Cerca",
             ColoresLugar.Favorito to "Favorito",
-            ColoresLugar.Registrado to "Registrado"
+            ColoresLugar.Registrado to "Registrado",
+            CampusColores.Violeta to "Evento"
         ).forEach { (color, texto) ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -866,7 +878,8 @@ private fun Leyenda(modifier: Modifier = Modifier) {
                     text = texto,
                     color = Color.White.copy(alpha = 0.65f),
                     fontFamily = FuenteCampus,
-                    fontSize = 11.sp
+                    fontSize = 10.sp,
+                    maxLines = 1
                 )
             }
         }

@@ -4,6 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.millones.campusgps.data.EventosRepository
 import com.millones.campusgps.data.LugaresRepository
+import com.millones.campusgps.data.UbicacionRepository
+import com.millones.campusgps.model.Posicion
+import com.millones.campusgps.model.ResultadoBusqueda
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import com.millones.campusgps.model.AvisoMapa
 import com.millones.campusgps.model.Evento
 import com.millones.campusgps.model.FiltroEventos
@@ -24,7 +29,8 @@ private const val MS_EN_CURSO = 2 * 60 * 60 * 1000L
 
 class EventosViewModel(
     private val eventosRepo: EventosRepository,
-    lugaresRepo: LugaresRepository
+    lugaresRepo: LugaresRepository,
+    private val ubicacionRepo: UbicacionRepository
 ) : ViewModel() {
 
     private val _cargando = MutableStateFlow(true)
@@ -62,6 +68,60 @@ class EventosViewModel(
     private val _guardando = MutableStateFlow(false)
     val guardando: StateFlow<Boolean> = _guardando.asStateFlow()
 
+    // ----- Búsqueda de ubicación (selector del mapa) -----
+    private val _resultados = MutableStateFlow<List<ResultadoBusqueda>>(emptyList())
+    val resultados: StateFlow<List<ResultadoBusqueda>> = _resultados.asStateFlow()
+
+    private val _buscando = MutableStateFlow(false)
+    val buscando: StateFlow<Boolean> = _buscando.asStateFlow()
+
+    // true cuando ya se buscó (para mostrar "Sin resultados")
+    private val _busquedaHecha = MutableStateFlow(false)
+    val busquedaHecha: StateFlow<Boolean> = _busquedaHecha.asStateFlow()
+
+    private var busqueda: Job? = null
+
+    // Busca mientras se escribe (espera medio segundo de pausa). Primero los lugares
+    // registrados que coinciden y luego las direcciones cercanas al centro del mapa.
+    fun buscarUbicacion(texto: String, latitudCentro: Double, longitudCentro: Double, inmediato: Boolean = false) {
+        busqueda?.cancel()
+        val consulta = texto.trim()
+        if (consulta.length < 3) {
+            _resultados.value = emptyList()
+            _buscando.value = false
+            _busquedaHecha.value = false
+            return
+        }
+        busqueda = viewModelScope.launch {
+            if (!inmediato) delay(500)
+            _buscando.value = true
+            val minusculas = consulta.lowercase()
+            val propios = lugares.value
+                .filter { it.nombre.lowercase().contains(minusculas) }
+                .take(3)
+                .map {
+                    ResultadoBusqueda(
+                        titulo = it.nombre,
+                        detalle = "Lugar registrado · ${it.categoria}",
+                        latitud = it.latitud,
+                        longitud = it.longitud,
+                        esLugarRegistrado = true
+                    )
+                }
+            val direcciones = ubicacionRepo.buscarDirecciones(consulta, Posicion(latitudCentro, longitudCentro))
+            _resultados.value = propios + direcciones
+            _buscando.value = false
+            _busquedaHecha.value = true
+        }
+    }
+
+    fun limpiarBusqueda() {
+        busqueda?.cancel()
+        _resultados.value = emptyList()
+        _buscando.value = false
+        _busquedaHecha.value = false
+    }
+
     fun elegirFiltro(filtro: FiltroEventos) {
         _filtro.value = filtro
     }
@@ -74,11 +134,14 @@ class EventosViewModel(
         if (!_guardando.value) _creando.value = false
     }
 
+    // El lugar es obligatorio (registrado o punto en el mapa): así el evento sale en el mapa
     fun crear(
         titulo: String,
         descripcion: String,
         fecha: Long?,
-        lugar: Lugar?,
+        lugarNombre: String,
+        latitud: Double?,
+        longitud: Double?,
         fotoUri: String?
     ) {
         val limpio = titulo.trim()
@@ -88,6 +151,7 @@ class EventosViewModel(
             descripcion.length > 500 -> "La descripción puede tener hasta 500 letras"
             fecha == null -> "Elige la fecha y la hora"
             fecha < System.currentTimeMillis() -> "La fecha ya pasó"
+            latitud == null || longitud == null -> "Elige dónde será el evento"
             else -> null
         }
         if (error != null || fecha == null) {
@@ -101,13 +165,13 @@ class EventosViewModel(
                 titulo = limpio,
                 descripcion = descripcion.trim(),
                 fecha = fecha,
-                lugarNombre = lugar?.nombre.orEmpty(),
-                latitud = lugar?.latitud,
-                longitud = lugar?.longitud,
+                lugarNombre = lugarNombre,
+                latitud = latitud,
+                longitud = longitud,
                 fotoUri = fotoUri
             ).onSuccess {
                 _creando.value = false
-                _aviso.value = AvisoMapa("$limpio se publicó", true)
+                _aviso.value = AvisoMapa("Evento publicado: ya aparece en el mapa", true)
             }.onFailure {
                 _aviso.value = AvisoMapa(it.message ?: "No se pudo crear el evento", false)
             }

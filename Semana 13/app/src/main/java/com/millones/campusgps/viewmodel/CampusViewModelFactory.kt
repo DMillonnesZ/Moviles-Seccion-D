@@ -24,18 +24,21 @@ class CampusViewModelFactory(context: Context) : ViewModelProvider.Factory {
     private val lugares by lazy {
         LugaresRepositoryNube(db, auth, CampusDatabase.obtener(appContext).lugarDao(), fotos)
     }
+    private val eventos by lazy { EventosRepositoryFirestore(db, auth, fotos) }
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T = when {
         modelClass.isAssignableFrom(MapaViewModel::class.java) -> MapaViewModel(
             ubicacionRepo = UbicacionRepositoryGoogle(appContext),
             lugaresRepo = lugares,
-            ubicacionesRepo = UbicacionesRepositoryFirestore(db, auth)
+            ubicacionesRepo = UbicacionesRepositoryFirestore(db, auth),
+            eventosRepo = eventos
         ) as T
 
         modelClass.isAssignableFrom(EventosViewModel::class.java) -> EventosViewModel(
-            eventosRepo = EventosRepositoryFirestore(db, auth, fotos),
-            lugaresRepo = lugares
+            eventosRepo = eventos,
+            lugaresRepo = lugares,
+            ubicacionRepo = UbicacionRepositoryGoogle(appContext)
         ) as T
 
         else -> throw IllegalArgumentException("ViewModel desconocido: ${modelClass.name}")

@@ -2,7 +2,9 @@ package com.millones.campusgps.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.millones.campusgps.data.EventosRepository
 import com.millones.campusgps.data.LugaresRepository
+import com.millones.campusgps.model.Evento
 import com.millones.campusgps.data.UbicacionRepository
 import com.millones.campusgps.data.UbicacionesRepository
 import com.millones.campusgps.model.AvisoMapa
@@ -41,7 +43,8 @@ private const val MS_ENTRE_PUBLICACIONES = 10_000L
 class MapaViewModel(
     private val ubicacionRepo: UbicacionRepository,
     private val lugaresRepo: LugaresRepository,
-    private val ubicacionesRepo: UbicacionesRepository
+    private val ubicacionesRepo: UbicacionesRepository,
+    private val eventosRepo: EventosRepository
 ) : ViewModel() {
 
     private val _estado = MutableStateFlow<UbicacionUi>(UbicacionUi.Inicial)
@@ -88,6 +91,15 @@ class MapaViewModel(
 
     // Otras personas que comparten su ubicación en vivo
     val personas: StateFlow<List<PersonaEnVivo>> = ubicacionesRepo.personas()
+        .catch { emit(emptyList()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Eventos próximos (o en curso) que tienen lugar: se muestran en el mapa
+    val eventos: StateFlow<List<Evento>> = eventosRepo.eventos
+        .map { lista ->
+            val desde = System.currentTimeMillis() - 2 * 60 * 60 * 1000L
+            lista.filter { it.latitud != null && it.longitud != null && it.fecha >= desde }
+        }
         .catch { emit(emptyList()) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -298,6 +310,29 @@ class MapaViewModel(
                     _aviso.value = AvisoMapa("Lugar eliminado", true)
                 }
                 .onFailure { mostrarError(it, "No se pudo eliminar el lugar") }
+        }
+    }
+
+    // ----- Eventos desde el mapa -----
+
+    fun alternarAsistencia(evento: Evento) {
+        viewModelScope.launch {
+            eventosRepo.alternarAsistencia(evento.id, evento.asisto)
+                .onSuccess {
+                    _aviso.value = AvisoMapa(
+                        if (evento.asisto) "Ya no asistirás a ${evento.titulo}" else "Asistirás a ${evento.titulo}",
+                        true
+                    )
+                }
+                .onFailure { mostrarError(it, "No se pudo actualizar") }
+        }
+    }
+
+    fun eliminarEvento(evento: Evento) {
+        viewModelScope.launch {
+            eventosRepo.eliminar(evento.id)
+                .onSuccess { _aviso.value = AvisoMapa("Evento eliminado", true) }
+                .onFailure { mostrarError(it, "No se pudo eliminar el evento") }
         }
     }
 

@@ -146,6 +146,51 @@ fun FotoLugar(
     }
 }
 
+// Marcador de un evento: recuadro violeta con el día y el mes, y una puntita
+@Composable
+fun PinEvento(dia: String, mes: String, asisto: Boolean) {
+    val violeta = CampusColores.Violeta
+    val borde = if (asisto) CampusColores.VerdeMenta else Color.White
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(borde)
+                .padding(2.5.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(Brush.verticalGradient(listOf(lerp(violeta, Color.White, 0.2f), violeta)))
+                .padding(horizontal = 9.dp, vertical = 4.dp)
+        ) {
+            Text(
+                text = dia,
+                color = Color.White,
+                fontFamily = FuenteCampus,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 17.sp,
+                lineHeight = 18.sp
+            )
+            Text(
+                text = mes,
+                color = Color.White.copy(alpha = 0.85f),
+                fontFamily = FuenteCampus,
+                fontWeight = FontWeight.Bold,
+                fontSize = 10.sp,
+                lineHeight = 11.sp
+            )
+        }
+        Canvas(modifier = Modifier.size(width = 14.dp, height = 9.dp)) {
+            val punta = Path().apply {
+                moveTo(0f, 0f)
+                lineTo(size.width, 0f)
+                lineTo(size.width / 2f, size.height)
+                close()
+            }
+            drawPath(punta, borde)
+        }
+    }
+}
+
 // Marcador de una persona que comparte su ubicación: inicial en círculo violeta y su nombre
 @Composable
 fun PinPersona(nombre: String) {

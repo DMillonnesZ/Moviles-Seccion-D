@@ -73,7 +73,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.millones.campusgps.model.Evento
 import com.millones.campusgps.model.FiltroEventos
-import com.millones.campusgps.ui.componentes.AvisoTemporal
+import com.millones.campusgps.ui.componentes.AvisoFlotante
 import com.millones.campusgps.ui.componentes.BotonCampus
 import com.millones.campusgps.ui.componentes.BotonVidrio
 import com.millones.campusgps.ui.componentes.CampusColores
@@ -109,14 +109,15 @@ fun PantallaEventos() {
     val creando by vm.creando.collectAsState()
     val guardando by vm.guardando.collectAsState()
     val lugares by vm.lugares.collectAsState()
+    val resultados by vm.resultados.collectAsState()
+    val buscando by vm.buscando.collectAsState()
+    val busquedaHecha by vm.busquedaHecha.collectAsState()
 
     val abrirMenu = LocalAbrirMenu.current
     val relleno = LocalRellenoBarra.current
 
     var detalleId by rememberSaveable { mutableStateOf<String?>(null) }
     var porEliminar by remember { mutableStateOf<Evento?>(null) }
-    var avisoExito by remember { mutableStateOf(true) }
-    aviso?.let { avisoExito = it.exito }
 
     Scaffold(
         containerColor = CampusColores.AzulNoche,
@@ -217,14 +218,14 @@ fun PantallaEventos() {
                 }
             }
 
-            // ----- Aviso -----
-            Box(
+            // ----- Aviso en insignia flotante -----
+            AvisoFlotante(
+                aviso = aviso,
+                onOcultar = vm::limpiarAviso,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(start = 16.dp, end = 16.dp, top = espacio.calculateTopPadding() + 76.dp)
-            ) {
-                AvisoTemporal(mensaje = aviso?.texto, onOcultar = vm::limpiarAviso, exito = avisoExito)
-            }
+            )
         }
     }
 
@@ -234,7 +235,12 @@ fun PantallaEventos() {
             lugares = lugares,
             guardando = guardando,
             onPublicar = vm::crear,
-            onCancelar = vm::cerrarFormulario
+            onCancelar = vm::cerrarFormulario,
+            resultados = resultados,
+            buscando = buscando,
+            busquedaHecha = busquedaHecha,
+            onBuscar = vm::buscarUbicacion,
+            onLimpiarBusqueda = vm::limpiarBusqueda
         )
     }
 
@@ -517,9 +523,9 @@ private fun SinEventos(filtro: FiltroEventos, onCrear: () -> Unit, modifier: Mod
     }
 }
 
-// Detalle completo del evento
+// Detalle completo del evento (también se abre al tocar un evento en el mapa)
 @Composable
-private fun DetalleEvento(
+fun DetalleEvento(
     evento: Evento,
     onCerrar: () -> Unit,
     onAsistir: () -> Unit,

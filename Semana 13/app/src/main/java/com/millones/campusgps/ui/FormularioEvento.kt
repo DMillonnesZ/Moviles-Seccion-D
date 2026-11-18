@@ -34,6 +34,10 @@ import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Event
+import androidx.compose.material.icons.rounded.Map
+import androidx.compose.material.icons.rounded.Place
+import com.google.android.gms.maps.model.LatLng
+import java.util.Locale
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
@@ -70,6 +74,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.millones.campusgps.model.Lugar
+import com.millones.campusgps.model.ResultadoBusqueda
 import com.millones.campusgps.ui.componentes.BotonCampus
 import com.millones.campusgps.ui.componentes.CampoCampus
 import com.millones.campusgps.ui.componentes.CampusColores
@@ -81,19 +86,39 @@ import kotlinx.coroutines.withContext
 import java.util.Calendar
 import java.util.TimeZone
 
-// Formulario para publicar un evento: imagen, nombre, descripción, fecha, hora y lugar
+// Formulario para publicar un evento: imagen, nombre, descripción, fecha, hora y lugar.
+// El lugar es obligatorio: uno registrado o un punto elegido en el mapa (así se ve en el mapa).
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FormularioEvento(
     lugares: List<Lugar>,
     guardando: Boolean,
-    onPublicar: (titulo: String, descripcion: String, fecha: Long?, lugar: Lugar?, fotoUri: String?) -> Unit,
-    onCancelar: () -> Unit
+    onPublicar: (
+        titulo: String,
+        descripcion: String,
+        fecha: Long?,
+        lugarNombre: String,
+        latitud: Double?,
+        longitud: Double?,
+        fotoUri: String?
+    ) -> Unit,
+    onCancelar: () -> Unit,
+    // Búsqueda de ubicación del selector del mapa
+    resultados: List<ResultadoBusqueda>,
+    buscando: Boolean,
+    busquedaHecha: Boolean,
+    onBuscar: (texto: String, latitud: Double, longitud: Double, inmediato: Boolean) -> Unit,
+    onLimpiarBusqueda: () -> Unit
 ) {
     var titulo by rememberSaveable { mutableStateOf("") }
     var descripcion by rememberSaveable { mutableStateOf("") }
     var fotoUri by rememberSaveable { mutableStateOf<String?>(null) }
     var lugarId by rememberSaveable { mutableStateOf<String?>(null) }
+    // Punto elegido en el mapa (en lugar de un lugar registrado)
+    var puntoLat by rememberSaveable { mutableStateOf<Double?>(null) }
+    var puntoLng by rememberSaveable { mutableStateOf<Double?>(null) }
+    var nombrePunto by rememberSaveable { mutableStateOf("") }
+    var verSelector by remember { mutableStateOf(false) }
     // Día elegido (medianoche UTC, como lo da el DatePicker) y hora
     var diaUtc by rememberSaveable { mutableStateOf<Long?>(null) }
     var hora by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -214,7 +239,7 @@ fun FormularioEvento(
 
             Spacer(Modifier.height(16.dp))
 
-            // Lugar (de los registrados en el mapa)
+            // ----- ¿Dónde? (obligatorio: así el evento aparece en el mapa) -----
             Text(
                 text = "¿Dónde?",
                 color = Color.White.copy(alpha = 0.75f),
@@ -224,27 +249,57 @@ fun FormularioEvento(
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(8.dp))
-            if (lugares.isEmpty()) {
+
+            // Elegir un punto en el mapa
+            BotonDato(
+                icono = Icons.Rounded.Map,
+                texto = if (puntoLat != null && puntoLng != null) {
+                    "Punto: %.5f, %.5f".format(Locale.US, puntoLat, puntoLng)
+                } else {
+                    "Elegir en el mapa"
+                },
+                elegido = puntoLat != null,
+                onClick = { verSelector = true },
+                modifier = Modifier.fillMaxWidth()
+            )
+            if (puntoLat != null) {
+                Spacer(Modifier.height(10.dp))
+                CampoCampus(
+                    valor = nombrePunto,
+                    onValorChange = { nombrePunto = it },
+                    placeholder = "Nombre del lugar (ej. Patio central)",
+                    icono = Icons.Rounded.Place,
+                    habilitado = !guardando,
+                    alto = 52.dp
+                )
+            }
+
+            // O uno de los lugares registrados
+            if (lugares.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
                 Text(
-                    text = "Registra lugares en el mapa (mantén presionado) para elegirlos aquí.",
+                    text = "o un lugar registrado",
                     color = Color.White.copy(alpha = 0.5f),
                     fontFamily = FuenteCampus,
                     fontSize = 12.sp,
                     modifier = Modifier.fillMaxWidth()
                 )
-            } else {
+                Spacer(Modifier.height(6.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState())
                 ) {
-                    ChipLugar(texto = "Sin lugar", activo = lugarId == null, onClick = { lugarId = null })
                     lugares.forEach { lugar ->
                         ChipLugar(
                             texto = lugar.nombre,
                             activo = lugar.id == lugarId,
-                            onClick = { lugarId = lugar.id }
+                            onClick = {
+                                lugarId = lugar.id
+                                puntoLat = null
+                                puntoLng = null
+                            }
                         )
                     }
                 }
@@ -255,7 +310,20 @@ fun FormularioEvento(
             BotonCampus(
                 texto = "Publicar evento",
                 onClick = {
-                    onPublicar(titulo, descripcion, fecha, lugares.firstOrNull { it.id == lugarId }, fotoUri)
+                    val registrado = lugares.firstOrNull { it.id == lugarId }
+                    if (puntoLat != null && puntoLng != null) {
+                        onPublicar(
+                            titulo, descripcion, fecha,
+                            nombrePunto.trim().ifBlank { "Punto en el mapa" },
+                            puntoLat, puntoLng, fotoUri
+                        )
+                    } else {
+                        onPublicar(
+                            titulo, descripcion, fecha,
+                            registrado?.nombre.orEmpty(),
+                            registrado?.latitud, registrado?.longitud, fotoUri
+                        )
+                    }
                 },
                 cargando = guardando,
                 alto = 54.dp
@@ -273,6 +341,36 @@ fun FormularioEvento(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
         }
+    }
+
+    // ----- Elegir el punto en el mapa -----
+    if (verSelector) {
+        val inicio = when {
+            puntoLat != null && puntoLng != null -> LatLng(puntoLat!!, puntoLng!!)
+            lugares.isNotEmpty() -> LatLng(lugares.first().latitud, lugares.first().longitud)
+            else -> LatLng(-12.0464, -77.0428)
+        }
+        SelectorUbicacionMapa(
+            inicial = inicio,
+            resultados = resultados,
+            buscando = buscando,
+            busquedaHecha = busquedaHecha,
+            onBuscar = onBuscar,
+            onLimpiarBusqueda = onLimpiarBusqueda,
+            onElegir = { punto, nombre ->
+                puntoLat = punto.latitude
+                puntoLng = punto.longitude
+                // Si vino de la búsqueda, su nombre queda como nombre del lugar
+                if (nombre != null) nombrePunto = nombre
+                lugarId = null
+                verSelector = false
+                onLimpiarBusqueda()
+            },
+            onCancelar = {
+                verSelector = false
+                onLimpiarBusqueda()
+            }
+        )
     }
 
     // ----- Calendario -----

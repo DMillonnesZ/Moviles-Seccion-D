@@ -18,6 +18,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.millones.campusgps.model.Posicion
+import com.millones.campusgps.model.ResultadoBusqueda
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
@@ -88,6 +89,64 @@ class UbicacionRepositoryGoogle(private val context: Context) : UbicacionReposit
             }
             direcciones.firstOrNull()?.let(::textoCalle)
         }.getOrNull()
+    }
+
+    // Búsqueda por nombre con el Geocoder (gratis, sin API key). Con "cerca" se limita a un
+    // recuadro de ~30 km alrededor para que "biblioteca" no devuelva una de otro país.
+    override suspend fun buscarDirecciones(texto: String, cerca: Posicion?): List<ResultadoBusqueda> =
+        withContext(Dispatchers.IO) {
+            if (!Geocoder.isPresent() || texto.isBlank()) return@withContext emptyList()
+            runCatching {
+                val geocoder = Geocoder(context, Locale.forLanguageTag("es-PE"))
+                val margen = 0.3
+                val direcciones: List<Address> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    suspendCancellableCoroutine { continuacion ->
+                        val oyente = object : Geocoder.GeocodeListener {
+                            override fun onGeocode(lista: MutableList<Address>) {
+                                if (continuacion.isActive) continuacion.resume(lista)
+                            }
+
+                            override fun onError(mensaje: String?) {
+                                if (continuacion.isActive) continuacion.resume(emptyList())
+                            }
+                        }
+                        if (cerca != null) {
+                            geocoder.getFromLocationName(
+                                texto, MAX_RESULTADOS,
+                                cerca.latitud - margen, cerca.longitud - margen,
+                                cerca.latitud + margen, cerca.longitud + margen,
+                                oyente
+                            )
+                        } else {
+                            geocoder.getFromLocationName(texto, MAX_RESULTADOS, oyente)
+                        }
+                    }
+                } else {
+                    @Suppress("DEPRECATION")
+                    if (cerca != null) {
+                        geocoder.getFromLocationName(
+                            texto, MAX_RESULTADOS,
+                            cerca.latitud - margen, cerca.longitud - margen,
+                            cerca.latitud + margen, cerca.longitud + margen
+                        ).orEmpty()
+                    } else {
+                        geocoder.getFromLocationName(texto, MAX_RESULTADOS).orEmpty()
+                    }
+                }
+                direcciones.map { direccion ->
+                    ResultadoBusqueda(
+                        titulo = textoCalle(direccion) ?: direccion.featureName ?: texto,
+                        detalle = direccion.getAddressLine(0).orEmpty(),
+                        latitud = direccion.latitude,
+                        longitud = direccion.longitude,
+                        esLugarRegistrado = false
+                    )
+                }
+            }.getOrDefault(emptyList())
+        }
+
+    private companion object {
+        const val MAX_RESULTADOS = 5
     }
 
     // "Calle Número"; si no hay calle, la primera parte de la dirección completa

@@ -24,6 +24,8 @@ import com.millones.campusgps.R
 import com.millones.campusgps.model.BorradorLugar
 import com.millones.campusgps.model.LugarConDistancia
 import com.millones.campusgps.model.PersonaEnVivo
+import com.millones.campusgps.model.Evento
+import com.millones.campusgps.ui.componentes.PinEvento
 import com.millones.campusgps.ui.componentes.PinPersona
 import com.millones.campusgps.model.Posicion
 import com.millones.campusgps.model.UbicacionUi
@@ -51,12 +53,14 @@ fun MapaUbicacion(
     posicion: Posicion?,
     lugares: List<LugarConDistancia>,
     personas: List<PersonaEnVivo>,
+    eventos: List<Evento>,
     lugarActualId: String?,
     seleccionado: String?,
     borrador: BorradorLugar?,
     camara: CameraPositionState,
     onMantenerPresionado: (LatLng) -> Unit,
     onTocarLugar: (String) -> Unit,
+    onTocarEvento: (String) -> Unit,
     modifier: Modifier = Modifier,
     // Espacio que tapan la cabecera, el panel y la barra: así la cámara centra en la zona visible
     contentPadding: PaddingValues = PaddingValues()
@@ -128,6 +132,28 @@ fun MapaUbicacion(
                 icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET),
                 zIndex = 3f
             )
+        }
+
+        // Eventos próximos: recuadro violeta con el día (borde menta si asistirás)
+        eventos.forEach { evento ->
+            val latitud = evento.latitud ?: return@forEach
+            val longitud = evento.longitud ?: return@forEach
+            key("evento_${evento.id}") {
+                val dia = formatearFecha(evento.fecha, "d")
+                val mes = formatearFecha(evento.fecha, "MMM").uppercase().take(3)
+                MarkerComposable(
+                    evento.id, dia, mes, evento.asisto,
+                    state = rememberUpdatedMarkerState(position = LatLng(latitud, longitud)),
+                    title = evento.titulo,
+                    zIndex = 3f,
+                    onClick = {
+                        onTocarEvento(evento.id)
+                        true
+                    }
+                ) {
+                    PinEvento(dia = dia, mes = mes, asisto = evento.asisto)
+                }
+            }
         }
 
         // Personas que comparten su ubicación en vivo: círculo con su inicial y su nombre

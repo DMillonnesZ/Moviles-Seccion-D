@@ -62,6 +62,15 @@ enum class FiltroEventos(val etiqueta: String) {
     ASISTIRE("Asistiré")
 }
 
+// Resultado al buscar una ubicación por nombre (lugar registrado o dirección del Geocoder)
+data class ResultadoBusqueda(
+    val titulo: String,
+    val detalle: String,
+    val latitud: Double,
+    val longitud: Double,
+    val esLugarRegistrado: Boolean
+)
+
 // Categorías que se pueden elegir al guardar un lugar
 val CATEGORIAS_LUGAR = listOf("Estudio", "Comida", "Eventos", "Servicios", "Otro")
 
