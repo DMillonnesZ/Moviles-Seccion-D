@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Android 12 o superior siempre muestra el splash del sistema (con el ícono de la app).
+         Se le pone el mismo azul noche para que empalme con el splash animado de Compose. -->
+    <style name="Theme.CampusGPS" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/azul_noche</item>
+        <item name="android:windowSplashScreenBackground">@color/azul_noche</item>
+    </style>
+</resources>

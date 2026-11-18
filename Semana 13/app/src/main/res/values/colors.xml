@@ -7,4 +7,6 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <!-- Fondo de la ventana y del splash del sistema (igual a CampusColores.AzulProfundo) -->
+    <color name="azul_noche">#FF0A1F44</color>
 </resources>
