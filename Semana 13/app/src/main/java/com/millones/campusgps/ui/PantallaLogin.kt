@@ -15,7 +15,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Email
-import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,7 +34,7 @@ import com.millones.campusgps.ui.componentes.SeparadorO
 import com.millones.campusgps.ui.componentes.rememberAccesoGoogle
 import com.millones.campusgps.ui.componentes.BotonCampus
 import com.millones.campusgps.ui.componentes.CampoCampus
-import com.millones.campusgps.ui.componentes.CampusColores
+import com.millones.campusgps.ui.componentes.CianCampus
 import com.millones.campusgps.ui.componentes.EncabezadoTarjeta
 import com.millones.campusgps.ui.componentes.EnlaceCampus
 import com.millones.campusgps.ui.componentes.EntradaSuave
@@ -47,7 +46,7 @@ import com.millones.campusgps.ui.componentes.TarjetaAuth
 import com.millones.campusgps.ui.componentes.sacudida
 import com.millones.campusgps.viewmodel.LoginViewModel
 
-// Login: nombre de la app, tarjeta blanca con el formulario y enlace transparente abajo.
+// Login: nombre de la app y tarjeta de vidrio con el formulario y el enlace al registro.
 // Cada pieza entra con su retraso (como en la PokeDex). El Scaffold deja libre la cámara.
 @Composable
 fun PantallaLogin(
@@ -120,7 +119,7 @@ fun PantallaLogin(
                                     valor = estado.clave,
                                     onValorChange = vm::onClaveChange,
                                     placeholder = "Contraseña",
-                                    icono = Icons.Rounded.Lock,
+                                    icono = null,   // como el diseño: la contraseña va sin ícono
                                     esClave = true,
                                     habilitado = !estado.cargando
                                 )
@@ -138,7 +137,7 @@ fun PantallaLogin(
                             ) {
                                 Text(
                                     text = "¿Olvidaste tu contraseña?",
-                                    color = CampusColores.AzulPrimario,
+                                    color = CianCampus,
                                     fontFamily = FuenteCampus,
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 14.sp,
@@ -167,15 +166,17 @@ fun PantallaLogin(
                                     habilitado = !ocupado
                                 )
                             }
-                        }
-                    }
 
-                    EntradaSuave(retrasoMs = 650L) {
-                        EnlaceCampus(
-                            pregunta = "¿No tienes cuenta?",
-                            accion = "Regístrate",
-                            onClick = onRegistro
-                        )
+                            // Enlace al registro dentro de la tarjeta
+                            EntradaSuave(retrasoMs = 650L) {
+                                EnlaceCampus(
+                                    pregunta = "¿No tienes cuenta?",
+                                    accion = "Regístrate",
+                                    onClick = onRegistro,
+                                    sinFondo = true
+                                )
+                            }
+                        }
                     }
                 }
             }

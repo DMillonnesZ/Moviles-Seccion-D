@@ -51,6 +51,7 @@ import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Visibility
@@ -106,6 +107,19 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlin.math.acos
+import kotlin.math.roundToInt
+import android.os.Build
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.Constraints
+
+// Cian de los acentos sobre el vidrio (foco de los campos y "¿Olvidaste tu contraseña?")
+val CianCampus = Color(0xFF5CE1E6)
 
 // ---------------------------------------------------------------------------
 // Componentes de las pantallas de acceso (equivalen a Madera.kt de la PokeDex)
@@ -138,19 +152,24 @@ fun EntradaSuave(
 // compacto = true: más pequeño y sin la frase (pantallas con muchos campos, como el registro)
 @Composable
 fun LogoCampus(compacto: Boolean = false) {
-    // Zona libre: la ruta del fondo rodea este bloque y no pasa sobre las letras
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.marcarZonaLibre()
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            // El pin es el destino de la ruta del fondo
-            LogoGps(
-                tamano = if (compacto) 40.dp else 50.dp,
-                modifier = Modifier.marcarDestino()
-            )
-            Spacer(Modifier.width(if (compacto) 10.dp else 12.dp))
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        // El nombre queda centrado (alineado con la frase de abajo) y el pin se cuelga
+        // a su izquierda sin ocupar ancho, así no empuja el nombre hacia un lado
+        val separacion = if (compacto) 4.dp else 6.dp
+        Box(contentAlignment = Alignment.Center) {
             NombreCampus(fontSize = if (compacto) 32.sp else 40.sp)
+            LogoGps(
+                tamano = if (compacto) 48.dp else 60.dp,
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .layout { medible, restricciones ->
+                        val pin = medible.measure(restricciones.copy(minWidth = 0, minHeight = 0))
+                        // Ancho 0: el Box solo mide el nombre
+                        layout(0, pin.height) {
+                            pin.place(-pin.width - separacion.roundToPx(), 0)
+                        }
+                    }
+            )
         }
         if (!compacto) {
             Spacer(Modifier.height(6.dp))
@@ -170,8 +189,11 @@ fun LogoCampus(compacto: Boolean = false) {
 fun NombreCampus(fontSize: TextUnit) {
     Text(
         text = buildAnnotatedString {
-            withStyle(SpanStyle(brush = brushBicolor(Color.White, Color(0xFFD3EBFF)))) { append("Campus") }
-            withStyle(SpanStyle(brush = brushBicolor(CampusColores.VerdeMenta, Color(0xFF8FE3F5)))) { append("GPS") }
+            // "Campus" blanco limpio y "GPS" con degradado menta -> turquesa (como el diseño)
+            withStyle(SpanStyle(color = Color.White)) { append("Campus") }
+            withStyle(
+                SpanStyle(brush = Brush.horizontalGradient(listOf(Color(0xFF7BF1C8), Color(0xFF34D3C4))))
+            ) { append("GPS") }
         },
         style = TextStyle(
             fontFamily = FuenteCampus,
@@ -179,10 +201,10 @@ fun NombreCampus(fontSize: TextUnit) {
             fontWeight = FontWeight.ExtraBold,
             letterSpacing = (-0.5).sp,
             // Resplandor celeste difuminado detrás de las letras
-            shadow = Shadow(color = CampusColores.AzulCielo.copy(alpha = 0.55f), offset = Offset.Zero, blurRadius = 22f)
+            shadow = Shadow(color = CampusColores.AzulCielo.copy(alpha = 0.25f), offset = Offset.Zero, blurRadius = 14f)
         ),
         // Brillo suave y lento
-        modifier = Modifier.brilloRecorrido(intensidad = 0.3f, duracionMs = 4500)
+        modifier = Modifier.brilloRecorrido(intensidad = 0.2f, duracionMs = 5000)
     )
 }
 
@@ -294,7 +316,9 @@ fun LogoGps(
     }
 }
 
-// Tarjeta blanca donde va el formulario (se conserva la idea del diseño anterior)
+// Tarjeta de vidrio esmerilado donde va el formulario: detrás dibuja la misma parte del fondo
+// pero desenfocada (Android 12+), con un tinte azul translúcido y borde blanco fino.
+// En Android 11 o menos no hay desenfoque: el tinte se vuelve más oscuro para que se lea.
 // compacta = true: menos espacio entre elementos y menos relleno (registro)
 @Composable
 fun TarjetaAuth(
@@ -302,18 +326,62 @@ fun TarjetaAuth(
     compacta: Boolean = false,
     contenido: @Composable ColumnScope.() -> Unit
 ) {
-    val forma = RoundedCornerShape(32.dp)
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(if (compacta) 10.dp else 16.dp),
+    val forma = RoundedCornerShape(30.dp)
+    val fondo = LocalFondoAuth.current
+    val conDesenfoque = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    // Posición de la tarjeta dentro del fondo (para recortar la misma zona)
+    var desfase by remember { mutableStateOf(Offset.Zero) }
+
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(24.dp, forma, ambientColor = CampusColores.AzulNoche, spotColor = CampusColores.AzulNoche)
+            .onGloballyPositioned { tarjeta ->
+                val base = fondo?.coordenadas
+                if (base != null && base.isAttached && tarjeta.isAttached) {
+                    desfase = base.localPositionOf(tarjeta, Offset.Zero)
+                }
+            }
             .clip(forma)
-            .background(Color.White)
-            .padding(horizontal = 24.dp, vertical = if (compacta) 20.dp else 28.dp),
-        content = contenido
-    )
+    ) {
+        val tamanoFondo = fondo?.coordenadas?.size
+        if (conDesenfoque && tamanoFondo != null) {
+            Box(modifier = Modifier.matchParentSize()) {
+                CapaFondoAuth(
+                    Modifier
+                        .layout { medible, restricciones ->
+                            val capa = medible.measure(
+                                Constraints.fixed(tamanoFondo.width, tamanoFondo.height)
+                            )
+                            layout(restricciones.maxWidth, restricciones.maxHeight) {
+                                capa.place(-desfase.x.roundToInt(), -desfase.y.roundToInt())
+                            }
+                        }
+                        .blur(26.dp)
+                )
+            }
+        }
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(if (compacta) 10.dp else 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF14295A).copy(alpha = if (conDesenfoque) 0.30f else 0.62f))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = 0.16f), Color.White.copy(alpha = 0.05f))
+                    )
+                )
+                .border(
+                    1.2.dp,
+                    Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = 0.45f), Color.White.copy(alpha = 0.12f))
+                    ),
+                    forma
+                )
+                .padding(horizontal = 24.dp, vertical = if (compacta) 20.dp else 28.dp),
+            content = contenido
+        )
+    }
 }
 
 // Encabezado de la tarjeta: título de color partido y descripción
@@ -323,15 +391,17 @@ fun EncabezadoTarjeta(titulo: String, descripcion: String, compacto: Boolean = f
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(if (compacto) 2.dp else 6.dp)
     ) {
-        TextoBicolor(
-            texto = titulo,
-            arriba = CampusColores.AzulProfundo,
-            abajo = CampusColores.AzulPrimario,
-            fontSize = if (compacto) 23.sp else 26.sp
+        Text(
+            text = titulo,
+            color = Color.White,
+            fontFamily = FuenteCampus,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = if (compacto) 23.sp else 26.sp,
+            textAlign = TextAlign.Center
         )
         Text(
             text = descripcion,
-            color = CampusColores.TextoSecundario,
+            color = Color.White.copy(alpha = 0.80f),
             fontFamily = FuenteCampus,
             fontSize = 14.sp,
             lineHeight = 20.sp,
@@ -413,7 +483,7 @@ fun CampoCampus(
     valor: String,
     onValorChange: (String) -> Unit,
     placeholder: String,
-    icono: ImageVector,
+    icono: ImageVector?,          // null = sin ícono (como la contraseña del login)
     esClave: Boolean = false,
     tipoTeclado: KeyboardType = KeyboardType.Text,
     habilitado: Boolean = true,
@@ -441,14 +511,19 @@ fun CampoCampus(
     }
 
     val colorBorde by animateColorAsState(
-        targetValue = if (enfocado) CampusColores.AzulCielo else CampusColores.Borde,
+        targetValue = if (enfocado) CianCampus else Color.White.copy(alpha = 0.22f),
         animationSpec = tween(250),
         label = "bordeCampo"
     )
     val colorIcono by animateColorAsState(
-        targetValue = if (enfocado) CampusColores.AzulPrimario else CampusColores.TextoSecundario,
+        targetValue = if (enfocado) CianCampus else Color.White.copy(alpha = 0.85f),
         animationSpec = tween(250),
         label = "iconoCampo"
+    )
+    val colorRelleno by animateColorAsState(
+        targetValue = if (enfocado) CianCampus.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.07f),
+        animationSpec = tween(250),
+        label = "rellenoCampo"
     )
     // 0 = etiqueta dentro como texto guía, 1 = etiqueta arriba y pequeña
     val etiquetaArriba by animateFloatAsState(
@@ -463,22 +538,29 @@ fun CampoCampus(
         modifier = Modifier
             .fillMaxWidth()
             .height(alto)
-            .shadow(if (enfocado) 6.dp else 0.dp, forma, ambientColor = CampusColores.AzulCielo, spotColor = CampusColores.AzulCielo)
+            // Halo cian alrededor del campo enfocado
+            .drawBehind {
+                if (enfocado) {
+                    val halo = 3.dp.toPx()
+                    drawRoundRect(
+                        color = CianCampus.copy(alpha = 0.28f),
+                        topLeft = Offset(-halo, -halo),
+                        size = Size(size.width + halo * 2, size.height + halo * 2),
+                        cornerRadius = CornerRadius(21.dp.toPx()),
+                        style = Stroke(width = halo * 1.4f)
+                    )
+                }
+            }
             .clip(forma)
-            .background(CampusColores.Superficie)
+            .background(colorRelleno)
             .border(1.5.dp, colorBorde, forma)
-            .padding(start = 8.dp, end = 16.dp)
+            .padding(start = 18.dp, end = 16.dp)
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(colorIcono.copy(alpha = 0.12f))
-        ) {
-            Icon(icono, contentDescription = null, tint = colorIcono, modifier = Modifier.size(20.dp))
+        // Ícono suelto, sin círculo detrás
+        if (icono != null) {
+            Icon(icono, contentDescription = null, tint = colorIcono, modifier = Modifier.size(22.dp))
+            Spacer(Modifier.width(14.dp))
         }
-        Spacer(Modifier.width(12.dp))
         BasicTextField(
             state = estadoTexto,
             enabled = habilitado,
@@ -486,11 +568,11 @@ fun CampoCampus(
             scrollState = desplazamiento,
             interactionSource = interaccion,
             textStyle = TextStyle(
-                color = CampusColores.TextoOscuro,
+                color = Color.White,
                 fontFamily = FuenteCampus,
                 fontSize = 16.sp
             ),
-            cursorBrush = SolidColor(CampusColores.AzulPrimario),
+            cursorBrush = SolidColor(CianCampus),
             outputTransformation = if (esClave && !verClave) OcultarClave else null,
             keyboardOptions = KeyboardOptions(
                 keyboardType = if (esClave) KeyboardType.Password else tipoTeclado
@@ -510,7 +592,7 @@ fun CampoCampus(
                     // Etiqueta flotante: sube y se achica cuando hay foco o texto
                     Text(
                         text = placeholder,
-                        color = if (etiquetaArriba > 0.5f) colorIcono else CampusColores.TextoSecundario.copy(alpha = 0.8f),
+                        color = if (etiquetaArriba > 0.5f) colorIcono else Color.White.copy(alpha = 0.85f),
                         fontFamily = FuenteCampus,
                         fontSize = 16.sp,
                         maxLines = 1,
@@ -543,7 +625,7 @@ fun CampoCampus(
             Icon(
                 imageVector = Icons.Rounded.CheckCircle,
                 contentDescription = "Dato válido",
-                tint = CampusColores.Exito,
+                tint = CampusColores.VerdeMenta,
                 modifier = Modifier
                     .padding(start = 8.dp)
                     .size(20.dp)
@@ -591,7 +673,7 @@ fun BarraFuerzaClave(nivel: Int) {
                         .weight(1f)
                         .height(6.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(if (i < nivel) color else CampusColores.Borde)
+                        .background(if (i < nivel) color else Color.White.copy(alpha = 0.18f))
                 )
                 if (i < 2) Spacer(Modifier.width(4.dp))
             }
@@ -604,7 +686,7 @@ fun BarraFuerzaClave(nivel: Int) {
                 fontSize = 13.sp,
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .background(color.copy(alpha = 0.12f))
+                    .background(color.copy(alpha = 0.20f))
                     .padding(horizontal = 8.dp, vertical = 1.dp)
             )
         }
@@ -641,11 +723,40 @@ fun BotonCampus(
 ) {
     val interaccion = remember { MutableInteractionSource() }
     val presionado by interaccion.collectIsPressedAsState()
+    val encima by interaccion.collectIsHoveredAsState()   // mouse encima (emulador / tablet)
+    val activo = presionado || encima
     val escala by animateFloatAsState(
-        targetValue = if (presionado) 0.95f else 1f,
+        targetValue = when {
+            presionado -> 0.96f
+            encima -> 1.02f
+            else -> 1f
+        },
         animationSpec = spring(dampingRatio = 0.5f),
         label = "escalaBoton"
     )
+    val resplandor by animateDpAsState(
+        targetValue = if (activo) 26.dp else 16.dp,
+        animationSpec = tween(250),
+        label = "resplandorBoton"
+    )
+
+    // Brillo diagonal que cruza el botón: al pasar por encima / tocarlo y cada pocos segundos
+    val brillo = remember { Animatable(1.3f) }   // fuera del botón = sin brillo
+    LaunchedEffect(activo) {
+        if (activo) {
+            brillo.snapTo(-0.3f)
+            brillo.animateTo(1.3f, tween(650, easing = FastOutSlowInEasing))
+        }
+    }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(4000)
+            if (!brillo.isRunning) {
+                brillo.snapTo(-0.3f)
+                brillo.animateTo(1.3f, tween(1000, easing = FastOutSlowInEasing))
+            }
+        }
+    }
 
     BoxWithConstraints(
         contentAlignment = Alignment.Center,
@@ -657,7 +768,7 @@ fun BotonCampus(
             label = "anchoBoton"
         )
         val esquina by animateDpAsState(
-            targetValue = if (cargando) alto / 2 else 20.dp,
+            targetValue = if (cargando) alto / 2 else 16.dp,
             animationSpec = tween(380, easing = FastOutSlowInEasing),
             label = "esquinaBoton"
         )
@@ -672,10 +783,38 @@ fun BotonCampus(
                     scaleX = escala
                     scaleY = escala
                 }
-                .shadow(12.dp, forma, ambientColor = CampusColores.AzulCielo, spotColor = CampusColores.AzulCielo)
+                // Resplandor azul alrededor del botón (crece al pasar por encima)
+                .shadow(resplandor, forma, ambientColor = Color(0xFF3B82F6), spotColor = Color(0xFF3B82F6))
                 .clip(forma)
-                .background(DegradadosCampus.Primario)
-                .border(1.5.dp, Color.White.copy(alpha = 0.35f), forma)
+                .background(Brush.horizontalGradient(listOf(Color(0xFF2563EB), Color(0xFF3B8BFF))))
+                // Luz suave arriba, como el vidrio del diseño
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = 0.18f), Color.Transparent)
+                    )
+                )
+                .border(1.dp, Color.White.copy(alpha = 0.30f), forma)
+                .drawWithContent {
+                    drawContent()
+                    if (!cargando) {
+                        val x = size.width * brillo.value
+                        val banda = size.width * 0.18f
+                        drawRect(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.White.copy(alpha = 0.45f),
+                                    Color.Transparent
+                                ),
+                                start = Offset(x - banda, 0f),
+                                end = Offset(x + banda, size.height)
+                            )
+                        )
+                    }
+                    // Se aclara un poco mientras está encima o presionado
+                    if (activo) drawRect(Color.White.copy(alpha = 0.08f))
+                }
+                .hoverable(interaccion)
                 .clickable(interactionSource = interaccion, indication = null, enabled = !cargando, onClick = onClick)
         ) {
             if (cargando) {
@@ -685,7 +824,7 @@ fun BotonCampus(
                     text = texto,
                     color = Color.White,
                     fontFamily = FuenteCampus,
-                    fontSize = 18.sp,
+                    fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     softWrap = false
@@ -695,50 +834,67 @@ fun BotonCampus(
     }
 }
 
-// Píldora con pregunta + enlace (EnlaceMadera de la PokeDex)
+// Pregunta + enlace (EnlaceMadera de la PokeDex).
+// sinFondo = true: solo texto, para ir dentro de la tarjeta de vidrio (login)
 @Composable
 fun EnlaceCampus(
     pregunta: String,
     accion: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    sinFondo: Boolean = false
 ) {
     val forma = RoundedCornerShape(50)
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .clip(forma)
-            .background(Color.White.copy(alpha = 0.10f))
-            .border(1.dp, Color.White.copy(alpha = 0.22f), forma)
-            .padding(horizontal = 20.dp, vertical = 12.dp)
+        modifier = if (sinFondo) {
+            Modifier.padding(vertical = 4.dp)
+        } else {
+            Modifier
+                .clip(forma)
+                .background(Color.White.copy(alpha = 0.10f))
+                .border(1.dp, Color.White.copy(alpha = 0.22f), forma)
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+        }
     ) {
         Text(
             text = "$pregunta ",
-            color = Color.White.copy(alpha = 0.85f),
+            color = Color.White.copy(alpha = 0.75f),
             fontFamily = FuenteCampus,
             fontSize = 15.sp
         )
-        Text(
-            text = accion,
-            color = CampusColores.VerdeMenta,
-            fontFamily = FuenteCampus,
-            fontWeight = FontWeight.Bold,
-            fontSize = 15.sp,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.clickable(onClick = onClick)
-        )
+        ) {
+            Text(
+                text = accion,
+                color = CampusColores.VerdeMenta,
+                fontFamily = FuenteCampus,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp
+            )
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = CampusColores.VerdeMenta,
+                modifier = Modifier.size(18.dp)
+            )
+        }
     }
 }
 
 // Aviso en píldora blanca con ícono: rojo si es error, verde si es éxito
 @Composable
 fun MensajeAviso(texto: String, exito: Boolean = false) {
-    val color = if (exito) CampusColores.Exito else CampusColores.Error
+    // Tonos claros para que se lean sobre el vidrio oscuro
+    val color = if (exito) CampusColores.VerdeMenta else Color(0xFFFF8A8A)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(color.copy(alpha = 0.10f))
-            .border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
+            .background(color.copy(alpha = 0.14f))
+            .border(1.dp, color.copy(alpha = 0.40f), RoundedCornerShape(16.dp))
             .padding(horizontal = 16.dp, vertical = 11.dp)
     ) {
         Icon(

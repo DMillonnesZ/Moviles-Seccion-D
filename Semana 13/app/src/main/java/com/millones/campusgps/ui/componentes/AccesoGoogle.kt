@@ -8,6 +8,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.hoverable
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -135,25 +139,26 @@ fun SeparadorO() {
             modifier = Modifier
                 .weight(1f)
                 .height(1.dp)
-                .background(CampusColores.Borde)
+                .background(Color.White.copy(alpha = 0.20f))
         )
         Text(
             text = "o",
-            color = CampusColores.TextoSecundario,
+            color = Color.White.copy(alpha = 0.75f),
             fontFamily = FuenteCampus,
             fontSize = 14.sp,
-            modifier = Modifier.padding(horizontal = 12.dp)
+            modifier = Modifier.padding(horizontal = 14.dp)
         )
         Box(
             modifier = Modifier
                 .weight(1f)
                 .height(1.dp)
-                .background(CampusColores.Borde)
+                .background(Color.White.copy(alpha = 0.20f))
         )
     }
 }
 
-// Botón blanco "Continuar con Google" con el logo oficial (res/drawable/ic_google)
+// Botón de vidrio "Continuar con Google" con el logo oficial (res/drawable/ic_google):
+// transparente con borde blanco; se aclara al pasar por encima o al tocarlo
 @Composable
 fun BotonGoogle(
     onClick: () -> Unit,
@@ -163,12 +168,22 @@ fun BotonGoogle(
 ) {
     val interaccion = remember { MutableInteractionSource() }
     val presionado by interaccion.collectIsPressedAsState()
+    val encima by interaccion.collectIsHoveredAsState()
     val escala by animateFloatAsState(
-        targetValue = if (presionado) 0.96f else 1f,
+        targetValue = when {
+            presionado -> 0.96f
+            encima -> 1.02f
+            else -> 1f
+        },
         animationSpec = spring(dampingRatio = 0.5f),
         label = "escalaGoogle"
     )
-    val forma = RoundedCornerShape(20.dp)
+    val relleno by animateColorAsState(
+        targetValue = if (presionado || encima) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.05f),
+        animationSpec = tween(200),
+        label = "rellenoGoogle"
+    )
+    val forma = RoundedCornerShape(16.dp)
 
     Box(
         contentAlignment = Alignment.Center,
@@ -181,8 +196,9 @@ fun BotonGoogle(
             }
             .alpha(if (habilitado || cargando) 1f else 0.5f)
             .clip(forma)
-            .background(Color.White)
-            .border(1.5.dp, CampusColores.Borde, forma)
+            .background(relleno)
+            .border(1.2.dp, Color.White.copy(alpha = 0.40f), forma)
+            .hoverable(interaccion)
             .clickable(
                 interactionSource = interaccion,
                 indication = null,
@@ -192,7 +208,7 @@ fun BotonGoogle(
     ) {
         if (cargando) {
             CircularProgressIndicator(
-                color = CampusColores.AzulPrimario,
+                color = Color.White,
                 strokeWidth = 2.5.dp,
                 modifier = Modifier.size(24.dp)
             )
@@ -206,7 +222,7 @@ fun BotonGoogle(
                 Spacer(Modifier.width(12.dp))
                 Text(
                     text = "Continuar con Google",
-                    color = CampusColores.TextoOscuro,
+                    color = Color.White,
                     fontFamily = FuenteCampus,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp
