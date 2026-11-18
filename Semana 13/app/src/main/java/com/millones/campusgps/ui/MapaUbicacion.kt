@@ -26,6 +26,9 @@ fun MapaUbicacion(
         position = CameraPosition.fromLatLngZoom(LatLng(-12.0464, -77.0428), 12f)
     }
 
+    // Id del lugar más cercano: el primero con distancia calculada
+    val masCercanoId = lugares.firstOrNull { it.metros != null }?.lugar?.id
+
     LaunchedEffect(estado) {
         if (estado is UbicacionUi.Lista) {
             camara.animate(
@@ -75,7 +78,10 @@ fun MapaUbicacion(
                     state = markerState,
                     title = item.lugar.nombre,
                     snippet = item.lugar.categoria,
-                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                    icon = BitmapDescriptorFactory.defaultMarker(
+                        if (item.lugar.id == masCercanoId) BitmapDescriptorFactory.HUE_GREEN
+                        else BitmapDescriptorFactory.HUE_AZURE
+                    )
                 )
             }
         }

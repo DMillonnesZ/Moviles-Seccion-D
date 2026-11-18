@@ -28,11 +28,13 @@ import com.millones.campusgps.model.LugarConDistancia
 import com.millones.campusgps.util.formatearDistancia
 
 private val AzulCampus = Color(0xFF1B6DA8)
+private val VerdeMasCercano = Color(0xFF2E9E4F)
 
 @Composable
 fun ListaLugares(
     lugares: List<LugarConDistancia>,
     seleccionado: Int?,
+    masCercanoId: Int?,
     onClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -42,6 +44,7 @@ fun ListaLugares(
     ) {
         items(lugares, key = { it.lugar.id }) { item ->
             val esSeleccionado = item.lugar.id == seleccionado
+            val esMasCercano = item.lugar.id == masCercanoId
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -60,7 +63,10 @@ fun ListaLugares(
                     Box(
                         modifier = Modifier
                             .size(8.dp)
-                            .background(AzulCampus, CircleShape)
+                            .background(
+                                if (esMasCercano) VerdeMasCercano else AzulCampus,
+                                CircleShape
+                            )
                     )
                     Spacer(modifier = Modifier.size(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
