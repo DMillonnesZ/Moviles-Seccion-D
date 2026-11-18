@@ -276,12 +276,7 @@ fun NavegacionApp(authVm: AuthViewModel) {
                                 PantallaMapa()
                             }
                             composable(Rutas.EVENTOS) {
-                                PantallaProximamente(
-                                    titulo = "Eventos",
-                                    subtitulo = "Lo que pasa en el campus",
-                                    icono = Icons.Rounded.Event,
-                                    mensaje = "Aquí verás los eventos del campus con su imagen y descripción."
-                                )
+                                PantallaEventos()
                             }
                             composable(Rutas.CHAT) {
                                 PantallaProximamente(
