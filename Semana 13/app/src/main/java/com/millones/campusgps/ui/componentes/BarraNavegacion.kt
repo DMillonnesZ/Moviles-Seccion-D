@@ -63,11 +63,14 @@ val ALTO_BARRA_TOTAL: Dp = 92.dp
 // Espacio que deben dejar abajo las pantallas (0 cuando la barra está oculta)
 val LocalRellenoBarra = staticCompositionLocalOf { 0.dp }
 
-// Una pestaña de la barra; insignia = número sobre el ícono (0 = ninguna)
+// Una pestaña de la barra; insignia = número sobre el ícono (0 = ninguna).
+// descripcion y color se usan en el menú lateral.
 data class ItemBarra(
     val etiqueta: String,
     val icono: ImageVector,
-    val insignia: Int = 0
+    val insignia: Int = 0,
+    val descripcion: String = "",
+    val color: Color = CampusColores.AzulCielo
 )
 
 // Barra flotante azul noche con una pastilla y una línea menta que se deslizan a la pestaña activa.
@@ -84,14 +87,15 @@ fun BarraNavegacion(
         modifier = modifier
             .fillMaxWidth()
             .height(72.dp)
-            .shadow(18.dp, forma, ambientColor = CampusColores.AzulProfundo, spotColor = CampusColores.AzulProfundo)
+            .shadow(18.dp, forma, ambientColor = Color.Black, spotColor = Color.Black)
             .clip(forma)
-            .background(DegradadosCampus.Noche)
-            .border(
-                1.dp,
-                Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.25f), Color.White.copy(alpha = 0.04f))),
-                forma
+            // Vidrio oscuro, igual que el panel del mapa
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF13285A).copy(alpha = 0.92f), VidrioMapa.FondoSolido.copy(alpha = 0.95f))
+                )
             )
+            .border(1.dp, VidrioMapa.Borde, forma)
             // Bloquea los toques para que no lleguen al mapa de atrás
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { }
     ) {
@@ -116,7 +120,8 @@ fun BarraNavegacion(
                     .width(anchoItem * 0.84f)
                     .height(altoBarra - 18.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .background(Color.White.copy(alpha = 0.08f))
+                    .background(VidrioMapa.Cian.copy(alpha = 0.12f))
+                    .border(1.dp, VidrioMapa.Cian.copy(alpha = 0.45f), RoundedCornerShape(20.dp))
             )
 
             // Línea menta con resplandor bajo la pestaña activa

@@ -3,8 +3,10 @@ package com.millones.campusgps.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.millones.campusgps.data.LugaresRepositoryLocal
+import com.millones.campusgps.data.AlmacenFotos
+import com.millones.campusgps.data.LugaresRepositoryRoom
 import com.millones.campusgps.data.UbicacionRepositoryGoogle
+import com.millones.campusgps.data.local.CampusDatabase
 
 class CampusViewModelFactory(context: Context) : ViewModelProvider.Factory {
 
@@ -18,7 +20,10 @@ class CampusViewModelFactory(context: Context) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         return MapaViewModel(
             UbicacionRepositoryGoogle(appContext),
-            LugaresRepositoryLocal()
+            LugaresRepositoryRoom(
+                dao = CampusDatabase.obtener(appContext).lugarDao(),
+                fotos = AlmacenFotos(appContext)
+            )
         ) as T
     }
 }

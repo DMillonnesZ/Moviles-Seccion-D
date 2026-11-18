@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.ksp)
 }
 
 val localProps = Properties().apply {
@@ -71,6 +72,10 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.maps.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    // Room: lugares guardados por el usuario
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

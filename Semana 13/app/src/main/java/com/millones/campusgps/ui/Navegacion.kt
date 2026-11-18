@@ -23,7 +23,16 @@ import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.Color
+import com.millones.campusgps.ui.componentes.LocalAbrirMenu
+import com.millones.campusgps.ui.componentes.MenuLateral
+import com.millones.campusgps.ui.componentes.rememberCerrarSesionCompleta
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -69,10 +78,22 @@ private val RUTAS_ACCESO = setOf(Rutas.LOGIN, Rutas.REGISTRO, Rutas.OLVIDO)
 private data class Pestana(val ruta: String, val item: ItemBarra)
 
 private val PESTANAS = listOf(
-    Pestana(Rutas.MAPA, ItemBarra("Mapa", Icons.Rounded.Map)),
-    Pestana(Rutas.EVENTOS, ItemBarra("Eventos", Icons.Rounded.Event)),
-    Pestana(Rutas.CHAT, ItemBarra("Chat", Icons.Rounded.Forum)),
-    Pestana(Rutas.PERFIL, ItemBarra("Perfil", Icons.Rounded.Person))
+    Pestana(
+        Rutas.MAPA,
+        ItemBarra("Mapa", Icons.Rounded.Map, descripcion = "Explora y guarda tus lugares", color = CampusColores.AzulCielo)
+    ),
+    Pestana(
+        Rutas.EVENTOS,
+        ItemBarra("Eventos", Icons.Rounded.Event, descripcion = "Lo que pasa en el campus", color = CampusColores.Violeta)
+    ),
+    Pestana(
+        Rutas.CHAT,
+        ItemBarra("Chat", Icons.Rounded.Forum, descripcion = "Conversa con otros estudiantes", color = CampusColores.VerdeMenta)
+    ),
+    Pestana(
+        Rutas.PERFIL,
+        ItemBarra("Perfil", Icons.Rounded.Person, descripcion = "Tu cuenta y tus datos", color = CampusColores.Ambar)
+    )
 )
 
 private fun esPestana(ruta: String?): Boolean = PESTANAS.any { it.ruta == ruta }
@@ -122,11 +143,43 @@ fun NavegacionApp(authVm: AuthViewModel) {
         }
     }
 
+    // ----- Menú lateral desplegable (se abre con el botón ☰ del mapa) -----
+    val menu = rememberDrawerState(DrawerValue.Closed)
+    val alcance = rememberCoroutineScope()
+    val abrirMenu: () -> Unit = remember { { alcance.launch { menu.open() } } }
+    val cerrarSesion = rememberCerrarSesionCompleta(onCerrarSesion = authVm::cerrarSesion)
+
+    // Atrás con el menú abierto: solo lo cierra
+    BackHandler(enabled = menu.isOpen) { alcance.launch { menu.close() } }
+
     PantallaCompleta()
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Las pantallas se crean cuando termina el splash, así sus animaciones de entrada se ven
         if (splashTerminado) {
+            ModalNavigationDrawer(
+                drawerState = menu,
+                // Deslizar solo para cerrarlo: abierto con gesto chocaría con mover el mapa
+                gesturesEnabled = menu.isOpen,
+                scrimColor = Color.Black.copy(alpha = 0.55f),
+                drawerContent = {
+                    MenuLateral(
+                        nombre = nombre,
+                        correo = usuario,
+                        items = PESTANAS.map { it.item },
+                        seleccionada = pestanaActual,
+                        onSeleccionar = { indice ->
+                            alcance.launch { menu.close() }
+                            irAPestana(indice)
+                        },
+                        onCerrarSesion = {
+                            alcance.launch { menu.close() }
+                            cerrarSesion()
+                        }
+                    )
+                }
+            ) {
+            CompositionLocalProvider(LocalAbrirMenu provides abrirMenu) {
             // Scaffold principal: la barra va en bottomBar y flota sobre las pantallas.
             // Su alto (0 cuando está oculta) llega a cada pantalla con LocalRellenoBarra.
             Scaffold(
@@ -249,6 +302,8 @@ fun NavegacionApp(authVm: AuthViewModel) {
                     }
                 }
             }
+            }   // CompositionLocalProvider (LocalAbrirMenu)
+            }   // ModalNavigationDrawer
         }
 
         // Splash encima de todo; al terminar se desvanece y se agranda un poco
