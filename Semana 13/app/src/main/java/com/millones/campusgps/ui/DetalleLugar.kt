@@ -164,14 +164,17 @@ fun DetalleLugar(
                         .align(Alignment.TopEnd)
                         .padding(12.dp)
                 )
-                BotonCircular(
-                    icono = Icons.Rounded.PhotoCamera,
-                    descripcion = "Cambiar foto",
-                    onClick = onCambiarFoto,
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(12.dp)
-                )
+                // Solo el autor puede cambiar la foto
+                if (lugar.esMio) {
+                    BotonCircular(
+                        icono = Icons.Rounded.PhotoCamera,
+                        descripcion = "Cambiar foto",
+                        onClick = onCambiarFoto,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(12.dp)
+                    )
+                }
             }
 
             Column(modifier = Modifier.padding(20.dp)) {
@@ -188,6 +191,15 @@ fun DetalleLugar(
                     )
                     EstrellaFavorito(activa = lugar.favorito, onClick = onFavorito)
                 }
+
+                // Quién lo registró
+                Text(
+                    text = if (lugar.esMio) "Registrado por ti"
+                    else "Registrado por ${lugar.autorNombre.ifBlank { "otro usuario" }}",
+                    color = Color.White.copy(alpha = 0.6f),
+                    fontFamily = FuenteCampus,
+                    fontSize = 13.sp
+                )
 
                 Spacer(Modifier.height(10.dp))
 
@@ -245,7 +257,8 @@ fun DetalleLugar(
 
                 Spacer(Modifier.height(8.dp))
 
-                Row(
+                // Solo el autor puede eliminarlo
+                if (lugar.esMio) Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)

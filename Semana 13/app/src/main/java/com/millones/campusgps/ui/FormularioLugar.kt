@@ -308,12 +308,15 @@ private fun SelectorFoto(uri: String?, categoria: String, onClick: () -> Unit) {
     }
 }
 
-// Campo de varias líneas para la descripción (mismo estilo de vidrio que CampoCampus)
+// Campo de varias líneas para la descripción (mismo estilo de vidrio que CampoCampus).
+// También lo usa el formulario de eventos.
 @Composable
-private fun CampoDescripcion(
+fun CampoDescripcion(
     valor: String,
     onValorChange: (String) -> Unit,
-    habilitado: Boolean
+    habilitado: Boolean,
+    maximo: Int = 160,
+    placeholder: String = "Descripción (por ejemplo: segundo piso, junto a la escalera)"
 ) {
     val interaccion = remember { MutableInteractionSource() }
     val enfocado by interaccion.collectIsFocusedAsState()
@@ -325,7 +328,7 @@ private fun CampoDescripcion(
 
     BasicTextField(
         value = valor,
-        onValueChange = { if (it.length <= 160) onValorChange(it) },
+        onValueChange = { if (it.length <= maximo) onValorChange(it) },
         enabled = habilitado,
         interactionSource = interaccion,
         textStyle = TextStyle(color = Color.White, fontFamily = FuenteCampus, fontSize = 15.sp),
@@ -342,7 +345,7 @@ private fun CampoDescripcion(
             Box {
                 if (valor.isEmpty()) {
                     Text(
-                        text = "Descripción (por ejemplo: segundo piso, junto a la escalera)",
+                        text = placeholder,
                         color = Color.White.copy(alpha = 0.55f),
                         fontFamily = FuenteCampus,
                         fontSize = 15.sp
@@ -353,7 +356,7 @@ private fun CampoDescripcion(
         }
     )
     Text(
-        text = "${valor.length}/160",
+        text = "${valor.length}/$maximo",
         color = Color.White.copy(alpha = 0.45f),
         fontFamily = FuenteCampus,
         fontSize = 11.sp,

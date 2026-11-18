@@ -23,6 +23,8 @@ import com.google.maps.android.compose.rememberUpdatedMarkerState
 import com.millones.campusgps.R
 import com.millones.campusgps.model.BorradorLugar
 import com.millones.campusgps.model.LugarConDistancia
+import com.millones.campusgps.model.PersonaEnVivo
+import com.millones.campusgps.ui.componentes.PinPersona
 import com.millones.campusgps.model.Posicion
 import com.millones.campusgps.model.UbicacionUi
 import com.millones.campusgps.ui.componentes.PinFoto
@@ -48,12 +50,13 @@ fun MapaUbicacion(
     estado: UbicacionUi,
     posicion: Posicion?,
     lugares: List<LugarConDistancia>,
-    lugarActualId: Int?,
-    seleccionado: Int?,
+    personas: List<PersonaEnVivo>,
+    lugarActualId: String?,
+    seleccionado: String?,
     borrador: BorradorLugar?,
     camara: CameraPositionState,
     onMantenerPresionado: (LatLng) -> Unit,
-    onTocarLugar: (Int) -> Unit,
+    onTocarLugar: (String) -> Unit,
     modifier: Modifier = Modifier,
     // Espacio que tapan la cabecera, el panel y la barra: así la cámara centra en la zona visible
     contentPadding: PaddingValues = PaddingValues()
@@ -125,6 +128,20 @@ fun MapaUbicacion(
                 icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET),
                 zIndex = 3f
             )
+        }
+
+        // Personas que comparten su ubicación en vivo: círculo con su inicial y su nombre
+        personas.forEach { persona ->
+            key("persona_${persona.uid}") {
+                MarkerComposable(
+                    persona.uid, persona.nombre,
+                    state = rememberUpdatedMarkerState(position = LatLng(persona.latitud, persona.longitud)),
+                    title = persona.nombre,
+                    zIndex = 4f
+                ) {
+                    PinPersona(nombre = persona.nombre)
+                }
+            }
         }
 
         // Lugares guardados: círculo con su foto.

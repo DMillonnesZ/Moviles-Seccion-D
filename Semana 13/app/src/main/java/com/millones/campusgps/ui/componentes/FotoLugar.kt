@@ -1,6 +1,7 @@
 package com.millones.campusgps.ui.componentes
 
 import android.graphics.BitmapFactory
+import android.util.Base64
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -16,6 +17,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -42,6 +47,22 @@ import kotlin.math.max
 fun rememberImagenLugar(ruta: String?, ladoMaximo: Int = 256): ImageBitmap? {
     val imagen by produceState<ImageBitmap?>(initialValue = null, ruta, ladoMaximo) {
         value = ruta?.let { cargarImagen(it, ladoMaximo) }
+    }
+    return imagen
+}
+
+// Imagen guardada como texto Base64 dentro de un documento de Firestore (eventos)
+@Composable
+fun rememberImagenBase64(base64: String?): ImageBitmap? {
+    val imagen by produceState<ImageBitmap?>(initialValue = null, base64) {
+        value = base64?.let {
+            withContext(Dispatchers.Default) {
+                runCatching {
+                    val bytes = Base64.decode(it, Base64.NO_WRAP)
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+                }.getOrNull()
+            }
+        }
     }
     return imagen
 }
@@ -121,6 +142,45 @@ fun FotoLugar(
                     modifier = Modifier.size(tamano * 0.24f)
                 )
             }
+        }
+    }
+}
+
+// Marcador de una persona que comparte su ubicación: inicial en círculo violeta y su nombre
+@Composable
+fun PinPersona(nombre: String) {
+    val violeta = CampusColores.Violeta
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = nombre.substringBefore(" ").take(14),
+            color = Color.White,
+            fontFamily = FuenteCampus,
+            fontWeight = FontWeight.Bold,
+            fontSize = 11.sp,
+            maxLines = 1,
+            modifier = Modifier
+                .clip(RoundedCornerShape(50))
+                .background(violeta)
+                .padding(horizontal = 8.dp, vertical = 2.dp)
+        )
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .padding(top = 3.dp)
+                .size(38.dp)
+                .clip(CircleShape)
+                .background(Color.White)
+                .padding(3.dp)
+                .clip(CircleShape)
+                .background(Brush.radialGradient(listOf(lerp(violeta, Color.White, 0.3f), violeta)))
+        ) {
+            Text(
+                text = nombre.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
+                color = Color.White,
+                fontFamily = FuenteCampus,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 16.sp
+            )
         }
     }
 }

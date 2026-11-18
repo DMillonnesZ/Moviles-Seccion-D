@@ -5,8 +5,10 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-// Base de datos local de la app (una sola instancia para toda la app)
-@Database(entities = [LugarEntity::class], version = 1, exportSchema = false)
+// Base de datos local: caché de los lugares de Firestore (una sola instancia para toda la app).
+// Versión 2: el id pasó a ser el id de Firestore. Como es solo caché, al cambiar de versión
+// se borra y se vuelve a llenar desde Firestore.
+@Database(entities = [LugarEntity::class], version = 2, exportSchema = false)
 abstract class CampusDatabase : RoomDatabase() {
 
     abstract fun lugarDao(): LugarDao
@@ -21,7 +23,10 @@ abstract class CampusDatabase : RoomDatabase() {
                     contexto.applicationContext,
                     CampusDatabase::class.java,
                     "campusgps.db"
-                ).build().also { instancia = it }
+                )
+                    .fallbackToDestructiveMigration(true)
+                    .build()
+                    .also { instancia = it }
             }
     }
 }

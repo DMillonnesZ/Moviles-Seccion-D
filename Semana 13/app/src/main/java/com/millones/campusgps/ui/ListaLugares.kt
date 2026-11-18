@@ -77,12 +77,12 @@ fun colorDeLugar(item: LugarConDistancia, esActual: Boolean): Color = when {
 @Composable
 fun ListaLugares(
     lugares: List<LugarConDistancia>,
-    seleccionado: Int?,
-    aquiId: Int?,
-    onClick: (Int) -> Unit,
-    onFavorito: (Int) -> Unit,
-    onCambiarFoto: (Int) -> Unit,
-    onEliminar: (Int) -> Unit,
+    seleccionado: String?,
+    aquiId: String?,
+    onClick: (String) -> Unit,
+    onFavorito: (String) -> Unit,
+    onCambiarFoto: (String) -> Unit,
+    onEliminar: (String) -> Unit,
     modifier: Modifier = Modifier,
     contenidoPadding: PaddingValues = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 16.dp)
 ) {
@@ -164,7 +164,8 @@ private fun TarjetaLugar(
             categoria = lugar.categoria,
             tamano = 50.dp,
             colorBorde = colorEstado,
-            onCambiarFoto = onCambiarFoto
+            // Solo el autor puede cambiar la foto
+            onCambiarFoto = if (lugar.esMio) onCambiarFoto else null
         )
 
         Spacer(Modifier.width(12.dp))
@@ -196,12 +197,15 @@ private fun TarjetaLugar(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+            // Categoría y quién lo registró
             Text(
-                text = lugar.categoria,
+                text = "${lugar.categoria} · ${if (lugar.esMio) "Tuyo" else "de ${lugar.autorNombre.ifBlank { "otro usuario" }}"}",
                 color = lerp(estilo.color, Color.White, 0.35f),
                 fontFamily = FuenteCampus,
                 fontWeight = FontWeight.SemiBold,
-                fontSize = 11.sp
+                fontSize = 11.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
 

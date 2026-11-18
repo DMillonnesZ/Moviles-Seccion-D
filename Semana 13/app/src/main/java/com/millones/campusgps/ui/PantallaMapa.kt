@@ -46,7 +46,9 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.AddLocationAlt
 import androidx.compose.material.icons.rounded.BookmarkAdd
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.LocationDisabled
 import androidx.compose.material.icons.rounded.LocationOn
+import androidx.compose.material.icons.rounded.ShareLocation
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material.icons.rounded.NearMe
@@ -130,6 +132,8 @@ fun PantallaMapa() {
     val direccion by vm.direccion.collectAsState()
     val posicion by vm.posicion.collectAsState()
     val lugarActual by vm.lugarActual.collectAsState()
+    val personas by vm.personas.collectAsState()
+    val compartiendo by vm.compartiendo.collectAsState()
     val borrador by vm.borrador.collectAsState()
     val guardando by vm.guardando.collectAsState()
     val aviso by vm.aviso.collectAsState()
@@ -169,7 +173,7 @@ fun PantallaMapa() {
     }
 
     // ----- Cambiar la foto de un lugar guardado -----
-    var lugarFoto by rememberSaveable { mutableStateOf<Int?>(null) }
+    var lugarFoto by rememberSaveable { mutableStateOf<String?>(null) }
     val elegirFoto = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
@@ -178,7 +182,7 @@ fun PantallaMapa() {
         lugarFoto = null
     }
 
-    fun cambiarFoto(id: Int) {
+    fun cambiarFoto(id: String) {
         lugarFoto = id
         elegirFoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     }
@@ -196,7 +200,7 @@ fun PantallaMapa() {
     // Lugar a eliminar (ventana de confirmación)
     var porEliminar by remember { mutableStateOf<LugarConDistancia?>(null) }
     // Lugar cuyo detalle está abierto
-    var detalleId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var detalleId by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Lugar registrado dentro del radio = tu ubicación actual
     val aquiId = lugarActual?.lugar?.id
@@ -222,6 +226,7 @@ fun PantallaMapa() {
                 estado = estado,
                 posicion = posicion,
                 lugares = lugares,
+                personas = personas,
                 lugarActualId = aquiId,
                 seleccionado = seleccionado,
                 borrador = borrador,
@@ -297,6 +302,13 @@ fun PantallaMapa() {
                     .align(Alignment.BottomEnd)
                     .padding(end = 16.dp, bottom = abajo + altoPanel + 14.dp)
             ) {
+                // Compartir mi ubicación en vivo (opcional); menta cuando está activo
+                BotonVidrio(
+                    icono = if (compartiendo) Icons.Rounded.ShareLocation else Icons.Rounded.LocationDisabled,
+                    descripcion = if (compartiendo) "Dejar de compartir mi ubicación" else "Compartir mi ubicación",
+                    onClick = vm::alternarCompartir,
+                    tinte = if (compartiendo) CampusColores.VerdeMenta else Color.White.copy(alpha = 0.75f)
+                )
                 BotonVidrio(
                     icono = Icons.Rounded.NearMe,
                     descripcion = "Ir a mi ubicación actual",
@@ -399,16 +411,22 @@ fun PantallaMapa() {
             title = { Text("¿Eliminar lugar?", fontFamily = FuenteCampus, fontWeight = FontWeight.Bold) },
             text = {
                 Text(
-                    "Se borrará \"${item.lugar.nombre}\" con su foto. No se puede deshacer.",
+                    if (item.lugar.esMio) {
+                        "Se borrará \"${item.lugar.nombre}\" con su foto para todos. No se puede deshacer."
+                    } else {
+                        "Solo ${item.lugar.autorNombre.ifBlank { "su autor" }} puede eliminar \"${item.lugar.nombre}\"."
+                    },
                     fontFamily = FuenteCampus
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    vm.eliminar(item.lugar.id)
-                    porEliminar = null
-                }) {
-                    Text("Eliminar", color = Color(0xFFFF8A8A), fontWeight = FontWeight.Bold)
+                if (item.lugar.esMio) {
+                    TextButton(onClick = {
+                        vm.eliminar(item.lugar.id)
+                        porEliminar = null
+                    }) {
+                        Text("Eliminar", color = Color(0xFFFF8A8A), fontWeight = FontWeight.Bold)
+                    }
                 }
             },
             dismissButton = {
@@ -655,14 +673,14 @@ private fun PanelLugares(
     ubicado: Boolean,
     pestana: Int,
     onPestana: (Int) -> Unit,
-    seleccionado: Int?,
-    aquiId: Int?,
+    seleccionado: String?,
+    aquiId: String?,
     abierto: Boolean,
     onAlternar: () -> Unit,
-    onSeleccionar: (Int) -> Unit,
-    onFavorito: (Int) -> Unit,
-    onCambiarFoto: (Int) -> Unit,
-    onEliminar: (Int) -> Unit,
+    onSeleccionar: (String) -> Unit,
+    onFavorito: (String) -> Unit,
+    onCambiarFoto: (String) -> Unit,
+    onEliminar: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val giro by animateFloatAsState(

@@ -1,29 +1,38 @@
 package com.millones.campusgps.data.local
 
 import androidx.room.Dao
-import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Transaction
+import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface LugarDao {
+abstract class LugarDao {
 
-    // Flow: la lista se actualiza sola cuando se guarda, edita o borra un lugar
+    // Flow: la lista se actualiza sola cada vez que llega un cambio de Firestore
     @Query("SELECT * FROM lugares ORDER BY creado_en DESC")
-    fun observarTodos(): Flow<List<LugarEntity>>
+    abstract fun observarTodos(): Flow<List<LugarEntity>>
 
     @Query("SELECT * FROM lugares WHERE id = :id")
-    suspend fun obtener(id: Int): LugarEntity?
+    abstract suspend fun obtener(id: String): LugarEntity?
 
-    @Insert
-    suspend fun insertar(lugar: LugarEntity): Long
+    @Upsert
+    protected abstract suspend fun guardarTodos(lista: List<LugarEntity>)
 
-    @Query("UPDATE lugares SET favorito = NOT favorito WHERE id = :id")
-    suspend fun alternarFavorito(id: Int)
+    @Query("DELETE FROM lugares WHERE id NOT IN (:ids)")
+    protected abstract suspend fun borrarExcepto(ids: List<String>)
 
-    @Query("UPDATE lugares SET foto = :ruta WHERE id = :id")
-    suspend fun actualizarFoto(id: Int, ruta: String)
+    @Query("DELETE FROM lugares")
+    abstract suspend fun borrarTodo()
 
-    @Query("DELETE FROM lugares WHERE id = :id")
-    suspend fun eliminar(id: Int)
+    // La caché queda igual a lo que hay en Firestore (los borrados también desaparecen)
+    @Transaction
+    open suspend fun reemplazarTodo(lista: List<LugarEntity>) {
+        if (lista.isEmpty()) {
+            borrarTodo()
+        } else {
+            borrarExcepto(lista.map { it.id })
+            guardarTodos(lista)
+        }
+    }
 }
