@@ -17,10 +17,10 @@ abstract class LugarDao {
     abstract suspend fun obtener(id: String): LugarEntity?
 
     @Upsert
-    protected abstract suspend fun guardarTodos(lista: List<LugarEntity>)
+    abstract suspend fun guardarTodos(lista: List<LugarEntity>)
 
     @Query("DELETE FROM lugares WHERE id NOT IN (:ids)")
-    protected abstract suspend fun borrarExcepto(ids: List<String>)
+    abstract suspend fun borrarExcepto(ids: List<String>)
 
     @Query("DELETE FROM lugares")
     abstract suspend fun borrarTodo()
