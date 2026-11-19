@@ -62,6 +62,8 @@ fun MapaUbicacion(
     onTocarLugar: (String) -> Unit,
     onTocarEvento: (String) -> Unit,
     modifier: Modifier = Modifier,
+    // Radio de "Cerca" elegido en el Perfil
+    radioCercanos: Float = RADIO_CERCANOS,
     // Espacio que tapan la cabecera, el panel y la barra: así la cámara centra en la zona visible
     contentPadding: PaddingValues = PaddingValues()
 ) {
@@ -110,7 +112,7 @@ fun MapaUbicacion(
             // Zona de lugares cercanos (verde tenue)
             Circle(
                 center = LatLng(posicion.latitud, posicion.longitud),
-                radius = RADIO_CERCANOS.toDouble(),
+                radius = radioCercanos.toDouble(),
                 fillColor = ColoresLugar.Cerca.copy(alpha = 0.05f),
                 strokeColor = ColoresLugar.Cerca.copy(alpha = 0.35f),
                 strokeWidth = 2f
@@ -177,7 +179,7 @@ fun MapaUbicacion(
                 val lugar = item.lugar
                 val esActual = lugar.id == lugarActualId
                 val imagen = rememberImagenLugar(lugar.foto, ladoMaximo = 160)
-                val colorBorde = colorDeLugar(item, esActual)
+                val colorBorde = colorDeLugar(item, esActual, radioCercanos)
 
                 MarkerComposable(
                     // Se vuelve a dibujar cuando cambian la foto, el color o la categoría

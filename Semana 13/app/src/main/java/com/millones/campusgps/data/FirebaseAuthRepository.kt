@@ -72,6 +72,20 @@ class FirebaseAuthRepository(
             Result.failure(Exception(mensajeDe(e)))
         }
 
+    override suspend fun actualizarNombre(nombre: String): Result<Unit> =
+        try {
+            val usuario = auth.currentUser ?: error("Sin sesión")
+            val perfil = UserProfileChangeRequest.Builder()
+                .setDisplayName(nombre)
+                .build()
+            usuario.updateProfile(perfil).await()
+            // El listener de sesión no avisa este cambio: se actualiza aquí
+            _nombre.value = nombre
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(Exception(mensajeDe(e)))
+        }
+
     override fun cerrarSesion() {
         auth.signOut()
     }

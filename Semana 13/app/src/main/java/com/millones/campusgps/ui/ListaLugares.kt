@@ -65,9 +65,10 @@ object ColoresLugar {
     val Registrado = Color(0xFF3B82F6)  // azul: registrado, no favorito y lejos
 }
 
-fun colorDeLugar(item: LugarConDistancia, esActual: Boolean): Color = when {
+// radioCercanos = radio de "Cerca" elegido en el Perfil
+fun colorDeLugar(item: LugarConDistancia, esActual: Boolean, radioCercanos: Float = RADIO_CERCANOS): Color = when {
     esActual -> ColoresLugar.Actual
-    (item.metros ?: Float.MAX_VALUE) <= RADIO_CERCANOS -> ColoresLugar.Cerca
+    (item.metros ?: Float.MAX_VALUE) <= radioCercanos -> ColoresLugar.Cerca
     item.lugar.favorito -> ColoresLugar.Favorito
     else -> ColoresLugar.Registrado
 }
@@ -84,6 +85,7 @@ fun ListaLugares(
     onCambiarFoto: (String) -> Unit,
     onEliminar: (String) -> Unit,
     modifier: Modifier = Modifier,
+    radioCercanos: Float = RADIO_CERCANOS,
     contenidoPadding: PaddingValues = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 16.dp)
 ) {
     LazyColumn(
@@ -96,6 +98,7 @@ fun ListaLugares(
                 item = item,
                 seleccionado = item.lugar.id == seleccionado,
                 estasAqui = item.lugar.id == aquiId,
+                radioCercanos = radioCercanos,
                 onClick = { onClick(item.lugar.id) },
                 onFavorito = { onFavorito(item.lugar.id) },
                 onCambiarFoto = { onCambiarFoto(item.lugar.id) },
@@ -113,6 +116,7 @@ private fun TarjetaLugar(
     item: LugarConDistancia,
     seleccionado: Boolean,
     estasAqui: Boolean,
+    radioCercanos: Float,
     onClick: () -> Unit,
     onFavorito: () -> Unit,
     onCambiarFoto: () -> Unit,
@@ -123,7 +127,7 @@ private fun TarjetaLugar(
     val estilo = estiloCategoria(lugar.categoria)
     val forma = RoundedCornerShape(18.dp)
     val haptico = LocalHapticFeedback.current
-    val colorEstado = colorDeLugar(item, estasAqui)
+    val colorEstado = colorDeLugar(item, estasAqui, radioCercanos)
 
     val escala by animateFloatAsState(
         targetValue = if (seleccionado) 1f else 0.985f,

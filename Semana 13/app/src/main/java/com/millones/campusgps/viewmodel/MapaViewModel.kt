@@ -2,6 +2,7 @@ package com.millones.campusgps.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.millones.campusgps.data.AjustesRepository
 import com.millones.campusgps.data.EventosRepository
 import com.millones.campusgps.data.LugaresRepository
 import com.millones.campusgps.model.Evento
@@ -31,7 +32,7 @@ import kotlinx.coroutines.launch
 // se toma como su ubicación actual
 const val RADIO_LUGAR_ACTUAL = 60f
 
-// Radio (metros) de "lugares cercanos": solo estos aparecen en la pestaña Cerca y se pintan de verde
+// Radio (metros) de "lugares cercanos" por defecto; el usuario lo cambia en Perfil (100/300/500)
 const val RADIO_CERCANOS = 300f
 
 // Solo se vuelve a buscar la calle si el usuario se movió más que esto
@@ -44,8 +45,14 @@ class MapaViewModel(
     private val ubicacionRepo: UbicacionRepository,
     private val lugaresRepo: LugaresRepository,
     private val ubicacionesRepo: UbicacionesRepository,
-    private val eventosRepo: EventosRepository
+    private val eventosRepo: EventosRepository,
+    ajustes: AjustesRepository
 ) : ViewModel() {
+
+    // Radio de "Cerca" elegido en el Perfil
+    val radioCercanos: StateFlow<Float> = ajustes.radioCercanos
+        .map { it.toFloat() }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ajustes.radioCercanos.value.toFloat())
 
     private val _estado = MutableStateFlow<UbicacionUi>(UbicacionUi.Inicial)
     val estado: StateFlow<UbicacionUi> = _estado.asStateFlow()
@@ -79,10 +86,10 @@ class MapaViewModel(
         .map { lista -> lista.filter { it.lugar.favorito } }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    // Lugares dentro de RADIO_CERCANOS (vacía mientras no hay ubicación)
-    val cercanos: StateFlow<List<LugarConDistancia>> = lugares
-        .map { lista -> lista.filter { (it.metros ?: Float.MAX_VALUE) <= RADIO_CERCANOS } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    // Lugares dentro del radio de "Cerca" (vacía mientras no hay ubicación)
+    val cercanos: StateFlow<List<LugarConDistancia>> = combine(lugares, radioCercanos) { lista, radio ->
+        lista.filter { (it.metros ?: Float.MAX_VALUE) <= radio }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // Lugar más cercano dentro de RADIO_LUGAR_ACTUAL = ubicación actual del usuario (null = ninguno)
     val lugarActual: StateFlow<LugarConDistancia?> = lugares

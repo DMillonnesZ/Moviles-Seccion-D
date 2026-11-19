@@ -15,5 +15,8 @@ interface AuthRepository {
 
     // Entra (o crea la cuenta la primera vez) con el token que da la cuenta de Google
     suspend fun iniciarSesionConGoogle(idToken: String): Result<Unit>
+
+    // Cambia el nombre de la cuenta (Perfil)
+    suspend fun actualizarNombre(nombre: String): Result<Unit>
     fun cerrarSesion()
 }
