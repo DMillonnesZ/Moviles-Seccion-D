@@ -1,6 +1,7 @@
 package com.millones.murocampus
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -15,15 +16,29 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.lifecycle.lifecycleScope
+import com.millones.murocampus.data.remote.RetrofitClient
 import com.millones.murocampus.ui.theme.Azul
 import com.millones.murocampus.ui.theme.FondoPantalla
 import com.millones.murocampus.ui.theme.MuroCampusTheme
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // PRUEBA TEMPORAL: se borra antes del commit
+        lifecycleScope.launch {
+            try {
+                val posts = RetrofitClient.api.listar()
+                Log.d("MuroCampus", "Llegaron ${posts.size} publicaciones")
+            } catch (e: Exception) {
+                Log.e("MuroCampus", "Falló la llamada", e)
+            }
+        }
+
         setContent {
             MuroCampusTheme {
                 Scaffold(
