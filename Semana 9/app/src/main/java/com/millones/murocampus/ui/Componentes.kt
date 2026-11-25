@@ -2,6 +2,7 @@ package com.millones.murocampus.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -26,7 +26,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.millones.murocampus.ui.theme.BordeTarjeta
-import com.millones.murocampus.ui.theme.TarjetaGris
+import com.millones.murocampus.ui.theme.Menta
+import com.millones.murocampus.ui.theme.RojoFondo
+import com.millones.murocampus.ui.theme.RojoTexto
+import com.millones.murocampus.ui.theme.Superficie
 import com.millones.murocampus.ui.theme.TextoSecundario
 
 // Colores de la insignia "Usuario N": fondo y texto
@@ -51,18 +54,22 @@ fun TarjetaPost(
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = TarjetaGris)
+        shape = FormaTarjeta,
+        colors = CardDefaults.cardColors(
+            containerColor = Superficie.copy(alpha = 0.85f),
+            contentColor = Color.White
+        ),
+        border = BorderStroke(1.dp, BordeTarjeta.copy(alpha = 0.6f))
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
                 "Usuario $userId",
                 modifier = Modifier
                     .background(fondo, RoundedCornerShape(50))
-                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                    .padding(horizontal = 10.dp, vertical = 3.dp),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = colorTexto
@@ -72,7 +79,8 @@ fun TarjetaPost(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = Color.White
             )
             Text(
                 texto,
@@ -91,24 +99,20 @@ fun Cargando(mensaje: String = "Cargando publicaciones…") {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Card(
+        Column(
             modifier = Modifier
+                .padding(24.dp)
                 .fillMaxWidth()
-                .padding(24.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            border = BorderStroke(1.dp, BordeTarjeta)
+                .vidrio()
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                CircularProgressIndicator()
-                Spacer(Modifier.height(12.dp))
-                Text(mensaje, color = TextoSecundario)
-            }
+            CircularProgressIndicator(
+                color = Menta,
+                trackColor = BordeTarjeta.copy(alpha = 0.4f)
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(mensaje, color = TextoSecundario)
         }
     }
 }
@@ -126,15 +130,13 @@ fun ErrorConReintento(mensaje: String, onReintentar: () -> Unit) {
             mensaje,
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    MaterialTheme.colorScheme.errorContainer,
-                    RoundedCornerShape(12.dp)
-                )
+                .background(RojoFondo, FormaTarjeta)
+                .border(1.dp, RojoTexto.copy(alpha = 0.5f), FormaTarjeta)
                 .padding(16.dp),
-            color = MaterialTheme.colorScheme.onErrorContainer,
+            color = Color(0xFFFFB4BC),
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(12.dp))
-        Button(onClick = onReintentar) { Text("Reintentar") }
+        BotonSecundario("Reintentar", onReintentar)
     }
 }

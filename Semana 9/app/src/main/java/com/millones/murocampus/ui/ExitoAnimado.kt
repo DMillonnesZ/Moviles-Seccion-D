@@ -6,6 +6,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -35,14 +36,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.millones.murocampus.ui.theme.Azul
+import com.millones.murocampus.ui.theme.BordeTarjeta
+import com.millones.murocampus.ui.theme.Menta
+import com.millones.murocampus.ui.theme.TarjetaGris
 import kotlinx.coroutines.delay
 import kotlin.math.sin
 import kotlin.random.Random
 
-private val VerdeExito = Color(0xFF2E9E5B)
+private val VerdeExito = Color(0xFF22C58B)
 
 private val coloresConfeti = listOf(
-    Azul, Color(0xFFF5A623), VerdeExito,
+    Azul, Color(0xFFF5A623), Menta,
     Color(0xFFD0475B), Color(0xFF8E5BD0), Color(0xFF2B7BD0)
 )
 
@@ -93,7 +97,7 @@ fun ExitoAnimado(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0x99000000))
+            .background(Color(0xB3000714))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
@@ -103,7 +107,8 @@ fun ExitoAnimado(
         Column(
             modifier = Modifier
                 .padding(32.dp)
-                .background(Color.White, RoundedCornerShape(24.dp))
+                .background(TarjetaGris, RoundedCornerShape(24.dp))
+                .border(1.dp, BordeTarjeta, RoundedCornerShape(24.dp))
                 .padding(horizontal = 32.dp, vertical = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -142,6 +147,7 @@ fun ExitoAnimado(
                 mensaje,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
+                color = Color.White,
                 textAlign = TextAlign.Center
             )
         }
