@@ -127,6 +127,16 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
         _busqueda.value = texto
     }
 
+    // ----- Favoritos (en memoria)
+    // Se guarda la publicación completa para poder mostrarla aunque no esté en la lista actual
+    private val _favoritos = MutableStateFlow<Map<Int, Post>>(emptyMap())
+    val favoritos: StateFlow<Map<Int, Post>> = _favoritos.asStateFlow()
+
+    fun alternarFavorito(post: Post) {
+        val actual = _favoritos.value
+        _favoritos.value = if (post.id in actual) actual - post.id else actual + (post.id to post)
+    }
+
     // ----- Detalle
     private val _detalle = MutableStateFlow<UiState<DetalleUi>>(UiState.Cargando)
     val detalle: StateFlow<UiState<DetalleUi>> = _detalle.asStateFlow()
@@ -199,6 +209,7 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
                 .onSuccess {
                     _creados.value = _creados.value.filterNot { it.id == id }
                     _borrados.value = _borrados.value + id
+                    _favoritos.value = _favoritos.value - id // también sale de favoritos
                     _evento.value = EventoUi.Exito("Publicación eliminada")
                 }
                 .onFailure { _evento.value = EventoUi.Error(mensajeDe(it)) }

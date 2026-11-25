@@ -77,6 +77,7 @@ fun PantallaLista(
     val busqueda by vm.busqueda.collectAsStateWithLifecycle()
     val hayMas by vm.hayMas.collectAsStateWithLifecycle()
     val cargandoMas by vm.cargandoMas.collectAsStateWithLifecycle()
+    val favoritos by vm.favoritos.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var porEliminar by remember { mutableStateOf<Post?>(null) }
     var menuAbierto by remember { mutableStateOf(false) }
@@ -193,13 +194,15 @@ fun PantallaLista(
                             state = listState,
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
-                                start = 16.dp, end = 16.dp, top = 12.dp, bottom = 88.dp
+                                start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp
                             ),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(e.datos, key = { it.id }) { post ->
                                 TarjetaDeslizable(
                                     post = post,
+                                    esFavorito = post.id in favoritos,
+                                    onFavorito = { vm.alternarFavorito(post) },
                                     onClick = { onPostClick(post.id) },
                                     onSolicitarEliminar = { porEliminar = post },
                                     modifier = Modifier.animateItem()
@@ -250,6 +253,8 @@ fun PantallaLista(
 @Composable
 private fun TarjetaDeslizable(
     post: Post,
+    esFavorito: Boolean,
+    onFavorito: () -> Unit,
     onClick: () -> Unit,
     onSolicitarEliminar: () -> Unit,
     modifier: Modifier = Modifier
@@ -283,10 +288,10 @@ private fun TarjetaDeslizable(
             }
         }
     ) {
-        TarjetaPost(
-            userId = post.userId,
-            titulo = post.title,
-            texto = post.body,
+        TarjetaConCorazon(
+            post = post,
+            esFavorito = esFavorito,
+            onFavorito = onFavorito,
             onClick = onClick
         )
     }

@@ -28,13 +28,16 @@ object RetrofitClient {
         })
         .build()
 
-    // Se crea una sola vez (by lazy)
-    val api: PostApi by lazy {
+    // Una sola instancia de Retrofit para todas las APIs
+    private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl("https://jsonplaceholder.typicode.com/")
             .client(cliente)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
-            .create(PostApi::class.java)
     }
+
+    val api: PostApi by lazy { retrofit.create(PostApi::class.java) }
+
+    val usuarioApi: UsuarioApi by lazy { retrofit.create(UsuarioApi::class.java) }
 }
