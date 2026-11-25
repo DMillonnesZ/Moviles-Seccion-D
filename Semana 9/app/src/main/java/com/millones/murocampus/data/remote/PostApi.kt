@@ -25,6 +25,14 @@ interface PostApi {
     @GET("posts")
     suspend fun porUsuario(@Query("userId") userId: Int): List<Post>
 
+    // Paginación: un userId nulo no se envía, así que sirve para "Todos" y para un usuario
+    @GET("posts")
+    suspend fun pagina(
+        @Query("userId") userId: Int?,
+        @Query("_start") inicio: Int,
+        @Query("_limit") limite: Int
+    ): List<Post>
+
     @POST("posts")
     suspend fun crear(@Body nuevo: NuevoPost): Post
 

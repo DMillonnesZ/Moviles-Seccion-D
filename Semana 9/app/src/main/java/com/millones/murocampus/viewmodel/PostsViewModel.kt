@@ -27,7 +27,12 @@ sealed interface EventoUi {
 
 class PostsViewModel(private val repo: PostRepository) : ViewModel() {
 
+    private companion object {
+        const val TAMANO_PAGINA = 20
+    }
+
     // ----- Lista: lo que dice el servidor + los cambios locales
+    // Guarda SOLO lo que vino del servidor, acumulado página tras página
     private val _remota = MutableStateFlow<UiState<List<Post>>>(UiState.Cargando)
 
     // JSONPlaceholder no guarda nada: lo creado y lo borrado se recuerda aquí
@@ -43,7 +48,15 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
     private val _busqueda = MutableStateFlow("")
     val busqueda: StateFlow<String> = _busqueda.asStateFlow()
 
+    // Paginación
+    private val _hayMas = MutableStateFlow(false)
+    val hayMas: StateFlow<Boolean> = _hayMas.asStateFlow()
+
+    private val _cargandoMas = MutableStateFlow(false)
+    val cargandoMas: StateFlow<Boolean> = _cargandoMas.asStateFlow()
+
     private var jobLista: Job? = null
+    private var jobMas: Job? = null
 
     val lista: StateFlow<UiState<List<Post>>> =
         combine(_remota, _creados, _borrados, _usuarioFiltro, _busqueda) { remota, creados, borrados, filtro, busqueda ->
@@ -62,15 +75,44 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState.Cargando)
 
+    /** Primera página (también la usan Reintentar y el cambio de filtro). */
     fun cargar() {
+        // Si había un "Cargar más" en curso, se cancela: la lista vuelve a empezar
+        jobMas?.cancel()
+        _cargandoMas.value = false
+        _hayMas.value = false
+
         jobLista?.cancel() // si eliges otro filtro rápido, cancela la carga anterior
         jobLista = viewModelScope.launch {
             _remota.value = UiState.Cargando
-            val filtro = _usuarioFiltro.value
-            val resultado = if (filtro == null) repo.listar() else repo.porUsuario(filtro)
-            resultado
-                .onSuccess { _remota.value = UiState.Exito(it) }
+            repo.pagina(_usuarioFiltro.value, 0, TAMANO_PAGINA)
+                .onSuccess {
+                    _remota.value = UiState.Exito(it)
+                    // Si llegó una página completa, probablemente hay más
+                    _hayMas.value = it.size == TAMANO_PAGINA
+                }
                 .onFailure { _remota.value = UiState.Error(mensajeDe(it)) }
+        }
+    }
+
+    /** Siguiente página: se agrega a lo que ya está descargado. */
+    fun cargarMas() {
+        val actual = _remota.value as? UiState.Exito ?: return
+        if (_cargandoMas.value || !_hayMas.value) return
+
+        jobMas = viewModelScope.launch {
+            _cargandoMas.value = true
+            try {
+                repo.pagina(_usuarioFiltro.value, actual.datos.size, TAMANO_PAGINA)
+                    .onSuccess { nuevos ->
+                        _remota.value = UiState.Exito(actual.datos + nuevos)
+                        _hayMas.value = nuevos.size == TAMANO_PAGINA
+                    }
+                    // Si falla, la lista se conserva y se avisa con un snackbar
+                    .onFailure { _evento.value = EventoUi.Error(mensajeDe(it)) }
+            } finally {
+                _cargandoMas.value = false
+            }
         }
     }
 

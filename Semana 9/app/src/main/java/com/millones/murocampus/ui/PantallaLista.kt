@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SwipeToDismissBox
@@ -72,6 +75,8 @@ fun PantallaLista(
     val estado by vm.lista.collectAsStateWithLifecycle()
     val filtro by vm.usuarioFiltro.collectAsStateWithLifecycle()
     val busqueda by vm.busqueda.collectAsStateWithLifecycle()
+    val hayMas by vm.hayMas.collectAsStateWithLifecycle()
+    val cargandoMas by vm.cargandoMas.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var porEliminar by remember { mutableStateOf<Post?>(null) }
     var menuAbierto by remember { mutableStateOf(false) }
@@ -164,12 +169,24 @@ fun PantallaLista(
                 is UiState.Error -> ErrorConReintento(e.mensaje) { vm.cargar() }
                 is UiState.Exito ->
                     if (e.datos.isEmpty()) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
                             Text(
                                 if (busqueda.isNotBlank()) "Sin resultados para «${busqueda.trim()}»"
                                 else "Sin publicaciones",
                                 color = TextoSecundario
                             )
+                            // La búsqueda solo mira lo descargado: aquí se pueden traer más
+                            if (hayMas || cargandoMas) {
+                                Spacer(Modifier.height(12.dp))
+                                if (cargandoMas) CircularProgressIndicator()
+                                else OutlinedButton(onClick = { vm.cargarMas() }) {
+                                    Text("Cargar más")
+                                }
+                            }
                         }
                     } else {
                         LazyColumn(
@@ -187,6 +204,23 @@ fun PantallaLista(
                                     onSolicitarEliminar = { porEliminar = post },
                                     modifier = Modifier.animateItem()
                                 )
+                            }
+
+                            // Botón al final de la lista
+                            if (hayMas || cargandoMas) {
+                                item(key = "cargar-mas") {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        if (cargandoMas) CircularProgressIndicator()
+                                        else OutlinedButton(onClick = { vm.cargarMas() }) {
+                                            Text("Cargar más")
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
