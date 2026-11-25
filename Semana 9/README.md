@@ -1,108 +1,128 @@
-# MuroCampus
+# MuroCampus 🚀
 
-App Android hecha con Jetpack Compose que consume el servicio web REST
-[JSONPlaceholder](https://jsonplaceholder.typicode.com/). Lista publicaciones,
-muestra el detalle con sus comentarios, filtra por usuario y crea una
-publicación nueva. Muestra los estados Cargando, Éxito y Error, y se comporta
-bien cuando no hay internet.
+App Android moderna construida con **Jetpack Compose** que consume el servicio web REST [JSONPlaceholder](https://jsonplaceholder.typicode.com/). 
 
-**Stack:** Kotlin, Compose, Retrofit, OkHttp, kotlinx.serialization,
-ViewModel + StateFlow, arquitectura MVVM + Repository.
+En esta versión (**Fase 2 · Mejoras con IA** - rama `mejora-ia`), la aplicación ha sido repotenciada con una arquitectura robusta, interfaz de usuario estilo *Glassmorphism*, sistema de búsqueda, paginación dinámica, borrado de publicaciones con `@DELETE`, gestión de favoritos y navegación multinivel por usuarios.
 
-## Estructura de paquetes
+---
+
+## 🌟 Novedades y Mejoras asistidas por IA (Fase 2)
+
+- 🗑️ **Borrado de publicaciones (`@DELETE`)**: 
+  - Integración del endpoint `@DELETE("posts/{id}")` con `Response<Unit>` en Retrofit para validar códigos HTTP (como 200/204) sin lanzar excepciones no deseadas.
+  - UI interactiva mediante deslizamiento de tarjeta (*SwipeToDismissBox*) o cuadro de diálogo modal de confirmación.
+  - Eliminación sincronizada que remueve la publicación tanto de la lista remota/local como del mapa de favoritos.
+
+- 🔍 **Búsqueda en tiempo real por Título**:
+  - Campo de búsqueda `OutlinedTextField` integrado en la barra superior.
+  - Filtrado instantáneo (case-insensitive) sobre las publicaciones cargadas sin saturar el servidor con peticiones innecesarias.
+
+- 📄 **Paginación Dinámica (Lotes de 20)**:
+  - Consumo del servicio paginado `@GET("posts")` usando parámetros `@Query("_start")` y `@Query("_limit")`.
+  - Carga diferida con botón *"Cargar más"* e indicador visual de progreso (`CircularProgressIndicator`).
+
+- ❤️ **Sistema de Favoritos en Memoria**:
+  - Posibilidad de marcar/desmarcar cualquier publicación con un ícono de corazón.
+  - Pestaña dedicada a Favoritos con contador en vivo (*Badge*) en la barra de navegación inferior.
+
+- 👤 **Exploración por Usuarios**:
+  - Pestaña *"Usuarios"* conectada a `UsuarioApi` y `UsuariosViewModel`.
+  - Permite visualizar la lista de usuarios y filtrar el feed principal automáticamente al seleccionar a un autor específico.
+
+- 🎨 **UI/UX Elevada (Glassmorphism & Animaciones)**:
+  - Diseño oscuro con efectos de cristal esmerilado (`vidrio()`), paleta de colores personalizada (Azul, Menta, TarjetaGris).
+  - Animación de celebración personalizada (`ExitoAnimado`) con confeti al realizar acciones exitosas como crear o eliminar publicaciones.
+
+---
+
+## 🛠️ Stack Tecnológico
+
+- **Lenguaje:** Kotlin
+- **UI Framework:** Jetpack Compose (Material 3)
+- **Asincronía & Estado:** Corrutinas, Flow, StateFlow, `collectAsStateWithLifecycle`
+- **Arquitectura:** MVVM (Model-View-ViewModel) + Repository Pattern
+- **Red:** Retrofit 2, OkHttp 4
+- **Serialización:** `kotlinx.serialization` (JSON)
+
+---
+
+## 📁 Estructura de Paquetes
 
 ```
 com.millones.murocampus/
-├── MainActivity.kt
+├── MainActivity.kt               # Scaffold principal, navegación por pestañas y snackbars
 ├── model/
-│   └── Modelos.kt              Usuario, Post, Comentario, NuevoPost
+│   └── Modelos.kt                # Data classes: Usuario, Post, Comentario, NuevoPost
 ├── data/
 │   ├── remote/
-│   │   ├── PostApi.kt          interface de Retrofit
-│   │   ├── UsuarioApi.kt       ejemplo resuelto
-│   │   └── RetrofitClient.kt   cliente creado una sola vez
-│   ├── PostRepository.kt       interface + PostRepositoryRemote
-│   └── UsuarioRepository.kt    ejemplo resuelto
+│   │   ├── PostApi.kt            # Interface Retrofit (GET, POST, DELETE, Paginación)
+│   │   ├── UsuarioApi.kt         # Interface Retrofit para Usuarios
+│   │   └── RetrofitClient.kt     # Cliente Singleton con kotlinx.serialization
+│   ├── PostRepository.kt         # Interface + PostRepositoryRemote (Result<T> & Response<Unit>)
+│   └── UsuarioRepository.kt      # Interface + UsuarioRepositoryRemote
 ├── viewmodel/
-│   ├── UiState.kt              Cargando / Exito / Error + mensajeDe
-│   ├── PostsViewModel.kt
-│   └── PostsViewModelFactory.kt
+│   ├── UiState.kt                # Sealed interface: Cargando, Exito, Error + EventoUi
+│   ├── PostsViewModel.kt         # Gestión de publicaciones, búsqueda, filtros, favoritos y borrado
+│   ├── PostsViewModelFactory.kt  # Inyección de dependencias para PostsViewModel
+│   └── UsuariosViewModel.kt      # ViewModel + Factory para la lista de usuarios
 └── ui/
-    ├── Componentes.kt          TarjetaPost, Cargando, ErrorConReintento
-    ├── PantallaLista.kt
-    ├── PantallaDetalle.kt
-    ├── PantallaCrear.kt
-    └── theme/
+    ├── Componentes.kt            # TarjetaPost, Botones, Cargando, ErrorConReintento
+    ├── TarjetaConCorazon.kt      # Tarjeta interactiva con acción de favorito
+    ├── Estilo.kt                 # Modificadores de Glassmorphism (vidrio) y formas
+    ├── ExitoAnimado.kt           # Animación overlay de éxito con confeti
+    ├── PantallaLista.kt          # Feed principal (búsqueda, filtro, paginación y SwipeToDismiss)
+    ├── PantallaDetalle.kt         # Vista detallada de la publicación y comentarios
+    ├── PantallaCrear.kt          # Formulario para publicar nuevos posts
+    ├── PantallaFavoritos.kt       # Pestaña de publicaciones guardadas
+    ├── PantallaUsuarios.kt        # Listado de usuarios del campus
+    └── theme/                    # Color.kt, Theme.kt, Type.kt
 ```
 
-## Arquitectura MVVM + Repository
+---
+
+## 🏗️ Arquitectura del Proyecto
 
 ```
-View (PantallaLista, PantallaDetalle, PantallaCrear)
-   | eventos: cargar, filtrar, publicar        ^ collectAsStateWithLifecycle()
-   v                                           |
-ViewModel (PostsViewModel) --- StateFlow<UiState> (Cargando / Exito / Error)
-   | viewModelScope.launch
-   v
-PostRepository (interface)  <- devuelve Result<...>
-   -> PostRepositoryRemote (captura IOException, HttpException...)
-   |
-   v
-PostApi (Retrofit) --- OkHttp ---> https://jsonplaceholder.typicode.com/
+View (Pantallas Compose)
+   │  Eventos: buscar, filtrar, publicar, borrar, alternarFavorito, cargarMas
+   ▼
+ViewModel (PostsViewModel / UsuariosViewModel) ─── StateFlow<UiState / EventoUi>
+   │  viewModelScope.launch (Corrutinas + async/await)
+   ▼
+Repository (PostRepository / UsuarioRepository)  ◄── Retorna Result<T>
+   │  Manejo centralizado de excepciones (CancellationException, HttpException, IOException)
+   ▼
+API Client (PostApi / UsuarioApi - Retrofit) ── OkHttp ──► REST API (JSONPlaceholder)
 ```
 
-## Capturas
+---
 
-<table>
-  <tr>
-    <td align="center"><b>Lista</b><br><img src="capturas/lista.jpeg" width="220"></td>
-    <td align="center"><b>Detalle</b><br><img src="capturas/detalle.jpeg" width="220"></td>
-    <td align="center"><b>Filtro</b><br><img src="capturas/filtro.jpeg" width="220"></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Crear</b><br><img src="capturas/crear.jpeg" width="220"></td>
-    <td align="center"><b>Error de conexión</b><br><img src="capturas/error.jpeg" width="220"></td>
-    <td></td>
-  </tr>
-</table>
+## 📸 Capturas de Pantalla
 
-## Para pensar
+| Feed Principal (Lista) | Detalle y Comentarios | Filtro por Autor |
+| :---: | :---: | :---: |
+| <img src="capturas/lista.jpeg" width="230"/> | <img src="capturas/detalle.jpeg" width="230"/> | <img src="capturas/filtro.jpeg" width="230"/> |
 
-**1. ¿Qué diferencia hay entre GET y POST? ¿Por qué crear lleva `@Body` y
-`porUsuario` lleva `@Query`?**
-GET lee datos y no cambia nada en el servidor; POST envía datos para crear un
-recurso. `crear` lleva `@Body` porque la publicación viaja como JSON en el
-cuerpo de la petición. `porUsuario` lleva `@Query` porque es un filtro que se
-agrega a la URL (`posts?userId=2`) y no hay nada que enviar en el cuerpo.
+| Lista de Usuarios | Publicaciones Favoritas | Crear Publicación | Error de Conexión |
+| :---: | :---: | :---: | :---: |
+| <img src="capturas/usuarios.jpeg" width="220"/> | <img src="capturas/favoritos.jpeg" width="220"/> | <img src="capturas/crear.jpeg" width="220"/> | <img src="capturas/error.jpeg" width="220"/> |
 
-**2. ¿Por qué la ruta es `"posts"` y no `"/posts"`?**
-Porque una barra inicial reemplaza todo el camino de la URL base. Con
-`"posts"`, Retrofit la une a la `baseUrl` y respeta su ruta; con `"/posts"` la
-descartaría.
+---
 
-**3. ¿Por qué el Repository devuelve `Result` en vez de dejar que la excepción
-llegue al ViewModel?**
-Para que el ViewModel no conozca los detalles de la red (`HttpException`,
-`IOException`). El Repository convierte cualquier falla en `Result.failure` y
-el ViewModel solo decide qué estado mostrar. Así la capa de datos se puede
-cambiar sin tocar el ViewModel ni las pantallas.
+## 🧠 Análisis Técnico y Preguntas de Reflexión
 
-**4. ¿Qué pasa si olvidas el permiso INTERNET? ¿Y si olvidas
-`ignoreUnknownKeys` y el servidor agrega un campo nuevo?**
-Sin el permiso, la app compila pero nunca se conecta y falla con un error de
-red aunque haya internet. Sin `ignoreUnknownKeys`, un campo nuevo que el
-modelo no declara hace fallar el parseo con `SerializationException`, y la app
-dejaría de funcionar sin que el código haya cambiado.
+### 1. ¿Por qué usar `@DELETE("posts/{id}")` retornando `Response<Unit>` en lugar de `Unit` directo?
+Al usar `Response<Unit>`, Retrofit nos entrega la respuesta HTTP completa sin lanzar automáticamente una `HttpException` ante códigos de error (ej. 404 o 500). Esto permite que el Repositorio analice `respuesta.isSuccessful` antes de proceder, garantizando un control explícito sobre el resultado de la operación.
 
-**5. ¿Por qué la pantalla de lista usa un `when` sobre `UiState` y no un `if`
-con tres variables?**
-Porque `UiState` es una `sealed interface`: el compilador obliga a cubrir los
-tres casos y evita estados imposibles, como estar cargando y con error a la
-vez. Con tres variables sueltas habría que mantenerlas sincronizadas a mano.
+### 2. ¿Cómo maneja la aplicación los datos locales frente al servicio REST ficticio?
+Como JSONPlaceholder no almacena las peticiones `POST` ni ejecuta borrados reales en el backend, el `PostsViewModel` mantiene un estado local de publicaciones creadas (`_creados`) y borradas (`_borrados`). Al combinar este estado con las respuestas de la API mediante `combine`, la interfaz ofrece una experiencia reactiva e instantánea.
 
-**6. JSONPlaceholder no guarda los POST. ¿Cómo cambiaría tu app si usaras un
-servicio real?**
-Al crear una publicación, la lista debería refrescarse (o insertar la
-publicación nueva) para que aparezca. También habría que manejar
-autenticación, validaciones del servidor y el `userId` real del usuario en
-sesión, en lugar del 1 fijo.
+### 3. ¿Por qué el filtro y la búsqueda operan de manera distinta?
+- **Filtro por Usuario:** Realiza una nueva petición paginada a la API (`posts?userId=X`), descargando únicamente los posts pertenecientes a ese autor.
+- **Búsqueda por Título:** Se realiza de manera local en memoria sobre la lista cargada actual mediante Kotlin `Flow`, brindando respuesta instantánea sin latencia de red.
+
+### 4. ¿Por qué el Repository devuelve `Result<T>` en lugar de propagar excepciones?
+Para desacoplar la capa de UI/ViewModel de las dependencias de red (`IOException`, `HttpException`). El Repository encapsula el manejo de errores en `Result.success` o `Result.failure`, permitiendo que el ViewModel reaccione transformando el estado a `UiState.Error(mensaje)` de manera limpia y segura.
+
+### 5. ¿Por qué se utiliza una `sealed interface` para `UiState`?
+Garantiza la exhaustividad en la UI mediante el operador `when`. Evita inconsistencias de estado (como mostrar pantalla de cargando y de error al mismo tiempo) y obliga al compilador a validar que se cubran todos los casos posibles (`Cargando`, `Exito`, `Error`).
