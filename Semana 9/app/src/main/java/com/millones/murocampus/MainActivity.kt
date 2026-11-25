@@ -2,18 +2,25 @@ package com.millones.murocampus
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.millones.murocampus.ui.PantallaDetalle
 import com.millones.murocampus.ui.PantallaLista
 import com.millones.murocampus.ui.theme.Azul
 import com.millones.murocampus.ui.theme.FondoPantalla
@@ -29,6 +36,15 @@ class MainActivity : ComponentActivity() {
         setContent {
             MuroCampusTheme {
                 val vm: PostsViewModel = viewModel(factory = PostsViewModelFactory())
+
+                // null = se ve la lista; con un id = se ve el detalle
+                var idSeleccionado by rememberSaveable { mutableStateOf<Int?>(null) }
+                // Se guarda aquí para que la lista conserve el scroll al volver
+                val listState = rememberLazyListState()
+
+                // Atrás del sistema: del detalle vuelve a la lista
+                BackHandler(enabled = idSeleccionado != null) { idSeleccionado = null }
+
                 Scaffold(
                     containerColor = FondoPantalla,
                     topBar = {
@@ -41,7 +57,17 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 ) { padding ->
-                    PantallaLista(vm, Modifier.padding(padding))
+                    val id = idSeleccionado
+                    if (id == null) {
+                        PantallaLista(
+                            vm = vm,
+                            onPostClick = { idSeleccionado = it },
+                            modifier = Modifier.padding(padding),
+                            listState = listState
+                        )
+                    } else {
+                        PantallaDetalle(vm, id, Modifier.padding(padding))
+                    }
                 }
             }
         }
