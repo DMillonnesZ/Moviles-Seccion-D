@@ -10,15 +10,29 @@ data class Usuario(
     val email: String
 )
 
-// [G] Esqueletos. Una data class vacía no compila, por eso son clases vacías.
-// TODO Paso 2: conviértelas en data class con userId, id, title, body
+// GET posts y GET posts/{id}
 @Serializable
-class Post
+data class Post(
+    val userId: Int,
+    val id: Int,
+    val title: String,
+    val body: String
+)
 
-// TODO Paso 2: data class con postId, id, name, email, body
+// GET posts/{id}/comments
 @Serializable
-class Comentario
+data class Comentario(
+    val postId: Int,
+    val id: Int,
+    val name: String,
+    val email: String,
+    val body: String
+)
 
-// TODO Paso 2: data class con userId, title, body (sin id)
+// Lo que enviamos en el POST: no lleva id, lo asigna el servidor
 @Serializable
-class NuevoPost
+data class NuevoPost(
+    val userId: Int,
+    val title: String,
+    val body: String
+)
