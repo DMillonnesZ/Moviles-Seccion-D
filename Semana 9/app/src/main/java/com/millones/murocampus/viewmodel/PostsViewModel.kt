@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.millones.murocampus.data.PostRepository
 import com.millones.murocampus.model.Comentario
+import com.millones.murocampus.model.NuevoPost
 import com.millones.murocampus.model.Post
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -78,5 +79,24 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
                 UiState.Exito(DetalleUi(rPost.getOrThrow(), rComentarios.getOrThrow()))
             }
         }
+    }
+
+    // ----- Crear (Paso 9)
+    // null = aún no se envió nada
+    private val _crear = MutableStateFlow<UiState<Post>?>(null)
+    val crear: StateFlow<UiState<Post>?> = _crear.asStateFlow()
+
+    fun publicar(titulo: String, texto: String) {
+        if (_crear.value is UiState.Cargando) return // evita doble envío
+        viewModelScope.launch {
+            _crear.value = UiState.Cargando
+            repo.crear(NuevoPost(userId = 1, title = titulo.trim(), body = texto.trim()))
+                .onSuccess { _crear.value = UiState.Exito(it) }
+                .onFailure { _crear.value = UiState.Error(mensajeDe(it)) }
+        }
+    }
+
+    fun limpiarCrear() {
+        _crear.value = null
     }
 }

@@ -83,8 +83,9 @@ fun PantallaLista(
                         LazyColumn(
                             state = listState,
                             modifier = Modifier.fillMaxSize(),
+                            // bottom = 88.dp: deja espacio para que el botón + no tape la última tarjeta
                             contentPadding = PaddingValues(
-                                start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp
+                                start = 16.dp, end = 16.dp, top = 4.dp, bottom = 88.dp
                             ),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
