@@ -1,29 +1,49 @@
 package com.millones.murocampus.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.millones.murocampus.model.Post
 import com.millones.murocampus.ui.theme.Azul
+import com.millones.murocampus.ui.theme.RojoTexto
 import com.millones.murocampus.ui.theme.TextoSecundario
 import com.millones.murocampus.viewmodel.PostsViewModel
 import com.millones.murocampus.viewmodel.UiState
@@ -43,10 +63,10 @@ fun PantallaLista(
     val estado by vm.lista.collectAsStateWithLifecycle()
     val filtro by vm.usuarioFiltro.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    var porEliminar by remember { mutableStateOf<Post?>(null) }
 
     Column(modifier = modifier.fillMaxSize()) {
 
-        // Fila de chips desplazable; siempre visible para poder cambiar el filtro
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -56,7 +76,6 @@ fun PantallaLista(
                     selected = filtro == userId,
                     onClick = {
                         vm.filtrar(userId)
-                        // Al cambiar de filtro, la lista vuelve arriba
                         scope.launch { listState.scrollToItem(0) }
                     },
                     label = { Text(if (userId == null) "Todos" else "Usuario $userId") },
@@ -83,23 +102,85 @@ fun PantallaLista(
                         LazyColumn(
                             state = listState,
                             modifier = Modifier.fillMaxSize(),
-                            // bottom = 88.dp: deja espacio para que el botón + no tape la última tarjeta
                             contentPadding = PaddingValues(
                                 start = 16.dp, end = 16.dp, top = 4.dp, bottom = 88.dp
                             ),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(e.datos, key = { it.id }) { post ->
-                                TarjetaPost(
-                                    userId = post.userId,
-                                    titulo = post.title,
-                                    texto = post.body,
-                                    onClick = { onPostClick(post.id) }
+                                TarjetaDeslizable(
+                                    post = post,
+                                    onClick = { onPostClick(post.id) },
+                                    onSolicitarEliminar = { porEliminar = post },
+                                    modifier = Modifier.animateItem()
                                 )
                             }
                         }
                     }
             }
         }
+    }
+
+    porEliminar?.let { post ->
+        AlertDialog(
+            onDismissRequest = { porEliminar = null },
+            title = { Text("Eliminar publicación") },
+            text = { Text("¿Quieres eliminar «${post.title.take(60)}»?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.borrar(post.id)
+                    porEliminar = null
+                }) { Text("Eliminar", color = RojoTexto) }
+            },
+            dismissButton = {
+                TextButton(onClick = { porEliminar = null }) { Text("Cancelar") }
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TarjetaDeslizable(
+    post: Post,
+    onClick: () -> Unit,
+    onSolicitarEliminar: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val estado = rememberSwipeToDismissBoxState(
+        confirmValueChange = { valor ->
+            if (valor == SwipeToDismissBoxValue.EndToStart) onSolicitarEliminar()
+            false // la tarjeta siempre vuelve a su sitio; desaparece solo si el borrado funciona
+        }
+    )
+
+    SwipeToDismissBox(
+        state = estado,
+        modifier = modifier,
+        enableDismissFromStartToEnd = false,
+        backgroundContent = {
+            // Solo se dibuja mientras se desliza, para que no asome en las esquinas
+            if (estado.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(RojoTexto, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Eliminar", color = Color.White, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.width(8.dp))
+                    Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
+                }
+            }
+        }
+    ) {
+        TarjetaPost(
+            userId = post.userId,
+            titulo = post.title,
+            texto = post.body,
+            onClick = onClick
+        )
     }
 }
