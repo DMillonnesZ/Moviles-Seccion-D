@@ -13,17 +13,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -43,6 +50,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.millones.murocampus.model.Post
 import com.millones.murocampus.ui.theme.Azul
+import com.millones.murocampus.ui.theme.AzulClaro
+import com.millones.murocampus.ui.theme.BordeTarjeta
 import com.millones.murocampus.ui.theme.RojoTexto
 import com.millones.murocampus.ui.theme.TextoSecundario
 import com.millones.murocampus.viewmodel.PostsViewModel
@@ -62,28 +71,88 @@ fun PantallaLista(
 ) {
     val estado by vm.lista.collectAsStateWithLifecycle()
     val filtro by vm.usuarioFiltro.collectAsStateWithLifecycle()
+    val busqueda by vm.busqueda.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var porEliminar by remember { mutableStateOf<Post?>(null) }
+    var menuAbierto by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize()) {
 
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        // Barra de búsqueda + botón Filtrar
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            items(opcionesFiltro) { userId ->
-                FilterChip(
-                    selected = filtro == userId,
-                    onClick = {
-                        vm.filtrar(userId)
-                        scope.launch { listState.scrollToItem(0) }
+            OutlinedTextField(
+                value = busqueda,
+                onValueChange = {
+                    vm.buscar(it)
+                    scope.launch { listState.scrollToItem(0) }
+                },
+                placeholder = { Text("Buscar por título") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (busqueda.isNotEmpty()) {
+                        IconButton(onClick = { vm.buscar("") }) {
+                            Icon(Icons.Default.Close, contentDescription = "Borrar búsqueda")
+                        }
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(28.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    focusedBorderColor = Azul,
+                    unfocusedBorderColor = BordeTarjeta
+                ),
+                modifier = Modifier.weight(1f)
+            )
+
+            Box {
+                Button(onClick = { menuAbierto = true }) { Text("Filtrar") }
+                DropdownMenu(
+                    expanded = menuAbierto,
+                    onDismissRequest = { menuAbierto = false }
+                ) {
+                    opcionesFiltro.forEach { userId ->
+                        DropdownMenuItem(
+                            text = { Text(if (userId == null) "Todos" else "Usuario $userId") },
+                            trailingIcon = {
+                                if (filtro == userId) Text("✓", color = Azul, fontWeight = FontWeight.Bold)
+                            },
+                            onClick = {
+                                menuAbierto = false
+                                vm.filtrar(userId)
+                                scope.launch { listState.scrollToItem(0) }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Etiqueta del filtro activo, con ✕ para quitarlo
+        if (filtro != null) {
+            Row(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp)) {
+                InputChip(
+                    selected = true,
+                    onClick = { vm.filtrar(null) },
+                    label = { Text("Usuario $filtro") },
+                    trailingIcon = {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Quitar filtro",
+                            modifier = Modifier.width(18.dp)
+                        )
                     },
-                    label = { Text(if (userId == null) "Todos" else "Usuario $userId") },
-                    colors = FilterChipDefaults.filterChipColors(
-                        containerColor = Color.White,
-                        labelColor = Azul,
-                        selectedContainerColor = Azul,
-                        selectedLabelColor = Color.White
+                    colors = InputChipDefaults.inputChipColors(
+                        selectedContainerColor = AzulClaro,
+                        selectedLabelColor = Azul,
+                        selectedTrailingIconColor = Azul
                     )
                 )
             }
@@ -96,14 +165,18 @@ fun PantallaLista(
                 is UiState.Exito ->
                     if (e.datos.isEmpty()) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Sin publicaciones", color = TextoSecundario)
+                            Text(
+                                if (busqueda.isNotBlank()) "Sin resultados para «${busqueda.trim()}»"
+                                else "Sin publicaciones",
+                                color = TextoSecundario
+                            )
                         }
                     } else {
                         LazyColumn(
                             state = listState,
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
-                                start = 16.dp, end = 16.dp, top = 4.dp, bottom = 88.dp
+                                start = 16.dp, end = 16.dp, top = 12.dp, bottom = 88.dp
                             ),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {

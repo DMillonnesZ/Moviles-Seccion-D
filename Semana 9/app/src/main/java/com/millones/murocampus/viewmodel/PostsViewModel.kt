@@ -39,16 +39,25 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
     private val _usuarioFiltro = MutableStateFlow<Int?>(null)
     val usuarioFiltro: StateFlow<Int?> = _usuarioFiltro.asStateFlow()
 
+    // Texto de la barra de búsqueda (filtra por título, sin llamar a la API)
+    private val _busqueda = MutableStateFlow("")
+    val busqueda: StateFlow<String> = _busqueda.asStateFlow()
+
     private var jobLista: Job? = null
 
     val lista: StateFlow<UiState<List<Post>>> =
-        combine(_remota, _creados, _borrados, _usuarioFiltro) { remota, creados, borrados, filtro ->
+        combine(_remota, _creados, _borrados, _usuarioFiltro, _busqueda) { remota, creados, borrados, filtro, busqueda ->
             when (remota) {
                 UiState.Cargando -> UiState.Cargando
                 is UiState.Error -> remota
                 is UiState.Exito -> {
+                    val texto = busqueda.trim()
                     val propios = creados.filter { filtro == null || it.userId == filtro }
-                    UiState.Exito((propios + remota.datos).filter { it.id !in borrados })
+                    val todos = (propios + remota.datos).filter { it.id !in borrados }
+                    UiState.Exito(
+                        if (texto.isEmpty()) todos
+                        else todos.filter { it.title.contains(texto, ignoreCase = true) }
+                    )
                 }
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState.Cargando)
@@ -66,10 +75,14 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
     }
 
     fun filtrar(userId: Int?) {
-        // Si tocas el mismo chip y la lista ya está cargada, no repite la descarga
+        // Si eliges el mismo usuario y la lista ya está cargada, no repite la descarga
         if (userId == _usuarioFiltro.value && _remota.value is UiState.Exito) return
         _usuarioFiltro.value = userId
         cargar()
+    }
+
+    fun buscar(texto: String) {
+        _busqueda.value = texto
     }
 
     // ----- Detalle
