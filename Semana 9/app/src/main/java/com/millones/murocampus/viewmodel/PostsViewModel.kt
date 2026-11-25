@@ -16,19 +16,35 @@ data class DetalleUi(val post: Post, val comentarios: List<Comentario>)
 
 class PostsViewModel(private val repo: PostRepository) : ViewModel() {
 
-    // ----- Lista (Paso 6)
+    // ----- Lista y filtro (Pasos 6 y 8)
     private val _lista = MutableStateFlow<UiState<List<Post>>>(UiState.Cargando)
     val lista: StateFlow<UiState<List<Post>>> = _lista.asStateFlow()
+
+    // null significa "Todos"
+    private val _usuarioFiltro = MutableStateFlow<Int?>(null)
+    val usuarioFiltro: StateFlow<Int?> = _usuarioFiltro.asStateFlow()
+
+    private var jobLista: Job? = null
 
     init { cargar() }
 
     fun cargar() {
-        viewModelScope.launch {
+        jobLista?.cancel() // si eliges otro filtro rápido, cancela la carga anterior
+        jobLista = viewModelScope.launch {
             _lista.value = UiState.Cargando
-            repo.listar()
+            val filtro = _usuarioFiltro.value
+            val resultado = if (filtro == null) repo.listar() else repo.porUsuario(filtro)
+            resultado
                 .onSuccess { _lista.value = UiState.Exito(it) }
                 .onFailure { _lista.value = UiState.Error(mensajeDe(it)) }
         }
+    }
+
+    fun filtrar(userId: Int?) {
+        // Si tocas el mismo chip y la lista ya está cargada, no repite la descarga
+        if (userId == _usuarioFiltro.value && _lista.value is UiState.Exito) return
+        _usuarioFiltro.value = userId
+        cargar()
     }
 
     // ----- Detalle (Paso 7)
