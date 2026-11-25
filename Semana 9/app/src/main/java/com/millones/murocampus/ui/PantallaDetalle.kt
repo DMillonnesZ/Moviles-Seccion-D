@@ -1,6 +1,5 @@
 package com.millones.murocampus.ui
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,8 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,8 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.millones.murocampus.ui.theme.Azul
-import com.millones.murocampus.ui.theme.BordeTarjeta
-import com.millones.murocampus.ui.theme.TarjetaGris
+import com.millones.murocampus.ui.theme.Menta
 import com.millones.murocampus.ui.theme.TextoSecundario
 import com.millones.murocampus.viewmodel.DetalleUi
 import com.millones.murocampus.viewmodel.PostsViewModel
@@ -56,27 +52,30 @@ private fun Contenido(detalle: DetalleUi) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, BordeTarjeta)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .vidrio()
+                    .padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Text(
-                        detalle.post.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        detalle.post.body,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextoSecundario
-                    )
-                }
+                Text(
+                    "Usuario ${detalle.post.userId}",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Menta
+                )
+                Text(
+                    detalle.post.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    detalle.post.body,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextoSecundario
+                )
             }
         }
 
@@ -85,32 +84,29 @@ private fun Contenido(detalle: DetalleUi) {
                 "Comentarios (${detalle.comentarios.size})",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Azul
+                color = Menta
             )
         }
 
         items(detalle.comentarios, key = { it.id }) { c ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = TarjetaGris)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .vidrio(RoundedCornerShape(16.dp))
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        c.email,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Azul
-                    )
-                    Text(
-                        c.body,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextoSecundario
-                    )
-                }
+                Text(
+                    c.email,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Azul
+                )
+                Text(
+                    c.body,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextoSecundario
+                )
             }
         }
     }

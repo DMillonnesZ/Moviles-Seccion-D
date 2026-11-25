@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -31,9 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -53,9 +52,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.millones.murocampus.model.Post
 import com.millones.murocampus.ui.theme.Azul
-import com.millones.murocampus.ui.theme.AzulClaro
-import com.millones.murocampus.ui.theme.BordeTarjeta
+import com.millones.murocampus.ui.theme.AzulBoton1
+import com.millones.murocampus.ui.theme.Menta
+import com.millones.murocampus.ui.theme.RojoAccion
 import com.millones.murocampus.ui.theme.RojoTexto
+import com.millones.murocampus.ui.theme.TarjetaGris
 import com.millones.murocampus.ui.theme.TextoSecundario
 import com.millones.murocampus.viewmodel.PostsViewModel
 import com.millones.murocampus.viewmodel.UiState
@@ -88,8 +89,8 @@ fun PantallaLista(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedTextField(
@@ -109,26 +110,40 @@ fun PantallaLista(
                 },
                 singleLine = true,
                 shape = RoundedCornerShape(28.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedBorderColor = Azul,
-                    unfocusedBorderColor = BordeTarjeta
-                ),
+                colors = coloresCampo(),
                 modifier = Modifier.weight(1f)
             )
 
             Box {
-                Button(onClick = { menuAbierto = true }) { Text("Filtrar") }
+                Button(
+                    onClick = { menuAbierto = true },
+                    modifier = Modifier.height(56.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AzulBoton1,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text("Filtrar", fontWeight = FontWeight.Bold)
+                }
                 DropdownMenu(
                     expanded = menuAbierto,
-                    onDismissRequest = { menuAbierto = false }
+                    onDismissRequest = { menuAbierto = false },
+                    shape = RoundedCornerShape(16.dp),
+                    containerColor = TarjetaGris
                 ) {
                     opcionesFiltro.forEach { userId ->
                         DropdownMenuItem(
-                            text = { Text(if (userId == null) "Todos" else "Usuario $userId") },
+                            text = {
+                                Text(
+                                    if (userId == null) "Todos" else "Usuario $userId",
+                                    color = Color.White
+                                )
+                            },
                             trailingIcon = {
-                                if (filtro == userId) Text("✓", color = Azul, fontWeight = FontWeight.Bold)
+                                if (filtro == userId) {
+                                    Text("✓", color = Menta, fontWeight = FontWeight.Bold)
+                                }
                             },
                             onClick = {
                                 menuAbierto = false
@@ -143,7 +158,7 @@ fun PantallaLista(
 
         // Etiqueta del filtro activo, con ✕ para quitarlo
         if (filtro != null) {
-            Row(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp)) {
+            Row(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)) {
                 InputChip(
                     selected = true,
                     onClick = { vm.filtrar(null) },
@@ -156,9 +171,9 @@ fun PantallaLista(
                         )
                     },
                     colors = InputChipDefaults.inputChipColors(
-                        selectedContainerColor = AzulClaro,
-                        selectedLabelColor = Azul,
-                        selectedTrailingIconColor = Azul
+                        selectedContainerColor = Menta.copy(alpha = 0.15f),
+                        selectedLabelColor = Menta,
+                        selectedTrailingIconColor = Menta
                     )
                 )
             }
@@ -183,10 +198,8 @@ fun PantallaLista(
                             // La búsqueda solo mira lo descargado: aquí se pueden traer más
                             if (hayMas || cargandoMas) {
                                 Spacer(Modifier.height(12.dp))
-                                if (cargandoMas) CircularProgressIndicator()
-                                else OutlinedButton(onClick = { vm.cargarMas() }) {
-                                    Text("Cargar más")
-                                }
+                                if (cargandoMas) CircularProgressIndicator(color = Menta)
+                                else BotonSecundario("Cargar más", { vm.cargarMas() })
                             }
                         }
                     } else {
@@ -218,10 +231,8 @@ fun PantallaLista(
                                             .padding(vertical = 4.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        if (cargandoMas) CircularProgressIndicator()
-                                        else OutlinedButton(onClick = { vm.cargarMas() }) {
-                                            Text("Cargar más")
-                                        }
+                                        if (cargandoMas) CircularProgressIndicator(color = Menta)
+                                        else BotonSecundario("Cargar más", { vm.cargarMas() })
                                     }
                                 }
                             }
@@ -234,16 +245,22 @@ fun PantallaLista(
     porEliminar?.let { post ->
         AlertDialog(
             onDismissRequest = { porEliminar = null },
-            title = { Text("Eliminar publicación") },
+            shape = RoundedCornerShape(24.dp),
+            containerColor = TarjetaGris,
+            titleContentColor = Color.White,
+            textContentColor = TextoSecundario,
+            title = { Text("Eliminar publicación", fontWeight = FontWeight.Bold) },
             text = { Text("¿Quieres eliminar «${post.title.take(60)}»?") },
             confirmButton = {
                 TextButton(onClick = {
                     vm.borrar(post.id)
                     porEliminar = null
-                }) { Text("Eliminar", color = RojoTexto) }
+                }) { Text("Eliminar", color = RojoTexto, fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
-                TextButton(onClick = { porEliminar = null }) { Text("Cancelar") }
+                TextButton(onClick = { porEliminar = null }) {
+                    Text("Cancelar", color = TextoSecundario)
+                }
             }
         )
     }
@@ -276,7 +293,7 @@ private fun TarjetaDeslizable(
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(RojoTexto, RoundedCornerShape(12.dp))
+                        .background(RojoAccion, FormaTarjeta)
                         .padding(horizontal = 20.dp),
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically

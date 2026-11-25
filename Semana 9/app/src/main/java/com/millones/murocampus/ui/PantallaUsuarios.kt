@@ -14,23 +14,29 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.millones.murocampus.model.Usuario
-import com.millones.murocampus.ui.theme.Azul
+import com.millones.murocampus.ui.theme.AzulBoton1
+import com.millones.murocampus.ui.theme.AzulBoton2
 import com.millones.murocampus.ui.theme.BordeTarjeta
+import com.millones.murocampus.ui.theme.Menta
+import com.millones.murocampus.ui.theme.Superficie
 import com.millones.murocampus.ui.theme.TextoSecundario
 import com.millones.murocampus.viewmodel.UiState
 import com.millones.murocampus.viewmodel.UsuariosViewModel
@@ -74,9 +80,12 @@ private fun TarjetaUsuario(usuario: Usuario, onClick: () -> Unit) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, BordeTarjeta)
+        shape = FormaTarjeta,
+        colors = CardDefaults.cardColors(
+            containerColor = Superficie.copy(alpha = 0.85f),
+            contentColor = Color.White
+        ),
+        border = BorderStroke(1.dp, BordeTarjeta.copy(alpha = 0.6f))
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -85,8 +94,11 @@ private fun TarjetaUsuario(usuario: Usuario, onClick: () -> Unit) {
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .background(Azul, CircleShape),
+                    .size(48.dp)
+                    .background(
+                        Brush.linearGradient(listOf(AzulBoton1, AzulBoton2)),
+                        CircleShape
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -96,11 +108,15 @@ private fun TarjetaUsuario(usuario: Usuario, onClick: () -> Unit) {
                     style = MaterialTheme.typography.titleMedium
                 )
             }
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 Text(
                     usuario.name,
                     fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleSmall
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Color.White
                 )
                 Text(
                     usuario.email,
@@ -109,10 +125,16 @@ private fun TarjetaUsuario(usuario: Usuario, onClick: () -> Unit) {
                 )
                 Text(
                     "Usuario ${usuario.id}",
-                    color = Azul,
+                    color = Menta,
+                    fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.labelSmall
                 )
             }
+            Icon(
+                Icons.Default.KeyboardArrowRight,
+                contentDescription = null,
+                tint = TextoSecundario
+            )
         }
     }
 }
