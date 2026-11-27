@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -56,6 +57,7 @@ import com.millones.avisoscampus.viewmodel.AvisosViewModel
 fun PantallaAvisos(vm: AvisosViewModel, modifier: Modifier = Modifier) {
     val contexto = LocalContext.current
     val permiso by vm.permiso.collectAsState()
+    val mensaje by vm.mensaje.collectAsState()
     val faltan by vm.faltan.collectAsState()
     val escuchando by vm.escuchandoAvion.collectAsState()
     val avisos by vm.avisos.collectAsState()
@@ -80,7 +82,7 @@ fun PantallaAvisos(vm: AvisosViewModel, modifier: Modifier = Modifier) {
     LaunchedEffect(Unit) {
         vm.eventos.collect { aviso ->
             val mostrado = Notificador.mostrar(contexto, aviso)
-            // TODO Paso 8: si no se mostró, avisar al ViewModel
+            if (!mostrado) vm.noSePudoMostrar()   // Paso 8: el aviso quedó en el historial
         }
     }
 
@@ -124,7 +126,32 @@ fun PantallaAvisos(vm: AvisosViewModel, modifier: Modifier = Modifier) {
             ) {
                 Text("Permitir notificaciones", fontWeight = FontWeight.Bold)
             }
-            // TODO Paso 8: recuadro de error y botón "Abrir ajustes"
+        }
+
+        // Paso 8: recuadro de error y botón para corregir el permiso desde Ajustes
+        mensaje?.let { texto ->
+            Text(
+                texto,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(RojoFondo, RoundedCornerShape(12.dp))
+                    .padding(12.dp),
+                color = RojoTexto,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
+            )
+        }
+        if (permiso == PermisoUi.Denegado) {
+            OutlinedButton(
+                onClick = {
+                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, contexto.packageName)
+                    contexto.startActivity(intent)
+                },
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text("Abrir ajustes", fontWeight = FontWeight.Bold)
+            }
         }
 
         TarjetaAviso("Avisos") {
