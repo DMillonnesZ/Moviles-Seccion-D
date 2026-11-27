@@ -1,13 +1,26 @@
 package com.millones.avisoscampus.notificacion
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.os.Build
 import com.millones.avisoscampus.model.Aviso
 
 object Notificador {
     const val CANAL = "avisos"
 
     fun crearCanal(context: Context) {
-        // TODO Paso 1: si SDK_INT >= O, crear NotificationChannel y registrarlo
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val canal = NotificationChannel(
+                CANAL,
+                "Avisos",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Notificaciones de la app"   // subtítulo que se ve en Ajustes
+            }
+            val manager = context.getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(canal)      // si ya existe, no lo duplica
+        }
     }
 
     fun tienePermiso(context: Context): Boolean {
