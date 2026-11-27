@@ -58,6 +58,7 @@ fun PantallaAvisos(vm: AvisosViewModel, modifier: Modifier = Modifier) {
     val permiso by vm.permiso.collectAsState()
     val faltan by vm.faltan.collectAsState()
     val escuchando by vm.escuchandoAvion.collectAsState()
+    val avisos by vm.avisos.collectAsState()
 
     // Paso 6: el receptor solo vive mientras el switch está activo
     DisposableEffect(escuchando) {
@@ -178,9 +179,8 @@ fun PantallaAvisos(vm: AvisosViewModel, modifier: Modifier = Modifier) {
             )
         }
 
-        // TODO Paso 7: reemplazar esta tarjeta completa por HistorialAvisos(avisos),
-        // que dibuja su propia tarjeta usando TarjetaAviso("Historial")
-        TarjetaAviso("Historial") { }
+        // Paso 7: el historial dibuja su propia tarjeta
+        HistorialAvisos(avisos)
     }
 }
 
