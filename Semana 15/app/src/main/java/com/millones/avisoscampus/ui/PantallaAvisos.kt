@@ -20,6 +20,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,6 +48,7 @@ import com.millones.avisoscampus.viewmodel.AvisosViewModel
 fun PantallaAvisos(vm: AvisosViewModel, modifier: Modifier = Modifier) {
     val contexto = LocalContext.current
     val permiso by vm.permiso.collectAsState()
+    val faltan by vm.faltan.collectAsState()
 
     // El ViewModel emite el evento y la pantalla (que sí tiene Context) muestra la notificación
     LaunchedEffect(Unit) {
@@ -107,7 +109,28 @@ fun PantallaAvisos(vm: AvisosViewModel, modifier: Modifier = Modifier) {
         }
 
         TarjetaAviso("Recordatorio") {
-            // TODO Paso 5: "Recordar en 10 s", "Cancelar" y el texto "Faltan N s"
+            // Paso 5: mientras corre, "Recordar" se deshabilita y "Cancelar" se habilita
+            val corriendo = faltan != null
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { vm.recordarEn(10) },
+                    enabled = !corriendo
+                ) {
+                    Text("Recordar en 10 s", fontWeight = FontWeight.Bold)
+                }
+                OutlinedButton(
+                    onClick = { vm.cancelarRecordatorio() },
+                    enabled = corriendo
+                ) {
+                    Text("Cancelar", fontWeight = FontWeight.Bold)
+                }
+            }
+            faltan?.let { n ->
+                Text("Faltan $n s", fontWeight = FontWeight.Bold)
+            }
         }
 
         TarjetaAviso("Receptor de anuncios") {
