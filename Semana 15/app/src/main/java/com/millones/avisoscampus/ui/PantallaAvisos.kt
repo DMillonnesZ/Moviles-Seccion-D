@@ -100,7 +100,10 @@ fun PantallaAvisos(vm: AvisosViewModel, modifier: Modifier = Modifier) {
         }
 
         TarjetaAviso("Avisos") {
-            // TODO Paso 3: botón "Mostrar aviso" -> vm.avisarAhora()
+            // Paso 3: el botón solo avisa al ViewModel; él decide qué aviso crear
+            Button(onClick = { vm.avisarAhora() }) {
+                Text("Mostrar aviso", fontWeight = FontWeight.Bold)
+            }
         }
 
         TarjetaAviso("Recordatorio") {

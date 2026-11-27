@@ -1,13 +1,19 @@
 package com.millones.avisoscampus.notificacion
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
+import com.millones.avisoscampus.R
 import com.millones.avisoscampus.model.Aviso
+import com.millones.avisoscampus.ui.theme.Azul
 
 object Notificador {
     const val CANAL = "avisos"
@@ -35,10 +41,24 @@ object Notificador {
         ) == PackageManager.PERMISSION_GRANTED
     }
 
+    // El permiso ya se comprueba con tienePermiso(); por eso se silencia el aviso de Lint
+    @SuppressLint("MissingPermission")
     fun mostrar(context: Context, aviso: Aviso): Boolean {
-        // TODO 1: si no tienePermiso(context) -> return false
-        // TODO 2: construir la notificación con NotificationCompat.Builder
-        // TODO 3: NotificationManagerCompat.from(context).notify(aviso.id, ...)
+        // 1. Sin permiso no se muestra nada (y no se lanza error)
+        if (!tienePermiso(context)) return false
+
+        // 2. Construir la notificación en el canal Avisos
+        val notificacion = NotificationCompat.Builder(context, CANAL)
+            .setSmallIcon(R.drawable.ic_notificacion)
+            .setColor(Azul.toArgb())                 // círculo del ícono en azul, como en la captura
+            .setContentTitle(aviso.titulo)
+            .setContentText(aviso.texto)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .build()
+
+        // 3. Publicarla con el id del aviso: cada aviso es una notificación distinta
+        NotificationManagerCompat.from(context).notify(aviso.id, notificacion)
         return true
     }
 }
