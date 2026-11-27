@@ -1,6 +1,8 @@
 package com.millones.avisoscampus.ui
 
 import android.Manifest
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,8 +23,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,15 +35,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.millones.avisoscampus.model.PermisoUi
 import com.millones.avisoscampus.notificacion.Notificador
+import com.millones.avisoscampus.receiver.ModoAvionReceiver
 import com.millones.avisoscampus.ui.theme.Azul
 import com.millones.avisoscampus.ui.theme.BordeTarjeta
 import com.millones.avisoscampus.ui.theme.GrisFondo
 import com.millones.avisoscampus.ui.theme.GrisTexto
 import com.millones.avisoscampus.ui.theme.RojoFondo
 import com.millones.avisoscampus.ui.theme.RojoTexto
+import com.millones.avisoscampus.ui.theme.TextoSecundario
 import com.millones.avisoscampus.ui.theme.VerdeFondo
 import com.millones.avisoscampus.ui.theme.VerdeTexto
 import com.millones.avisoscampus.viewmodel.AvisosViewModel
@@ -49,6 +57,23 @@ fun PantallaAvisos(vm: AvisosViewModel, modifier: Modifier = Modifier) {
     val contexto = LocalContext.current
     val permiso by vm.permiso.collectAsState()
     val faltan by vm.faltan.collectAsState()
+    val escuchando by vm.escuchandoAvion.collectAsState()
+
+    // Paso 6: el receptor solo vive mientras el switch está activo
+    DisposableEffect(escuchando) {
+        if (escuchando) {
+            val receptor = ModoAvionReceiver { activo -> vm.alCambiarModoAvion(activo) }
+            ContextCompat.registerReceiver(
+                contexto,
+                receptor,
+                IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+            onDispose { contexto.unregisterReceiver(receptor) }
+        } else {
+            onDispose { }
+        }
+    }
 
     // El ViewModel emite el evento y la pantalla (que sí tiene Context) muestra la notificación
     LaunchedEffect(Unit) {
@@ -134,7 +159,23 @@ fun PantallaAvisos(vm: AvisosViewModel, modifier: Modifier = Modifier) {
         }
 
         TarjetaAviso("Receptor de anuncios") {
-            // TODO Paso 6: Switch "Escuchar el modo avión"
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Escuchar el modo avión", style = MaterialTheme.typography.bodyLarge)
+                Switch(
+                    checked = escuchando,
+                    onCheckedChange = { vm.cambiarEscucha(it) }
+                )
+            }
+            Text(
+                "Activa o desactiva el modo avión del celular",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextoSecundario,
+                textAlign = TextAlign.Center
+            )
         }
 
         // TODO Paso 7: reemplazar esta tarjeta completa por HistorialAvisos(avisos),
